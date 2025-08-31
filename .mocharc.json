@@ -1,0 +1,8 @@
+{
+  "require": ["tsx"],
+  "extension": ["ts"],
+  "watch-extensions": "ts",
+  "recursive": true,
+  "reporter": "spec",
+  "timeout": 600000
+}

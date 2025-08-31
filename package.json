@@ -1,0 +1,233 @@
+{
+  "name": "@j-schreiber/sf-cli-security-audit",
+  "description": "Salesforce CLI plugin to automate highly configurable security audits",
+  "version": "0.1.0",
+  "repository": {
+    "type": "https",
+    "url": "https://github.com/j-schreiber/js-sf-cli-security-audit"
+  },
+  "dependencies": {
+    "@jsforce/jsforce-node": "^3.4.2",
+    "@oclif/core": "^4",
+    "@oclif/multi-stage-output": "^0.8.16",
+    "@salesforce/apex-node": "^8.1.19",
+    "@salesforce/core": "^8.5.7",
+    "@salesforce/kit": "^3.2.3",
+    "@salesforce/packaging": "^4.2.15",
+    "@salesforce/sf-plugins-core": "^12.0.8",
+    "@salesforce/source-deploy-retrieve": "^12.21.5",
+    "fast-xml-parser": "5",
+    "js-yaml": "^4.1.0",
+    "zod": "4"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.2.1",
+    "@oclif/plugin-command-snapshot": "^5.1.9",
+    "@oclif/test": "^4.1.13",
+    "@release-it/conventional-changelog": "^10.0.1",
+    "@salesforce/cli-plugins-testkit": "^5.3.10",
+    "@salesforce/dev-scripts": "11",
+    "eslint": "8",
+    "eslint-plugin-sf-plugin": "^1.18.6",
+    "husky": "^9.1.7",
+    "oclif": "^4.14.0",
+    "release-it": "^19.0.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "/lib",
+    "/messages",
+    "/oclif.manifest.json",
+    "/oclif.lock"
+  ],
+  "keywords": [
+    "force",
+    "salesforce",
+    "salesforcedx",
+    "sf",
+    "sf-plugin",
+    "sfdx",
+    "sfdx-plugin"
+  ],
+  "license": "BSD-3-Clause",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "sf",
+    "topicSeparator": " ",
+    "devPlugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {
+      "org": {
+        "description": "Org namespace",
+        "subtopics": {
+          "audit": {
+            "description": "Initialise and run security audits"
+          }
+        }
+      }
+    },
+    "flexibleTaxonomy": true
+  },
+  "scripts": {
+    "build": "wireit",
+    "clean": "sf-clean",
+    "clean-all": "sf-clean all",
+    "compile": "wireit",
+    "docs": "sf-docs",
+    "format": "wireit",
+    "pretty-quick-staged": "pretty-quick --staged",
+    "link-check": "wireit",
+    "lint": "wireit",
+    "postpack": "sf-clean --ignore-signing-artifacts",
+    "prepack": "sf-prepack",
+    "test": "wireit",
+    "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
+    "test:only": "wireit",
+    "readme": "wireit",
+    "prepare": "husky",
+    "release": "rm -rf .wireit && yarn build && release-it"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "wireit": {
+    "build": {
+      "dependencies": [
+        "clean-deps",
+        "compile",
+        "lint"
+      ]
+    },
+    "clean-deps": {
+      "command": "rm -rf node_modules/@types/{glob,minimatch,shelljs}"
+    },
+    "compile": {
+      "command": "tsc -p . --pretty --incremental",
+      "files": [
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        "messages/**"
+      ],
+      "output": [
+        "lib/**",
+        "*.tsbuildinfo"
+      ],
+      "clean": "if-file-deleted"
+    },
+    "format": {
+      "command": "prettier --write \"+(src|test|schemas)/**/*.+(ts|js|json)|command-snapshot.json\"",
+      "files": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "schemas/**/*.json",
+        "command-snapshot.json",
+        ".prettier*"
+      ],
+      "output": []
+    },
+    "lint": {
+      "command": "eslint src test --color --cache --cache-location .eslintcache",
+      "files": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "messages/**",
+        "**/.eslint*",
+        "**/tsconfig.json"
+      ],
+      "output": []
+    },
+    "test:compile": {
+      "command": "tsc -p \"./test\" --pretty",
+      "files": [
+        "test/**/*.ts",
+        "**/tsconfig.json"
+      ],
+      "output": []
+    },
+    "test": {
+      "dependencies": [
+        "test:compile",
+        "test:only",
+        "lint"
+      ]
+    },
+    "test:only": {
+      "command": "nyc mocha \"test/**/*.test.ts\"",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": [
+        "test/**/*.ts",
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        ".mocha*",
+        "!*.nut.ts",
+        ".nycrc"
+      ],
+      "output": []
+    },
+    "test:command-reference": {
+      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" commandreference:generate --erroronwarnings",
+      "files": [
+        "src/**/*.ts",
+        "messages/**",
+        "package.json"
+      ],
+      "output": [
+        "tmp/root"
+      ]
+    },
+    "test:deprecation-policy": {
+      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" snapshot:compare",
+      "files": [
+        "src/**/*.ts"
+      ],
+      "output": [],
+      "dependencies": [
+        "compile"
+      ]
+    },
+    "test:json-schema": {
+      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" schema:compare",
+      "files": [
+        "src/**/*.ts",
+        "schemas"
+      ],
+      "output": []
+    },
+    "link-check": {
+      "command": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || linkinator \"**/*.md\" --skip \"CHANGELOG.md|node_modules|test/|confluence.internal.salesforce.com|my.salesforce.com|%s\" --markdown --retry --directory-listing --verbosity error",
+      "files": [
+        "./*.md",
+        "./!(CHANGELOG).md",
+        "messages/**/*.md"
+      ],
+      "output": []
+    },
+    "readme": {
+      "dependencies": [
+        "build"
+      ],
+      "command": "oclif readme && pretty-quick"
+    }
+  },
+  "exports": "./lib/index.js",
+  "type": "module",
+  "author": "Jannis Schreiber",
+  "main": "index.js",
+  "bin": {
+    "sf-plugin": "bin/dev.js"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}

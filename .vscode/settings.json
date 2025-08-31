@@ -1,0 +1,19 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    "**/lib": true,
+    "**/bin": true
+  },
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "mochaExplorer.files": "test/**/*.test.ts",
+  "mochaExplorer.require": "tsx",
+  "github-actions.workflows.pinned.workflows": [".github/workflows/tests.yml"]
+}
