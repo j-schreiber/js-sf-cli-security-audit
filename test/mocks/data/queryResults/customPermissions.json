@@ -1,0 +1,29 @@
+[
+  {
+    "attributes": {
+      "type": "CustomPermission",
+      "url": "/services/data/v64.0/sobjects/CustomPermission/0CP4P0000000001AAA"
+    },
+    "Id": "0CP4P0000000001AAA",
+    "MasterLabel": "Delete Activated Invoices",
+    "DeveloperName": "Delete_Activated_Invoices"
+  },
+  {
+    "attributes": {
+      "type": "CustomPermission",
+      "url": "/services/data/v64.0/sobjects/CustomPermission/0CP4P0000000002AAA"
+    },
+    "Id": "0CP4P0000000002AAA",
+    "MasterLabel": "Modify Activated Invoices",
+    "DeveloperName": "Modify_Activated_Invoices"
+  },
+  {
+    "attributes": {
+      "type": "CustomPermission",
+      "url": "/services/data/v64.0/sobjects/CustomPermission/0CP4P0000000003AAA"
+    },
+    "Id": "0CP4P0000000003AAA",
+    "MasterLabel": "Do Some Irrelevant Stuff",
+    "DeveloperName": "Do_Some_Irrelevant_Stuff"
+  }
+]

@@ -9,6 +9,7 @@ import { DEFAULT_CLASSIFICATIONS } from '../config/defaultPolicyClassification.j
 import { PolicyRiskLevel, PolicyWriteResult } from './types.js';
 import PolicySet from './policySet.js';
 import { PermissionsConfig, PermissionsPolicy } from './schema.js';
+import { CustomPermission } from './salesforceStandardTypes.js';
 
 export const PERMISSIONS_SUBDIR = 'permissions';
 export const USER_PERMISSIONS_PATH = path.join(PERMISSIONS_SUBDIR, 'userPermissions.yml');
@@ -25,6 +26,7 @@ export default class Policies {
     const result = new PolicySet();
     const permSet = await con.describe('PermissionSet');
     result.userPermissions.push(...initUserPermissions(permSet));
+    result.customPermissions.push(...(await resolveCustomPermissions(con)));
     result.sort();
     return result;
   }
@@ -59,6 +61,9 @@ export default class Policies {
 }
 
 function writePermissionsPolicies(policies: PermissionsPolicy[], outputPath: string): void {
+  if (policies.length === 0) {
+    return;
+  }
   const fileContent: PermissionsConfig = { permissions: {} };
   policies.forEach((perm) => {
     fileContent.permissions[perm.name] = {
@@ -91,4 +96,13 @@ function initUserPermissions(describe: DescribeSObjectResult): PermissionsPolicy
       };
     }
   });
+}
+
+async function resolveCustomPermissions(con: Connection): Promise<PermissionsPolicy[]> {
+  const customPerms = await con.query<CustomPermission>('SELECT Id,MasterLabel,DeveloperName FROM CustomPermission');
+  return customPerms.records.map((cp) => ({
+    name: cp.DeveloperName,
+    label: cp.MasterLabel,
+    classification: PolicyRiskLevel.UNKNOWN,
+  }));
 }

@@ -33,13 +33,27 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
     // eslint-disable-next-line sf-plugin/get-connection-with-version
     const policies = await Policies.initialize(flags['target-org'].getConnection());
-    const writeResult = Policies.write(policies, flags['output-dir']);
-    this.logSuccess(
-      messages.getMessage('success.policy-summary', [
-        policies.userPermissions?.length ?? 0,
-        writeResult.paths['userPermissions'],
-      ])
-    );
+    this.writeResults(policies, flags['output-dir']);
     return { policies };
+  }
+
+  private writeResults(policies: PolicySet, outputDir: string): void {
+    const writeResult = Policies.write(policies, outputDir);
+    if (policies.userPermissions.length > 0) {
+      this.logSuccess(
+        messages.getMessage('success.policy-summary', [
+          policies.userPermissions?.length ?? 0,
+          writeResult.paths['userPermissions'],
+        ])
+      );
+    }
+    if (policies.customPermissions.length > 0) {
+      this.logSuccess(
+        messages.getMessage('success.policy-summary', [
+          policies.customPermissions?.length ?? 0,
+          writeResult.paths['customPermissions'],
+        ])
+      );
+    }
   }
 }

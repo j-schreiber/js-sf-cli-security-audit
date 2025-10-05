@@ -22,4 +22,4 @@ Directory where policies and classifications are created. If empty, the root dir
 
 # success.policy-summary
 
-Initialised policy with %s permissions at %s
+Initialised %s permissions at %s
