@@ -7,6 +7,9 @@ import AuditTestContext from '../../../mocks/auditTestContext.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
+const DEFAULT_USER_PERMS_PATH = path.join('policies', 'permissions', 'userPermissions.yml');
+const DEFAULT_CUSTOM_PERMS_PATH = path.join('policies', 'permissions', 'customPermissions.yml');
+
 describe('org audit init', () => {
   const $$ = new AuditTestContext();
 
@@ -31,11 +34,11 @@ describe('org audit init', () => {
     expect(result.policies.customPermissions.length).to.equal(expectedCustomPerms);
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([]);
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      `Initialised ${expectedPermsCount} permissions at policies/permissions/userPermissions.yml`,
-      `Initialised ${expectedCustomPerms} permissions at policies/permissions/customPermissions.yml`,
+      `Initialised ${expectedPermsCount} permissions at ${DEFAULT_USER_PERMS_PATH}`,
+      `Initialised ${expectedCustomPerms} permissions at ${DEFAULT_CUSTOM_PERMS_PATH}`,
     ]);
-    expect(fs.existsSync(path.join('policies', 'permissions', 'userPermissions.yml'))).to.equal(true);
-    expect(fs.existsSync(path.join('policies', 'permissions', 'customPermissions.yml'))).to.equal(true);
+    expect(fs.existsSync(DEFAULT_USER_PERMS_PATH)).to.equal(true);
+    expect(fs.existsSync(DEFAULT_CUSTOM_PERMS_PATH)).to.equal(true);
   });
 
   it('initialises no custom permissions policy if org does not have any', async () => {
@@ -53,9 +56,9 @@ describe('org audit init', () => {
     expect(result.policies.customPermissions.length).to.equal(expectedCustomPerms);
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([]);
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      `Initialised ${expectedPermsCount} permissions at policies/permissions/userPermissions.yml`,
+      `Initialised ${expectedPermsCount} permissions at ${DEFAULT_USER_PERMS_PATH}`,
     ]);
-    expect(fs.existsSync(path.join('policies', 'permissions', 'userPermissions.yml'))).to.equal(true);
-    expect(fs.existsSync(path.join('policies', 'permissions', 'customPermissions.yml'))).to.equal(false);
+    expect(fs.existsSync(DEFAULT_USER_PERMS_PATH)).to.equal(true);
+    expect(fs.existsSync(DEFAULT_CUSTOM_PERMS_PATH)).to.equal(false);
   });
 });
