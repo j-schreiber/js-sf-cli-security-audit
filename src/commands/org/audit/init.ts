@@ -29,6 +29,8 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
 
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
+    // inset of async await, run with listener and log events
+    // make "resolve" or smth that allows to paralellise with Promise.all()
     // eslint-disable-next-line sf-plugin/get-connection-with-version
     const auditConfig = await Policies.initialize(flags['target-org'].getConnection());
     this.writeConfigFiles(auditConfig, flags['output-dir']);
@@ -58,6 +60,17 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
       if (writtenProfiles > 0) {
         this.logSuccess(
           messages.getMessage('success.profile-policy-summary', [writtenProfiles, writeResult.paths.profilePolicy])
+        );
+      }
+    }
+    if (config.policies.permissionSets) {
+      const writtenPermSets = Object.keys(config.policies.permissionSets.permissionSets).length;
+      if (writtenPermSets > 0) {
+        this.logSuccess(
+          messages.getMessage('success.permset-policy-summary', [
+            writtenPermSets,
+            writeResult.paths.permissionSetPolicy,
+          ])
         );
       }
     }

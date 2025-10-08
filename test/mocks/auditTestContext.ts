@@ -2,7 +2,7 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/policies/policies.js';
+import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../src/libs/policies/policies.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -49,5 +49,6 @@ function buildDefaultMocks() {
   const defaults = structuredClone(DEFAULT_MOCKS);
   defaults.queries[CUSTOM_PERMS_QUERY] = 'test/mocks/data/queryResults/customPermissions.json';
   defaults.queries[PROFILES_QUERY] = 'test/mocks/data/queryResults/profiles.json';
+  defaults.queries[PERMISSION_SETS_QUERY] = 'test/mocks/data/queryResults/empty.json';
   return defaults;
 }

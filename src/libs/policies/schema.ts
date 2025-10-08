@@ -19,13 +19,20 @@ const PolicyConfigSchema = z.object({
   rules: z.record(z.string(), PolicyRuleConfigSchema),
 });
 
-const ProfileConfig = z.object({
+const PermSetConfig = z.object({
   preset: z.string(),
+});
+
+const ProfileConfig = PermSetConfig.extend({
   enforceIpRanges: z.boolean().optional(),
 });
 
 const ProfilesPolicyConfigSchema = PolicyConfigSchema.extend({
   profiles: z.record(z.string(), ProfileConfig),
+});
+
+const PermSetsPolicyConfigSchema = PolicyConfigSchema.extend({
+  permissionSets: z.record(z.string(), PermSetConfig),
 });
 
 const PermissionsConfigSchema = z.object({
@@ -40,3 +47,4 @@ export type PermissionsConfig = z.infer<typeof PermissionsConfigSchema>;
 export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
 export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
 export type ProfilesPolicyConfig = z.infer<typeof ProfilesPolicyConfigSchema>;
+export type PermSetsPolicyConfig = z.infer<typeof PermSetsPolicyConfigSchema>;

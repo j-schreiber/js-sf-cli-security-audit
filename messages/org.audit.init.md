@@ -27,3 +27,7 @@ Initialised %s permissions at %s.
 # success.profile-policy-summary
 
 Initialised policy with %s profiles at %s.
+
+# success.permset-policy-summary
+
+Initialised policy with %s permission sets at %s.

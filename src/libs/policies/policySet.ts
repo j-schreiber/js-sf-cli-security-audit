@@ -1,4 +1,4 @@
-import { PermissionsClassification, ProfilesPolicyConfig } from './schema.js';
+import { PermissionsClassification, PermSetsPolicyConfig, ProfilesPolicyConfig } from './schema.js';
 import { PolicyRiskLevel } from './types.js';
 
 /**
@@ -39,6 +39,7 @@ export class AuditClassifications {
 
 export class AuditPolicies {
   public profiles?: ProfilesPolicyConfig;
+  public permissionSets?: PermSetsPolicyConfig;
 
   public constructor() {}
 }
