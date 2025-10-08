@@ -11,9 +11,9 @@ import PolicySet from './policySet.js';
 import { PermissionsConfig, PermissionsPolicy } from './schema.js';
 import { CustomPermission } from './salesforceStandardTypes.js';
 
-export const PERMISSIONS_SUBDIR = 'permissions';
-export const USER_PERMISSIONS_PATH = path.join(PERMISSIONS_SUBDIR, 'userPermissions.yml');
-export const CUSTOM_PERMISSIONS_PATH = path.join(PERMISSIONS_SUBDIR, 'customPermissions.yml');
+export const CLASSIFICATION_SUBDIR = 'classification';
+export const USER_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'userPermissions.yml');
+export const CUSTOM_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'customPermissions.yml');
 
 export default class Policies {
   /**
@@ -49,7 +49,7 @@ export default class Policies {
    * @param outputDir
    */
   public static write(policies: PolicySet, outputDir: string): PolicyWriteResult {
-    fs.mkdirSync(path.join(outputDir, PERMISSIONS_SUBDIR), { recursive: true });
+    fs.mkdirSync(path.join(outputDir, CLASSIFICATION_SUBDIR), { recursive: true });
     const writeConfig: Record<string, string> = {
       userPermissions: path.join(outputDir, USER_PERMISSIONS_PATH),
       customPermissions: path.join(outputDir, CUSTOM_PERMISSIONS_PATH),

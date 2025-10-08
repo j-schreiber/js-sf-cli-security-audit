@@ -7,8 +7,8 @@ import AuditTestContext from '../../../mocks/auditTestContext.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
-const DEFAULT_USER_PERMS_PATH = path.join('policies', 'permissions', 'userPermissions.yml');
-const DEFAULT_CUSTOM_PERMS_PATH = path.join('policies', 'permissions', 'customPermissions.yml');
+const DEFAULT_USER_PERMS_PATH = path.join('my-test-org', 'classification', 'userPermissions.yml');
+const DEFAULT_CUSTOM_PERMS_PATH = path.join('my-test-org', 'classification', 'customPermissions.yml');
 
 describe('org audit init', () => {
   const $$ = new AuditTestContext();
@@ -21,9 +21,9 @@ describe('org audit init', () => {
     $$.reset();
   });
 
-  it('initialises user permission policies from a target org in default directory', async () => {
+  it('initialises user permission policies from a target org', async () => {
     // Act
-    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username]);
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
 
     // Assert
     assert.isDefined(result.policies.userPermissions);
@@ -46,7 +46,7 @@ describe('org audit init', () => {
     $$.mocks.queries['SELECT Id,MasterLabel,DeveloperName FROM CustomPermission'] = [];
 
     // Act
-    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username]);
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
 
     // Assert
     assert.isDefined(result.policies.userPermissions);
@@ -60,5 +60,25 @@ describe('org audit init', () => {
     ]);
     expect(fs.existsSync(DEFAULT_USER_PERMS_PATH)).to.equal(true);
     expect(fs.existsSync(DEFAULT_CUSTOM_PERMS_PATH)).to.equal(false);
+  });
+
+  it('initialises user permission policies from a target org', async () => {
+    // Act
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+
+    // Assert
+    assert.isDefined(result.policies.userPermissions);
+    assert.isDefined(result.policies.customPermissions);
+    const expectedPermsCount = 417;
+    const expectedCustomPerms = 3;
+    expect(result.policies.userPermissions.length).to.equal(expectedPermsCount);
+    expect(result.policies.customPermissions.length).to.equal(expectedCustomPerms);
+    expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([]);
+    expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
+      `Initialised ${expectedPermsCount} permissions at ${DEFAULT_USER_PERMS_PATH}`,
+      `Initialised ${expectedCustomPerms} permissions at ${DEFAULT_CUSTOM_PERMS_PATH}`,
+    ]);
+    expect(fs.existsSync(DEFAULT_USER_PERMS_PATH)).to.equal(true);
+    expect(fs.existsSync(DEFAULT_CUSTOM_PERMS_PATH)).to.equal(true);
   });
 });

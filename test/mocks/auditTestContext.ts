@@ -16,7 +16,7 @@ export default class AuditTestContext {
   public context = new TestContext();
   public targetOrg = new MockTestOrgData();
   public outputDirectory: PathLike;
-  public defaultPath = path.join('policies');
+  public defaultPath = path.join('my-test-org');
   public sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
   public mocks: SfConnectionMocks;
 
@@ -24,7 +24,7 @@ export default class AuditTestContext {
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
-      this.outputDirectory = path.join('tmp', 'tests', '12345');
+      this.outputDirectory = this.defaultPath;
     }
     this.mocks = new SfConnectionMocks(DEFAULT_MOCKS);
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);

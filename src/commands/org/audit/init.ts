@@ -25,7 +25,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
       required: false,
       char: 'd',
       summary: messages.getMessage('flags.output-dir.summary'),
-      default: 'policies',
+      default: '',
     }),
   };
 
