@@ -1,7 +1,7 @@
 import z from 'zod';
 import { PolicyRiskLevel } from './types.js';
 
-const PermissionsPolicySchema = z.object({
+const PermissionsClassificationSchema = z.object({
   /** API name of the permission. Used in profile metadata or SOQL */
   name: z.string(),
   /** UI Label */
@@ -12,6 +12,22 @@ const PermissionsPolicySchema = z.object({
   classification: z.enum(PolicyRiskLevel),
 });
 
+const PolicyRuleConfigSchema = z.object({ enabled: z.boolean().default(true) });
+
+const PolicyConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  rules: z.record(z.string(), PolicyRuleConfigSchema),
+});
+
+const ProfileConfig = z.object({
+  preset: z.string(),
+  enforceIpRanges: z.boolean().optional(),
+});
+
+const ProfilesPolicyConfigSchema = PolicyConfigSchema.extend({
+  profiles: z.record(z.string(), ProfileConfig),
+});
+
 const PermissionsConfigSchema = z.object({
   permissions: z.record(
     z.string(),
@@ -19,5 +35,8 @@ const PermissionsConfigSchema = z.object({
   ),
 });
 
-export type PermissionsPolicy = z.infer<typeof PermissionsPolicySchema>;
+export type PermissionsClassification = z.infer<typeof PermissionsClassificationSchema>;
 export type PermissionsConfig = z.infer<typeof PermissionsConfigSchema>;
+export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
+export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
+export type ProfilesPolicyConfig = z.infer<typeof ProfilesPolicyConfigSchema>;

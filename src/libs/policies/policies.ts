@@ -8,12 +8,18 @@ import { AuditResult } from '../audit/types.js';
 import { DEFAULT_CLASSIFICATIONS } from '../config/defaultPolicyClassification.js';
 import { PolicyRiskLevel, PolicyWriteResult } from './types.js';
 import PolicySet from './policySet.js';
-import { PermissionsConfig, PermissionsPolicy } from './schema.js';
-import { CustomPermission } from './salesforceStandardTypes.js';
+import { PermissionsConfig, PermissionsClassification, ProfilesPolicyConfig, PolicyConfig } from './schema.js';
+import { CustomPermission, PermissionSet } from './salesforceStandardTypes.js';
 
 export const CLASSIFICATION_SUBDIR = 'classification';
+export const POLICIES_SUBDIR = 'policies';
 export const USER_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'userPermissions.yml');
 export const CUSTOM_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'customPermissions.yml');
+export const PROFILE_POLICY_PATH = path.join(POLICIES_SUBDIR, 'profiles.yml');
+
+export const CUSTOM_PERMS_QUERY = 'SELECT Id,MasterLabel,DeveloperName FROM CustomPermission';
+export const PROFILES_QUERY =
+  'SELECT Profile.Name,Profile.UserType,IsCustom FROM PermissionSet WHERE IsOwnedByProfile = TRUE';
 
 export default class Policies {
   /**
@@ -25,8 +31,9 @@ export default class Policies {
   public static async initialize(con: Connection): Promise<PolicySet> {
     const result = new PolicySet();
     const permSet = await con.describe('PermissionSet');
-    result.userPermissions.push(...initUserPermissions(permSet));
-    result.customPermissions.push(...(await resolveCustomPermissions(con)));
+    result.classification.userPermissions.push(...initUserPermissions(permSet));
+    result.classification.customPermissions.push(...(await resolveCustomPermissions(con)));
+    result.policies.profiles = await initProfilesPolicy(con);
     result.sort();
     return result;
   }
@@ -50,17 +57,20 @@ export default class Policies {
    */
   public static write(policies: PolicySet, outputDir: string): PolicyWriteResult {
     fs.mkdirSync(path.join(outputDir, CLASSIFICATION_SUBDIR), { recursive: true });
+    fs.mkdirSync(path.join(outputDir, POLICIES_SUBDIR), { recursive: true });
     const writeConfig: Record<string, string> = {
       userPermissions: path.join(outputDir, USER_PERMISSIONS_PATH),
       customPermissions: path.join(outputDir, CUSTOM_PERMISSIONS_PATH),
+      profilePolicy: path.join(outputDir, PROFILE_POLICY_PATH),
     };
-    writePermissionsPolicies(policies.userPermissions, writeConfig.userPermissions);
-    writePermissionsPolicies(policies.customPermissions, writeConfig.customPermissions);
+    writePermClassification(policies.classification.userPermissions, writeConfig.userPermissions);
+    writePermClassification(policies.classification.customPermissions, writeConfig.customPermissions);
+    writePolicy(writeConfig.profilePolicy, policies.policies.profiles);
     return { paths: writeConfig };
   }
 }
 
-function writePermissionsPolicies(policies: PermissionsPolicy[], outputPath: string): void {
+function writePermClassification(policies: PermissionsClassification[], outputPath: string): void {
   if (policies.length === 0) {
     return;
   }
@@ -76,7 +86,15 @@ function writePermissionsPolicies(policies: PermissionsPolicy[], outputPath: str
   fs.writeFileSync(outputPath, yamlFileBody);
 }
 
-function initUserPermissions(describe: DescribeSObjectResult): PermissionsPolicy[] {
+function writePolicy(fullFilePath: string, policy?: PolicyConfig): void {
+  if (policy === undefined) {
+    return;
+  }
+  const yamlDump = yaml.dump(policy);
+  fs.writeFileSync(fullFilePath, yamlDump);
+}
+
+function initUserPermissions(describe: DescribeSObjectResult): PermissionsClassification[] {
   const permFields = describe.fields.filter((field) => field.name.startsWith('Permissions'));
   return permFields.map((field) => {
     const policyName = field.name.replace('Permissions', '');
@@ -98,11 +116,27 @@ function initUserPermissions(describe: DescribeSObjectResult): PermissionsPolicy
   });
 }
 
-async function resolveCustomPermissions(con: Connection): Promise<PermissionsPolicy[]> {
-  const customPerms = await con.query<CustomPermission>('SELECT Id,MasterLabel,DeveloperName FROM CustomPermission');
+async function resolveCustomPermissions(con: Connection): Promise<PermissionsClassification[]> {
+  const customPerms = await con.query<CustomPermission>(CUSTOM_PERMS_QUERY);
   return customPerms.records.map((cp) => ({
     name: cp.DeveloperName,
     label: cp.MasterLabel,
     classification: PolicyRiskLevel.UNKNOWN,
   }));
+}
+
+async function initProfilesPolicy(con: Connection): Promise<ProfilesPolicyConfig> {
+  const profiles = await con.query<PermissionSet>(
+    'SELECT Profile.Name,Profile.UserType,IsCustom FROM PermissionSet WHERE IsOwnedByProfile = TRUE'
+  );
+  const profilesPolicy = {
+    enabled: true,
+    profiles: {},
+    rules: {},
+  } as ProfilesPolicyConfig;
+  profiles.records.forEach((profileRecord) => {
+    profilesPolicy.profiles[profileRecord.Profile.Name] = { preset: 'Unknown', enforceIpRanges: false };
+  });
+  // TODO: Load all available profile rules
+  return profilesPolicy;
 }

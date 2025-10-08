@@ -20,6 +20,10 @@ Directory where policies and classifications are created. If empty, the root dir
 
   <%= config.bin %> <%= command.id %> -o MyTargetOrg
 
-# success.policy-summary
+# success.perm-classification-summary
 
-Initialised %s permissions at %s
+Initialised %s permissions at %s.
+
+# success.profile-policy-summary
+
+Initialised policy with %s profiles at %s.

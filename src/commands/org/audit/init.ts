@@ -6,9 +6,7 @@ import PolicySet from '../../../libs/policies/policySet.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
 
-export type OrgAuditInitResult = {
-  policies: PolicySet;
-};
+export type OrgAuditInitResult = PolicySet;
 
 export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   public static readonly summary = messages.getMessage('summary');
@@ -32,28 +30,36 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
     // eslint-disable-next-line sf-plugin/get-connection-with-version
-    const policies = await Policies.initialize(flags['target-org'].getConnection());
-    this.writeResults(policies, flags['output-dir']);
-    return { policies };
+    const auditConfig = await Policies.initialize(flags['target-org'].getConnection());
+    this.writeConfigFiles(auditConfig, flags['output-dir']);
+    return auditConfig;
   }
 
-  private writeResults(policies: PolicySet, outputDir: string): void {
-    const writeResult = Policies.write(policies, outputDir);
-    if (policies.userPermissions.length > 0) {
+  private writeConfigFiles(config: PolicySet, outputDir: string): void {
+    const writeResult = Policies.write(config, outputDir);
+    if (config.classification.userPermissions.length > 0) {
       this.logSuccess(
-        messages.getMessage('success.policy-summary', [
-          policies.userPermissions?.length ?? 0,
-          writeResult.paths['userPermissions'],
+        messages.getMessage('success.perm-classification-summary', [
+          config.classification.userPermissions?.length ?? 0,
+          writeResult.paths.userPermissions,
         ])
       );
     }
-    if (policies.customPermissions.length > 0) {
+    if (config.classification.customPermissions.length > 0) {
       this.logSuccess(
-        messages.getMessage('success.policy-summary', [
-          policies.customPermissions?.length ?? 0,
-          writeResult.paths['customPermissions'],
+        messages.getMessage('success.perm-classification-summary', [
+          config.classification.customPermissions?.length ?? 0,
+          writeResult.paths.customPermissions,
         ])
       );
+    }
+    if (config.policies.profiles) {
+      const writtenProfiles = Object.keys(config.policies.profiles.profiles).length;
+      if (writtenProfiles > 0) {
+        this.logSuccess(
+          messages.getMessage('success.profile-policy-summary', [writtenProfiles, writeResult.paths.profilePolicy])
+        );
+      }
     }
   }
 }

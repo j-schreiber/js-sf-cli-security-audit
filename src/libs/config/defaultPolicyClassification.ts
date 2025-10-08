@@ -1,11 +1,11 @@
 import { Messages } from '@salesforce/core';
 import { PolicyRiskLevel } from '../policies/types.js';
-import { PermissionsPolicy } from '../policies/schema.js';
+import { PermissionsClassification } from '../policies/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
-export const DEFAULT_CLASSIFICATIONS: Record<string, Omit<PermissionsPolicy, 'name'>> = {
+export const DEFAULT_CLASSIFICATIONS: Record<string, Omit<PermissionsClassification, 'name'>> = {
   CustomizeApplication: {
     classification: PolicyRiskLevel.CRITICAL,
     reason: messages.getMessage('CustomizeApplication'),

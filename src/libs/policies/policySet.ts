@@ -1,17 +1,23 @@
-import { PermissionsPolicy } from './schema.js';
+import { PermissionsClassification, ProfilesPolicyConfig } from './schema.js';
 import { PolicyRiskLevel } from './types.js';
 
+/**
+ * A full audit config
+ */
 export default class PolicySet {
-  public userPermissions: PermissionsPolicy[];
-  public customPermissions: PermissionsPolicy[];
+  public classification: AuditClassifications;
+  public policies: AuditPolicies;
 
   public constructor() {
-    this.userPermissions = [];
-    this.customPermissions = [];
+    this.classification = new AuditClassifications();
+    this.policies = new AuditPolicies();
   }
 
   public sort(): void {
-    this.userPermissions.sort(
+    this.classification.userPermissions.sort(
+      (a, b) => getRiskLevelOrdinalValue(a.classification) - getRiskLevelOrdinalValue(b.classification)
+    );
+    this.classification.customPermissions.sort(
       (a, b) => getRiskLevelOrdinalValue(a.classification) - getRiskLevelOrdinalValue(b.classification)
     );
   }
@@ -19,4 +25,20 @@ export default class PolicySet {
 
 function getRiskLevelOrdinalValue(value: string): number {
   return Object.keys(PolicyRiskLevel).indexOf(value.toUpperCase());
+}
+
+export class AuditClassifications {
+  public userPermissions: PermissionsClassification[];
+  public customPermissions: PermissionsClassification[];
+
+  public constructor() {
+    this.userPermissions = [];
+    this.customPermissions = [];
+  }
+}
+
+export class AuditPolicies {
+  public profiles?: ProfilesPolicyConfig;
+
+  public constructor() {}
 }
