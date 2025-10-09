@@ -1,0 +1,957 @@
+[
+  {
+    "attributes": {
+      "type": "Profile",
+      "url": "/services/data/v63.0/tooling/sobjects/Profile/00e3X000002HGbgQAG"
+    },
+    "Id": "00e3X000002HGbgQAG",
+    "Metadata": {
+      "agentAccesses": [],
+      "applicationVisibilities": [],
+      "categoryGroupVisibilities": [
+        {
+          "dataCategories": null,
+          "dataCategoryGroup": "test",
+          "visibility": "ALL"
+        }
+      ],
+      "classAccesses": [
+        {
+          "apexClass": "ApexClass1",
+          "enabled": true
+        },
+        {
+          "apexClass": "ApexClass2",
+          "enabled": true
+        }
+      ],
+      "description": null,
+      "externalDataSourceAccesses": [],
+      "fieldPermissions": [
+        {
+          "editable": true,
+          "field": "Account.CustomField1__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "Account.CustomField2__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "CustomObject__c.CustomField1__c",
+          "readable": true
+        }
+      ],
+      "flowAccesses": [],
+      "loginFlows": null,
+      "loginHours": null,
+      "loginIpRanges": [],
+      "objectPermissions": [
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "Account",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        },
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "CustomObject__c",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        }
+      ],
+      "pageAccesses": [],
+      "profileActionOverrides": null,
+      "recordTypeVisibilities": [],
+      "tabVisibilities": [],
+      "urls": null,
+      "userLicense": "Salesforce",
+      "userPermissions": [
+        {
+          "enabled": true,
+          "name": "AIViewInsightObjects"
+        },
+        {
+          "enabled": true,
+          "name": "ActivateContract"
+        },
+        {
+          "enabled": true,
+          "name": "ActivateOrder"
+        },
+        {
+          "enabled": true,
+          "name": "ActivitiesAccess"
+        },
+        {
+          "enabled": true,
+          "name": "AddDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "AllowObjectDetectionTraining"
+        },
+        {
+          "enabled": true,
+          "name": "AllowUniversalSearch"
+        },
+        {
+          "enabled": true,
+          "name": "AllowViewKnowledge"
+        },
+        {
+          "enabled": true,
+          "name": "ApexRestServices"
+        },
+        {
+          "enabled": true,
+          "name": "ApiEnabled"
+        },
+        {
+          "enabled": true,
+          "name": "AppFrameworkManageApp"
+        },
+        {
+          "enabled": true,
+          "name": "AppFrameworkManageTemplate"
+        },
+        {
+          "enabled": true,
+          "name": "ApprovalAdmin"
+        },
+        {
+          "enabled": true,
+          "name": "ApprovalDesigner"
+        },
+        {
+          "enabled": true,
+          "name": "ApproveContract"
+        },
+        {
+          "enabled": true,
+          "name": "ArchiveArticles"
+        },
+        {
+          "enabled": true,
+          "name": "AssignPermissionSets"
+        },
+        {
+          "enabled": true,
+          "name": "AssignTopics"
+        },
+        {
+          "enabled": true,
+          "name": "AssignUserToSkill"
+        },
+        {
+          "enabled": true,
+          "name": "AuthorApex"
+        },
+        {
+          "enabled": true,
+          "name": "BulkMacrosAllowed"
+        },
+        {
+          "enabled": true,
+          "name": "CanAccessCE"
+        },
+        {
+          "enabled": true,
+          "name": "CanApproveUninstalledApps"
+        },
+        {
+          "enabled": true,
+          "name": "CanInsertFeedSystemFields"
+        },
+        {
+          "enabled": true,
+          "name": "CanUseNewDashboardBuilder"
+        },
+        {
+          "enabled": true,
+          "name": "CanVerifyComment"
+        },
+        {
+          "enabled": true,
+          "name": "ChangeDashboardColors"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterEditOwnPost"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterEditOwnRecordPost"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterFileLink"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterInternalUser"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterInviteExternalUsers"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterOwnGroups"
+        },
+        {
+          "enabled": true,
+          "name": "ClientSecretRotation"
+        },
+        {
+          "enabled": true,
+          "name": "ConnectOrgToEnvironmentHub"
+        },
+        {
+          "enabled": true,
+          "name": "ConsentApiUpdate"
+        },
+        {
+          "enabled": true,
+          "name": "ContentAdministrator"
+        },
+        {
+          "enabled": true,
+          "name": "ConvertLeads"
+        },
+        {
+          "enabled": true,
+          "name": "CreateCustomizeDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "CreateCustomizeFilters"
+        },
+        {
+          "enabled": true,
+          "name": "CreateCustomizeReports"
+        },
+        {
+          "enabled": true,
+          "name": "CreateDashboardFolders"
+        },
+        {
+          "enabled": true,
+          "name": "CreateLtngTempFolder"
+        },
+        {
+          "enabled": true,
+          "name": "CreatePackaging"
+        },
+        {
+          "enabled": true,
+          "name": "CreateReportFolders"
+        },
+        {
+          "enabled": true,
+          "name": "CreateTopics"
+        },
+        {
+          "enabled": true,
+          "name": "CreateWorkBadgeDefinition"
+        },
+        {
+          "enabled": true,
+          "name": "CreateWorkspaces"
+        },
+        {
+          "enabled": true,
+          "name": "CustomizeApplication"
+        },
+        {
+          "enabled": true,
+          "name": "DataExport"
+        },
+        {
+          "enabled": true,
+          "name": "DecisionTableExecUserAccess"
+        },
+        {
+          "enabled": true,
+          "name": "DelegatedTwoFactor"
+        },
+        {
+          "enabled": true,
+          "name": "DeleteActivatedContract"
+        },
+        {
+          "enabled": true,
+          "name": "DeleteTopics"
+        },
+        {
+          "enabled": true,
+          "name": "DistributeFromPersWksp"
+        },
+        {
+          "enabled": true,
+          "name": "EditActivatedOrders"
+        },
+        {
+          "enabled": true,
+          "name": "EditBillingInfo"
+        },
+        {
+          "enabled": true,
+          "name": "EditBrandTemplates"
+        },
+        {
+          "enabled": true,
+          "name": "EditCaseComments"
+        },
+        {
+          "enabled": true,
+          "name": "EditEvent"
+        },
+        {
+          "enabled": true,
+          "name": "EditHtmlTemplates"
+        },
+        {
+          "enabled": true,
+          "name": "EditKnowledge"
+        },
+        {
+          "enabled": true,
+          "name": "EditMyDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "EditMyReports"
+        },
+        {
+          "enabled": true,
+          "name": "EditOppLineItemUnitPrice"
+        },
+        {
+          "enabled": true,
+          "name": "EditPublicDocuments"
+        },
+        {
+          "enabled": true,
+          "name": "EditPublicFilters"
+        },
+        {
+          "enabled": true,
+          "name": "EditPublicTemplates"
+        },
+        {
+          "enabled": true,
+          "name": "EditReadonlyFields"
+        },
+        {
+          "enabled": true,
+          "name": "EditTask"
+        },
+        {
+          "enabled": true,
+          "name": "EditTopics"
+        },
+        {
+          "enabled": true,
+          "name": "EditTranslation"
+        },
+        {
+          "enabled": true,
+          "name": "EmailMass"
+        },
+        {
+          "enabled": true,
+          "name": "EmailSingle"
+        },
+        {
+          "enabled": true,
+          "name": "EnableNotifications"
+        },
+        {
+          "enabled": true,
+          "name": "ExportReport"
+        },
+        {
+          "enabled": true,
+          "name": "ExternalClientAppAdmin"
+        },
+        {
+          "enabled": true,
+          "name": "ExternalClientAppDeveloper"
+        },
+        {
+          "enabled": true,
+          "name": "ExternalClientAppViewer"
+        },
+        {
+          "enabled": true,
+          "name": "FreezeUsers"
+        },
+        {
+          "enabled": true,
+          "name": "GiveRecognitionBadge"
+        },
+        {
+          "enabled": true,
+          "name": "ImportCustomObjects"
+        },
+        {
+          "enabled": true,
+          "name": "ImportLeads"
+        },
+        {
+          "enabled": true,
+          "name": "ImportPersonal"
+        },
+        {
+          "enabled": true,
+          "name": "InboundMigrationToolsUser"
+        },
+        {
+          "enabled": true,
+          "name": "InstallPackaging"
+        },
+        {
+          "enabled": true,
+          "name": "LightningConsoleAllowedForUser"
+        },
+        {
+          "enabled": true,
+          "name": "LightningExperienceUser"
+        },
+        {
+          "enabled": true,
+          "name": "ListEmailSend"
+        },
+        {
+          "enabled": true,
+          "name": "ManageAnalyticSnapshots"
+        },
+        {
+          "enabled": true,
+          "name": "ManageAuthProviders"
+        },
+        {
+          "enabled": true,
+          "name": "ManageBusinessHourHolidays"
+        },
+        {
+          "enabled": true,
+          "name": "ManageC360AConnections"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCMS"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCallCenters"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCases"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCategories"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCertificates"
+        },
+        {
+          "enabled": true,
+          "name": "ManageContentPermissions"
+        },
+        {
+          "enabled": true,
+          "name": "ManageContentProperties"
+        },
+        {
+          "enabled": true,
+          "name": "ManageContentTaxonomy"
+        },
+        {
+          "enabled": true,
+          "name": "ManageContentTypes"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCustomDomains"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCustomPermissions"
+        },
+        {
+          "enabled": true,
+          "name": "ManageCustomReportTypes"
+        },
+        {
+          "enabled": true,
+          "name": "ManageDashbdsInPubFolders"
+        },
+        {
+          "enabled": true,
+          "name": "ManageDataCategories"
+        },
+        {
+          "enabled": true,
+          "name": "ManageDataIntegrations"
+        },
+        {
+          "enabled": true,
+          "name": "ManageDevSandboxes"
+        },
+        {
+          "enabled": true,
+          "name": "ManageDynamicDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "ManageEmailClientConfig"
+        },
+        {
+          "enabled": true,
+          "name": "ManageExchangeConfig"
+        },
+        {
+          "enabled": true,
+          "name": "ManageFilesAndAttachments"
+        },
+        {
+          "enabled": true,
+          "name": "ManageForecastingCustomData"
+        },
+        {
+          "enabled": true,
+          "name": "ManageHealthCheck"
+        },
+        {
+          "enabled": true,
+          "name": "ManageHubConnections"
+        },
+        {
+          "enabled": true,
+          "name": "ManageInteraction"
+        },
+        {
+          "enabled": true,
+          "name": "ManageInternalUsers"
+        },
+        {
+          "enabled": true,
+          "name": "ManageIpAddresses"
+        },
+        {
+          "enabled": true,
+          "name": "ManageKnowledge"
+        },
+        {
+          "enabled": true,
+          "name": "ManageKnowledgeImportExport"
+        },
+        {
+          "enabled": true,
+          "name": "ManageLeads"
+        },
+        {
+          "enabled": true,
+          "name": "ManageLoginAccessPolicies"
+        },
+        {
+          "enabled": true,
+          "name": "ManageMobile"
+        },
+        {
+          "enabled": true,
+          "name": "ManageNetworks"
+        },
+        {
+          "enabled": true,
+          "name": "ManageOrchInstsAndWorkItems"
+        },
+        {
+          "enabled": true,
+          "name": "ManagePackageLicenses"
+        },
+        {
+          "enabled": true,
+          "name": "ManagePasswordPolicies"
+        },
+        {
+          "enabled": true,
+          "name": "ManageProfilesPermissionsets"
+        },
+        {
+          "enabled": true,
+          "name": "ManagePropositions"
+        },
+        {
+          "enabled": true,
+          "name": "ManagePvtRptsAndDashbds"
+        },
+        {
+          "enabled": true,
+          "name": "ManageQuotas"
+        },
+        {
+          "enabled": true,
+          "name": "ManageRecommendationStrategies"
+        },
+        {
+          "enabled": true,
+          "name": "ManageReleaseUpdates"
+        },
+        {
+          "enabled": true,
+          "name": "ManageRemoteAccess"
+        },
+        {
+          "enabled": true,
+          "name": "ManageReportsInPubFolders"
+        },
+        {
+          "enabled": true,
+          "name": "ManageRoles"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSandboxes"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSearchPromotionRules"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSharing"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSolutions"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSubscriptions"
+        },
+        {
+          "enabled": true,
+          "name": "ManageSynonyms"
+        },
+        {
+          "enabled": true,
+          "name": "ManageTranslation"
+        },
+        {
+          "enabled": true,
+          "name": "ManageTrustMeasures"
+        },
+        {
+          "enabled": true,
+          "name": "ManageUnlistedGroups"
+        },
+        {
+          "enabled": true,
+          "name": "ManageUsers"
+        },
+        {
+          "enabled": true,
+          "name": "MassInlineEdit"
+        },
+        {
+          "enabled": true,
+          "name": "MergeTopics"
+        },
+        {
+          "enabled": true,
+          "name": "ModerateChatter"
+        },
+        {
+          "enabled": true,
+          "name": "ModifyAllData"
+        },
+        {
+          "enabled": true,
+          "name": "ModifyDataClassification"
+        },
+        {
+          "enabled": true,
+          "name": "ModifyMetadata"
+        },
+        {
+          "enabled": true,
+          "name": "MonitorLoginHistory"
+        },
+        {
+          "enabled": true,
+          "name": "NewReportBuilder"
+        },
+        {
+          "enabled": true,
+          "name": "OutboundMigrationToolsUser"
+        },
+        {
+          "enabled": true,
+          "name": "OverrideForecasts"
+        },
+        {
+          "enabled": true,
+          "name": "Packaging2"
+        },
+        {
+          "enabled": true,
+          "name": "Packaging2Delete"
+        },
+        {
+          "enabled": true,
+          "name": "PrivacyDataAccess"
+        },
+        {
+          "enabled": true,
+          "name": "PublishArticles"
+        },
+        {
+          "enabled": true,
+          "name": "PublishPackaging"
+        },
+        {
+          "enabled": true,
+          "name": "PublishTranslation"
+        },
+        {
+          "enabled": true,
+          "name": "RemoveDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "ResetPasswords"
+        },
+        {
+          "enabled": true,
+          "name": "RunReports"
+        },
+        {
+          "enabled": true,
+          "name": "ScheduleJob"
+        },
+        {
+          "enabled": true,
+          "name": "ScheduleReports"
+        },
+        {
+          "enabled": true,
+          "name": "SelectFilesFromSalesforce"
+        },
+        {
+          "enabled": true,
+          "name": "SendCustomNotifications"
+        },
+        {
+          "enabled": true,
+          "name": "SendExternalEmailAvailable"
+        },
+        {
+          "enabled": true,
+          "name": "SendSitRequests"
+        },
+        {
+          "enabled": true,
+          "name": "ShareInternalArticles"
+        },
+        {
+          "enabled": true,
+          "name": "ShowCompanyNameAsUserBadge"
+        },
+        {
+          "enabled": true,
+          "name": "SlackServiceUser"
+        },
+        {
+          "enabled": true,
+          "name": "SolutionImport"
+        },
+        {
+          "enabled": true,
+          "name": "SubmitForTranslation"
+        },
+        {
+          "enabled": true,
+          "name": "SubmitMacrosAllowed"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeDashboardRolesGrps"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeDashboardToOtherUsers"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeReportRolesGrps"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeReportToOtherUsers"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeReportsRunAsUser"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeToLightningDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeToLightningReports"
+        },
+        {
+          "enabled": true,
+          "name": "TerritoryOperations"
+        },
+        {
+          "enabled": true,
+          "name": "TraceXdsQueries"
+        },
+        {
+          "enabled": true,
+          "name": "TransactionalEmailSend"
+        },
+        {
+          "enabled": true,
+          "name": "TransferAnyCase"
+        },
+        {
+          "enabled": true,
+          "name": "TransferAnyEntity"
+        },
+        {
+          "enabled": true,
+          "name": "TransferAnyLead"
+        },
+        {
+          "enabled": true,
+          "name": "UseTeamReassignWizards"
+        },
+        {
+          "enabled": true,
+          "name": "UseWebLink"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllData"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllForecasts"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllProfiles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllUsers"
+        },
+        {
+          "enabled": true,
+          "name": "ViewArchivedArticles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewClientSecret"
+        },
+        {
+          "enabled": true,
+          "name": "ViewConsumption"
+        },
+        {
+          "enabled": true,
+          "name": "ViewContentTaxonomy"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDataAssessment"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDataCategories"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDeveloperName"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDraftArticles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewEventLogFiles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewFlowUsageAndFlowEventData"
+        },
+        {
+          "enabled": true,
+          "name": "ViewHealthCheck"
+        },
+        {
+          "enabled": true,
+          "name": "ViewHelpLink"
+        },
+        {
+          "enabled": true,
+          "name": "ViewMLModels"
+        },
+        {
+          "enabled": true,
+          "name": "ViewMyTeamsDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "ViewPublicDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "ViewPublicReports"
+        },
+        {
+          "enabled": true,
+          "name": "ViewRoles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewSetup"
+        },
+        {
+          "enabled": true,
+          "name": "ViewTrustMeasures"
+        },
+        {
+          "enabled": true,
+          "name": "ViewUserPII"
+        }
+      ]
+    }
+  }
+]

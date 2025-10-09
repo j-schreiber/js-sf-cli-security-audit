@@ -1,5 +1,5 @@
 import z from 'zod';
-import { PolicyRiskLevel } from './types.js';
+import { PermissionRiskLevelPresets, PolicyRiskLevel } from './types.js';
 
 const PermissionsClassificationSchema = z.object({
   /** API name of the permission. Used in profile metadata or SOQL */
@@ -12,7 +12,10 @@ const PermissionsClassificationSchema = z.object({
   classification: z.enum(PolicyRiskLevel),
 });
 
-const PolicyRuleConfigSchema = z.object({ enabled: z.boolean().default(true) });
+const PolicyRuleConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  config: z.unknown().optional(),
+});
 
 const PolicyConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -20,22 +23,20 @@ const PolicyConfigSchema = z.object({
 });
 
 const PermSetConfig = z.object({
-  preset: z.string(),
+  preset: z.enum(PermissionRiskLevelPresets),
 });
 
-const ProfileConfig = PermSetConfig.extend({
-  enforceIpRanges: z.boolean().optional(),
-});
+const PermSetMap = z.record(z.string(), PermSetConfig);
 
-const ProfilesPolicyConfigSchema = PolicyConfigSchema.extend({
-  profiles: z.record(z.string(), ProfileConfig),
+export const ProfilesPolicyConfigSchema = PolicyConfigSchema.extend({
+  profiles: PermSetMap,
 });
 
 const PermSetsPolicyConfigSchema = PolicyConfigSchema.extend({
-  permissionSets: z.record(z.string(), PermSetConfig),
+  permissionSets: PermSetMap,
 });
 
-const PermissionsConfigSchema = z.object({
+export const PermissionsConfigSchema = z.object({
   permissions: z.record(
     z.string(),
     z.object({ label: z.string().optional(), reason: z.string().optional(), classification: z.enum(PolicyRiskLevel) })
@@ -48,3 +49,5 @@ export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
 export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
 export type ProfilesPolicyConfig = z.infer<typeof ProfilesPolicyConfigSchema>;
 export type PermSetsPolicyConfig = z.infer<typeof PermSetsPolicyConfigSchema>;
+export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
+export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;

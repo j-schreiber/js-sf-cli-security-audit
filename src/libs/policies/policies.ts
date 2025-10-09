@@ -6,7 +6,7 @@ import { DescribeSObjectResult } from '@jsforce/jsforce-node';
 import yaml from 'js-yaml';
 import { AuditResult } from '../audit/types.js';
 import { DEFAULT_CLASSIFICATIONS } from '../config/defaultPolicyClassification.js';
-import { PolicyRiskLevel, PolicyWriteResult } from './types.js';
+import { PermissionRiskLevelPresets, PolicyRiskLevel, PolicyWriteResult } from './types.js';
 import PolicySet from './policySet.js';
 import {
   PermissionsConfig,
@@ -37,6 +37,10 @@ export default class Policies {
    */
   public static async initialize(con: Connection): Promise<PolicySet> {
     const result = new PolicySet();
+    // should be modularized in self-contained initialiser / builder classes
+    // per classification, policy, etc. So this class fully delegates
+    // initialisation of all available policies and can easily orchestrate
+    // initialisation with Promise.all()
     const permSet = await con.describe('PermissionSet');
     result.classification.userPermissions.push(...initUserPermissions(permSet));
     result.classification.customPermissions.push(...(await resolveCustomPermissions(con)));
@@ -53,7 +57,9 @@ export default class Policies {
    * @param policies
    */
   public static async audit(con: Connection, policies: PolicySet): Promise<AuditResult> {
-    // do stuff
+    // from this perspective, we iterate all policies of the audit config
+    // here we decide, if a policy is run (is present & enabled)
+    // each policy delegates audit and iterates all enabled rules
     return Promise.resolve({ isCompliant: true, policies: {} });
   }
 
@@ -143,7 +149,7 @@ async function initProfilesPolicy(con: Connection): Promise<ProfilesPolicyConfig
     rules: {},
   } as ProfilesPolicyConfig;
   profiles.records.forEach((profileRecord) => {
-    profilesPolicy.profiles[profileRecord.Profile.Name] = { preset: 'Unknown', enforceIpRanges: false };
+    profilesPolicy.profiles[profileRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
   });
   // TODO: Load all available profile rules
   return profilesPolicy;
@@ -159,7 +165,7 @@ async function initPermissionSetsPolicy(con: Connection): Promise<PermSetsPolicy
   permSets.records
     .filter((permsetRecord) => permsetRecord.IsCustom)
     .forEach((permsetRecord) => {
-      permSetsPolicy.permissionSets[permsetRecord.Name] = { preset: 'Unknown' };
+      permSetsPolicy.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
   // TODO: Load all available permission set rules
   return permSetsPolicy;

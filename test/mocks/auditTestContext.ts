@@ -13,24 +13,26 @@ const DEFAULT_MOCKS = {
 };
 
 export default class AuditTestContext {
-  public context = new TestContext();
-  public targetOrg = new MockTestOrgData();
+  public context: TestContext;
+  public targetOrg: MockTestOrgData;
   public outputDirectory: PathLike;
   public defaultPath = path.join('my-test-org');
-  public sfCommandStubs: ReturnType<typeof stubSfCommandUx>;
+  public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public mocks: SfConnectionMocks;
 
   public constructor(dirPath?: string) {
+    this.context = new TestContext();
+    this.targetOrg = new MockTestOrgData();
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
       this.outputDirectory = this.defaultPath;
     }
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
-    this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
   }
 
   public init() {
+    this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
   }
@@ -38,7 +40,6 @@ export default class AuditTestContext {
   public reset() {
     this.context.restore();
     process.removeAllListeners();
-    this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
@@ -50,5 +51,7 @@ function buildDefaultMocks() {
   defaults.queries[CUSTOM_PERMS_QUERY] = 'test/mocks/data/queryResults/customPermissions.json';
   defaults.queries[PROFILES_QUERY] = 'test/mocks/data/queryResults/profiles.json';
   defaults.queries[PERMISSION_SETS_QUERY] = 'test/mocks/data/queryResults/empty.json';
+  defaults.queries["SELECT Metadata FROM Profile WHERE Name = 'System Administrator'"] =
+    'test/mocks/data/queryResults/profile-with-metadata.json';
   return defaults;
 }
