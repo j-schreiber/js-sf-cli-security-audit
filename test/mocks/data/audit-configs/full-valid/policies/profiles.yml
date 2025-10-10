@@ -1,0 +1,51 @@
+enabled: true
+profiles:
+  Guest License User:
+    preset: Unknown
+  Custom Standard User 1:
+    preset: Standard User
+  Custom Standard User 2:
+    preset: Standard User
+  Minimum Access - Salesforce:
+    preset: Unknown
+  System Administrator:
+    preset: Admin
+  Standard User:
+    preset: Standard User
+  Solution Manager:
+    preset: Unknown
+  Marketing User:
+    preset: Unknown
+  Contract Manager:
+    preset: Unknown
+  CPQ Integration User:
+    preset: Unknown
+  Chatter Moderator User:
+    preset: Unknown
+  Chatter Free User:
+    preset: Unknown
+  Chatter External User:
+    preset: Unknown
+  Identity User:
+    preset: Unknown
+  Chat Setup Flow Site Profile:
+    preset: Unknown
+  Minimum Access - API Only Integrations:
+    preset: Unknown
+  Analytics Cloud Security User:
+    preset: Unknown
+  Analytics Cloud Integration User:
+    preset: Unknown
+  Sales Insights Integration User:
+    preset: Unknown
+  Salesforce API Only System Integrations:
+    preset: Unknown
+  Anypoint Integration:
+    preset: Unknown
+  API Only Deploy User:
+    preset: Unknown
+  Einstein Agent User:
+    preset: Unknown
+rules:
+  EnforceClassificationPresets:
+    enabled: true

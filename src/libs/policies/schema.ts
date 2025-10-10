@@ -17,7 +17,7 @@ const PolicyRuleConfigSchema = z.object({
   config: z.unknown().optional(),
 });
 
-const PolicyConfigSchema = z.object({
+export const PolicyConfigSchema = z.object({
   enabled: z.boolean().default(true),
   rules: z.record(z.string(), PolicyRuleConfigSchema),
 });
@@ -32,7 +32,7 @@ export const ProfilesPolicyConfigSchema = PolicyConfigSchema.extend({
   profiles: PermSetMap,
 });
 
-const PermSetsPolicyConfigSchema = PolicyConfigSchema.extend({
+export const PermSetsPolicyConfigSchema = PolicyConfigSchema.extend({
   permissionSets: PermSetMap,
 });
 
