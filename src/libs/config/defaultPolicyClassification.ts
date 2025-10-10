@@ -10,6 +10,10 @@ export const DEFAULT_CLASSIFICATIONS: Record<string, PermissionsClassification> 
     classification: PolicyRiskLevel.CRITICAL,
     reason: messages.getMessage('CustomizeApplication'),
   },
+  ModifyMetadata: {
+    classification: PolicyRiskLevel.CRITICAL,
+    reason: messages.getMessage('CustomizeApplication'),
+  },
   ViewSetup: {
     classification: PolicyRiskLevel.HIGH,
     reason: messages.getMessage('ViewSetup'),
@@ -21,6 +25,22 @@ export const DEFAULT_CLASSIFICATIONS: Record<string, PermissionsClassification> 
   ManageAuthProviders: {
     classification: PolicyRiskLevel.CRITICAL,
     reason: messages.getMessage('ManageAuthProviders'),
+  },
+  Packaging2: {
+    classification: PolicyRiskLevel.CRITICAL,
+    reason: messages.getMessage('Packaging'),
+  },
+  Packaging2Delete: {
+    classification: PolicyRiskLevel.CRITICAL,
+    reason: messages.getMessage('Packaging'),
+  },
+  Packaging2PromoteVersion: {
+    classification: PolicyRiskLevel.CRITICAL,
+    reason: messages.getMessage('Packaging'),
+  },
+  InstallPackaging: {
+    classification: PolicyRiskLevel.CRITICAL,
+    reason: messages.getMessage('Packaging'),
   },
   ApiEnabled: {
     classification: PolicyRiskLevel.HIGH,

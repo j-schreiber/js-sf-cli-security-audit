@@ -1,12 +1,12 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import Policies from '../../../libs/policies/policies.js';
-import PolicySet from '../../../libs/policies/policySet.js';
+import AuditRun from '../../../libs/policies/auditRun.js';
+import AuditRunConfig from '../../../libs/policies/interfaces/auditRunConfig.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
 
-export type OrgAuditInitResult = PolicySet;
+export type OrgAuditInitResult = AuditRunConfig;
 
 export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   public static readonly summary = messages.getMessage('summary');
@@ -29,50 +29,62 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
 
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
-    // inset of async await, run with listener and log events
-    // make "resolve" or smth that allows to paralellise with Promise.all()
-    // eslint-disable-next-line sf-plugin/get-connection-with-version
-    const auditConfig = await Policies.initialize(flags['target-org'].getConnection());
-    this.writeConfigFiles(auditConfig, flags['output-dir']);
+    const auditConfig = await AuditRun.initialiseNewConfig(flags['target-org'].getConnection('64.0'), {
+      directoryPath: flags['output-dir'],
+    });
+    this.logResults(auditConfig);
     return auditConfig;
   }
 
-  private writeConfigFiles(config: PolicySet, outputDir: string): void {
-    const writeResult = Policies.write(config, outputDir);
-    if (config.classification.userPermissions.length > 0) {
+  private logResults(config: AuditRunConfig): void {
+    const userPerms = config.classifications.userPermissions
+      ? Object.entries(config.classifications.userPermissions.content.permissions)
+      : [];
+    if (userPerms.length > 0) {
       this.logSuccess(
         messages.getMessage('success.perm-classification-summary', [
-          config.classification.userPermissions?.length ?? 0,
-          writeResult.paths.userPermissions,
+          userPerms.length ?? 0,
+          config.classifications.userPermissions?.filePath,
         ])
       );
     }
-    if (config.classification.customPermissions.length > 0) {
+    const customPerms = config.classifications.customPermissions
+      ? Object.entries(config.classifications.customPermissions.content.permissions)
+      : [];
+    if (customPerms.length > 0) {
       this.logSuccess(
         messages.getMessage('success.perm-classification-summary', [
-          config.classification.customPermissions?.length ?? 0,
-          writeResult.paths.customPermissions,
+          customPerms.length ?? 0,
+          config.classifications.customPermissions?.filePath,
         ])
       );
     }
-    if (config.policies.profiles) {
-      const writtenProfiles = Object.keys(config.policies.profiles.profiles).length;
-      if (writtenProfiles > 0) {
-        this.logSuccess(
-          messages.getMessage('success.profile-policy-summary', [writtenProfiles, writeResult.paths.profilePolicy])
-        );
-      }
-    }
-    if (config.policies.permissionSets) {
-      const writtenPermSets = Object.keys(config.policies.permissionSets.permissionSets).length;
-      if (writtenPermSets > 0) {
-        this.logSuccess(
-          messages.getMessage('success.permset-policy-summary', [
-            writtenPermSets,
-            writeResult.paths.permissionSetPolicy,
-          ])
-        );
-      }
-    }
+    // if (config.classification.customPermissions.length > 0) {
+    //   this.logSuccess(
+    //     messages.getMessage('success.perm-classification-summary', [
+    //       config.classification.customPermissions?.length ?? 0,
+    //       writeResult.paths.customPermissions,
+    //     ])
+    //   );
+    // }
+    // if (config.policies.profiles) {
+    //   const writtenProfiles = Object.keys(config.policies.profiles.profiles).length;
+    //   if (writtenProfiles > 0) {
+    //     this.logSuccess(
+    //       messages.getMessage('success.profile-policy-summary', [writtenProfiles, writeResult.paths.profilePolicy])
+    //     );
+    //   }
+    // }
+    // if (config.policies.permissionSets) {
+    //   const writtenPermSets = Object.keys(config.policies.permissionSets.permissionSets).length;
+    //   if (writtenPermSets > 0) {
+    //     this.logSuccess(
+    //       messages.getMessage('success.permset-policy-summary', [
+    //         writtenPermSets,
+    //         writeResult.paths.permissionSetPolicy,
+    //       ])
+    //     );
+    //   }
+    // }
   }
 }

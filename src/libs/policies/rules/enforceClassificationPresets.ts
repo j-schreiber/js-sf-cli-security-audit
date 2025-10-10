@@ -4,7 +4,7 @@ import { Connection } from '@salesforce/core';
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../audit/types.js';
 import { RowLevelPolicyRule, AuditContext } from '../interfaces/policyRuleInterfaces.js';
-import { NamedPermissionsClassification, PermissionSetLikeMap } from '../schema.js';
+import { PermissionSetLikeMap } from '../schema.js';
 import { permissionAllowedInPreset, PermissionRiskLevelPresets, PolicyRiskLevel } from '../types.js';
 import AuditRunConfig from '../interfaces/auditRunConfig.js';
 
@@ -41,10 +41,9 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
     };
     const resolvedProfiles = await this.resolveProfiles(context.targetOrgConnection);
     Object.values(resolvedProfiles).forEach((profile) => {
-      // console.log(`Resolved Profile "${profile.name}" as ${profile.preset}`);
       profile.metadata.userPermissions.forEach((userPerm) => {
         const identifier = [profile.name, userPerm.name];
-        const classifiedUserPerm = this.resolveUserPermission(userPerm.name);
+        const classifiedUserPerm = this.auditContext.resolveUserPermission(userPerm.name);
         if (classifiedUserPerm) {
           if (classifiedUserPerm.classification === PolicyRiskLevel.BLOCKED) {
             result.violations.push({
@@ -56,12 +55,16 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
               identifier,
               message: `Permission is classified as ${classifiedUserPerm.classification} but profile uses preset ${profile.preset}`,
             });
+          } else if (classifiedUserPerm.classification === PolicyRiskLevel.UNKNOWN) {
+            result.warnings.push({
+              identifier,
+              message: 'Permission was not classified. Update classification to LOW or higher to resolve.',
+            });
           }
         } else {
           result.warnings.push({
             identifier,
-            message:
-              'Profile has permission, but it was not classified. Refresh classifications to resolve this warning.',
+            message: 'Profile is enabled, but not found in classification. Refresh classifications to resolve.',
           });
         }
       });
@@ -92,17 +95,5 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
       }
     });
     return profileMetadata;
-  }
-
-  private resolveUserPermission(permissionName: string): NamedPermissionsClassification | undefined {
-    const classification = this.auditContext.classifications.userPermissions?.content.permissions[permissionName];
-    if (classification) {
-      return {
-        name: permissionName,
-        ...classification,
-      };
-    } else {
-      return undefined;
-    }
   }
 }

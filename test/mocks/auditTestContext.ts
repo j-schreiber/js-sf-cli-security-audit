@@ -1,8 +1,10 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
+import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../src/libs/policies/policies.js';
+import MdapiRetriever, { parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
+import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../src/libs/config/queries.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -23,6 +25,7 @@ export default class AuditTestContext {
   public constructor(dirPath?: string) {
     this.context = new TestContext();
     this.targetOrg = new MockTestOrgData();
+    this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
@@ -31,10 +34,12 @@ export default class AuditTestContext {
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
   }
 
-  public init() {
+  public async init() {
+    await this.context.stubAuths(this.targetOrg);
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
+    this.context.SANDBOX.stub(MdapiRetriever.prototype, 'retrievePermissionsets').callsFake(retrievePermsetsStub);
   }
 
   public reset() {
@@ -44,6 +49,16 @@ export default class AuditTestContext {
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
   }
+}
+
+async function retrievePermsetsStub(cmpNames: string[]): Promise<Record<string, PermissionSet>> {
+  const result: Record<string, PermissionSet> = {};
+  cmpNames.forEach((cname) => {
+    result[cname] = parseAsPermissionset(
+      path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets', `${cname}.permissionset-meta.xml`)
+    );
+  });
+  return result;
 }
 
 function buildDefaultMocks() {

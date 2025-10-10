@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+export const TEMP_DIR = '.jsc';
 export const CLASSIFICATION_SUBDIR = 'classification';
 export const POLICIES_SUBDIR = 'policies';
 export const USER_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'userPermissions.yml');

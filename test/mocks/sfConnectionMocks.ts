@@ -21,9 +21,13 @@ export default class SfConnectionMocks {
     }
     if (config.queries) {
       Object.entries(config.queries).forEach(([queryString, resultsPath]) => {
-        this.queries[queryString] = loadRecords(resultsPath);
+        this.setQueryMock(queryString, resultsPath);
       });
     }
+  }
+
+  public setQueryMock(queryString: string, resultsPath: PathLike): void {
+    this.queries[queryString] = loadRecords(resultsPath);
   }
 
   /**

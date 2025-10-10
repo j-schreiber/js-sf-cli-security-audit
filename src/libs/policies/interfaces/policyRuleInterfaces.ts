@@ -5,7 +5,7 @@ export type RowLevelPolicyRule = {
   run(context: AuditContext): Promise<PolicyRuleExecutionResult>;
 };
 
-export type Policy = {
+export type IPolicy = {
   run(context: AuditContext): Promise<AuditPolicyResult>;
 };
 

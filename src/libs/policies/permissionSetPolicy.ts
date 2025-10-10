@@ -1,12 +1,12 @@
 import { isEmpty } from '@salesforce/kit';
 import { RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
-import EnforceClassificationPresets from './rules/enforceClassificationPresets.js';
-import { PolicyRuleConfig, ProfilesPolicyConfig } from './schema.js';
+import { PermSetsPolicyConfig, PolicyRuleConfig } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
+import EnforceClassificationPresetsPermSets from './rules/enforceClassificationPresetsPermSets.js';
 import Policy from './policy.js';
 
-export default class ProfilePolicy extends Policy {
-  public constructor(public config: ProfilesPolicyConfig, public auditContext: AuditRunConfig) {
+export default class PermissionSetPolicy extends Policy {
+  public constructor(public config: PermSetsPolicyConfig, public auditContext: AuditRunConfig) {
     super(auditContext);
     this.rules.push(...resolveRules(auditContext, config.rules));
   }
@@ -24,7 +24,7 @@ function resolveRules(
   for (const [ruleName, ruleConfig] of Object.entries(ruleConfigs!)) {
     switch (ruleName) {
       case 'EnforceClassificationPresets':
-        resolved.push(new EnforceClassificationPresets(auditContext));
+        resolved.push(new EnforceClassificationPresetsPermSets(auditContext));
         break;
       default:
         break;
