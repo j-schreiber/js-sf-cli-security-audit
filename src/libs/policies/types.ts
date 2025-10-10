@@ -41,3 +41,10 @@ export function resolveRiskLevelOrdinalValue(value: string): number {
 export function resolvePresetOrdinalValue(value: string): number {
   return Object.keys(PermissionRiskLevelPresets).indexOf(value.toUpperCase().replace(' ', '_'));
 }
+
+export function permissionAllowedInPreset(permClassification: string, preset: string): boolean {
+  // this works, as long as we are mindful when adding new risk levels and presets
+  const invertedPermValue = Object.keys(PolicyRiskLevel).length - resolveRiskLevelOrdinalValue(permClassification);
+  const invertedPresetValue = Object.keys(PermissionRiskLevelPresets).length - resolvePresetOrdinalValue(preset);
+  return invertedPresetValue >= invertedPermValue;
+}

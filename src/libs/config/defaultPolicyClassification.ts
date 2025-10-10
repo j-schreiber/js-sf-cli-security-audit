@@ -5,13 +5,13 @@ import { PermissionsClassification } from '../policies/schema.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
-export const DEFAULT_CLASSIFICATIONS: Record<string, Omit<PermissionsClassification, 'name'>> = {
+export const DEFAULT_CLASSIFICATIONS: Record<string, PermissionsClassification> = {
   CustomizeApplication: {
     classification: PolicyRiskLevel.CRITICAL,
     reason: messages.getMessage('CustomizeApplication'),
   },
   ViewSetup: {
-    classification: PolicyRiskLevel.CRITICAL,
+    classification: PolicyRiskLevel.HIGH,
     reason: messages.getMessage('ViewSetup'),
   },
   AuthorApex: {
@@ -37,5 +37,9 @@ export const DEFAULT_CLASSIFICATIONS: Record<string, Omit<PermissionsClassificat
   ManageTwoFactor: {
     classification: PolicyRiskLevel.HIGH,
     reason: messages.getMessage('ManageTwoFactor'),
+  },
+  CanApproveUninstalledApps: {
+    classification: PolicyRiskLevel.HIGH,
+    reason: messages.getMessage('CanApproveUninstalledApps'),
   },
 };

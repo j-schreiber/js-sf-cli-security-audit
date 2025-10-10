@@ -5,6 +5,7 @@
       "url": "/services/data/v63.0/tooling/sobjects/Profile/00e3X000002HGbgQAG"
     },
     "Id": "00e3X000002HGbgQAG",
+    "Name": "System Administrator",
     "Metadata": {
       "agentAccesses": [],
       "applicationVisibilities": [],

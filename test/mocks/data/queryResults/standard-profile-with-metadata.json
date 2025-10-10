@@ -1,0 +1,278 @@
+[
+  {
+    "attributes": {
+      "type": "Profile",
+      "url": "/services/data/v63.0/tooling/sobjects/Profile/00e3X000002HGbhQAG"
+    },
+    "Id": "00e3X000002HGbhQAG",
+    "Name": "Standard User",
+    "Metadata": {
+      "agentAccesses": [],
+      "applicationVisibilities": [],
+      "categoryGroupVisibilities": [
+        {
+          "dataCategories": null,
+          "dataCategoryGroup": "test",
+          "visibility": "ALL"
+        }
+      ],
+      "classAccesses": [
+        {
+          "apexClass": "ApexClass1",
+          "enabled": true
+        },
+        {
+          "apexClass": "ApexClass2",
+          "enabled": true
+        }
+      ],
+      "description": null,
+      "externalDataSourceAccesses": [],
+      "fieldPermissions": [
+        {
+          "editable": true,
+          "field": "Account.CustomField1__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "Account.CustomField2__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "CustomObject__c.CustomField1__c",
+          "readable": true
+        }
+      ],
+      "flowAccesses": [],
+      "loginFlows": null,
+      "loginHours": null,
+      "loginIpRanges": [],
+      "objectPermissions": [
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "Account",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        },
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "CustomObject__c",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        }
+      ],
+      "pageAccesses": [],
+      "profileActionOverrides": null,
+      "recordTypeVisibilities": [],
+      "tabVisibilities": [],
+      "urls": null,
+      "userLicense": "Salesforce",
+      "userPermissions": [
+        {
+          "enabled": true,
+          "name": "ActivitiesAccess"
+        },
+        {
+          "enabled": true,
+          "name": "AddDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "AllowUniversalSearch"
+        },
+        {
+          "enabled": true,
+          "name": "AllowViewKnowledge"
+        },
+        {
+          "enabled": true,
+          "name": "ApexRestServices"
+        },
+        {
+          "enabled": true,
+          "name": "ApiEnabled"
+        },
+        {
+          "enabled": true,
+          "name": "AssignTopics"
+        },
+        {
+          "enabled": true,
+          "name": "CanAccessCE"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterEditOwnPost"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterFileLink"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterInternalUser"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterInviteExternalUsers"
+        },
+        {
+          "enabled": true,
+          "name": "ChatterOwnGroups"
+        },
+        {
+          "enabled": true,
+          "name": "ConvertLeads"
+        },
+        {
+          "enabled": true,
+          "name": "CreateCustomizeFilters"
+        },
+        {
+          "enabled": true,
+          "name": "CreateCustomizeReports"
+        },
+        {
+          "enabled": true,
+          "name": "CreateTopics"
+        },
+        {
+          "enabled": true,
+          "name": "DistributeFromPersWksp"
+        },
+        {
+          "enabled": true,
+          "name": "EditEvent"
+        },
+        {
+          "enabled": true,
+          "name": "EditOppLineItemUnitPrice"
+        },
+        {
+          "enabled": true,
+          "name": "EditTask"
+        },
+        {
+          "enabled": true,
+          "name": "EditTopics"
+        },
+        {
+          "enabled": true,
+          "name": "EmailMass"
+        },
+        {
+          "enabled": true,
+          "name": "EmailSingle"
+        },
+        {
+          "enabled": true,
+          "name": "EnableNotifications"
+        },
+        {
+          "enabled": true,
+          "name": "ExportReport"
+        },
+        {
+          "enabled": true,
+          "name": "ImportPersonal"
+        },
+        {
+          "enabled": true,
+          "name": "LightningConsoleAllowedForUser"
+        },
+        {
+          "enabled": true,
+          "name": "LightningExperienceUser"
+        },
+        {
+          "enabled": true,
+          "name": "ListEmailSend"
+        },
+        {
+          "enabled": true,
+          "name": "MassInlineEdit"
+        },
+        {
+          "enabled": true,
+          "name": "OverrideForecasts"
+        },
+        {
+          "enabled": true,
+          "name": "RemoveDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "RunReports"
+        },
+        {
+          "enabled": true,
+          "name": "SelectFilesFromSalesforce"
+        },
+        {
+          "enabled": true,
+          "name": "SendExternalEmailAvailable"
+        },
+        {
+          "enabled": true,
+          "name": "SendSitRequests"
+        },
+        {
+          "enabled": true,
+          "name": "ShowCompanyNameAsUserBadge"
+        },
+        {
+          "enabled": true,
+          "name": "SubmitMacrosAllowed"
+        },
+        {
+          "enabled": true,
+          "name": "SubscribeToLightningReports"
+        },
+        {
+          "enabled": true,
+          "name": "TransactionalEmailSend"
+        },
+        {
+          "enabled": true,
+          "name": "UseWebLink"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDeveloperName"
+        },
+        {
+          "enabled": true,
+          "name": "ViewHelpLink"
+        },
+        {
+          "enabled": true,
+          "name": "ViewRoles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewSetup"
+        },
+        {
+          "enabled": true,
+          "name": "ViewTrustMeasures"
+        }
+      ]
+    }
+  }
+]

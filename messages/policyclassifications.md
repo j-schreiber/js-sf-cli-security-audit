@@ -25,3 +25,7 @@ Enables the user to set up external identity provider for SSO.
 # ManageTwoFactor
 
 Set up and reset the connected MFA for a user.
+
+# CanApproveUninstalledApps
+
+Allows to authorize new connected apps and therefore new integrations.

@@ -51,7 +51,9 @@ function buildDefaultMocks() {
   defaults.queries[CUSTOM_PERMS_QUERY] = 'test/mocks/data/queryResults/customPermissions.json';
   defaults.queries[PROFILES_QUERY] = 'test/mocks/data/queryResults/profiles.json';
   defaults.queries[PERMISSION_SETS_QUERY] = 'test/mocks/data/queryResults/empty.json';
-  defaults.queries["SELECT Metadata FROM Profile WHERE Name = 'System Administrator'"] =
-    'test/mocks/data/queryResults/profile-with-metadata.json';
+  defaults.queries["SELECT Name,Metadata FROM Profile WHERE Name = 'System Administrator'"] =
+    'test/mocks/data/queryResults/admin-profile-with-metadata.json';
+  defaults.queries["SELECT Name,Metadata FROM Profile WHERE Name = 'Standard User'"] =
+    'test/mocks/data/queryResults/standard-profile-with-metadata.json';
   return defaults;
 }

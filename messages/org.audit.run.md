@@ -10,7 +10,7 @@ Exports permissions (standard and custom), permission sets, profiles, users, etc
 
 Target org to analyse to initialise classifications for permissions
 
-# flags.output-dir.summary
+# flags.source-dir.summary
 
 Directory where policies and classifications are created. If empty, the root directory will be used.
 

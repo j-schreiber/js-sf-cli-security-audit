@@ -1,17 +1,18 @@
 import { isEmpty } from '@salesforce/kit';
 import { AuditPolicyResult, PolicyRuleExecutionResult } from '../audit/types.js';
-import { RowLevelPolicyRule, RuleExecutionContext } from './interfaces/policyRuleInterfaces.js';
+import { AuditContext, Policy, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
 import EnforceClassificationPresets from './rules/enforceClassificationPresets.js';
-import { PermissionSetLikeMap, PolicyRuleConfig, ProfilesPolicyConfig } from './schema.js';
+import { PolicyRuleConfig, ProfilesPolicyConfig } from './schema.js';
+import AuditRunConfig from './interfaces/auditRunConfig.js';
 
-export default class ProfilePolicy {
+export default class ProfilePolicy implements Policy {
   private rules: RowLevelPolicyRule[];
 
-  public constructor(public config: ProfilesPolicyConfig) {
-    this.rules = resolveRules(config.rules, config.profiles);
+  public constructor(public config: ProfilesPolicyConfig, public auditContext: AuditRunConfig) {
+    this.rules = resolveRules(auditContext, config.rules);
   }
 
-  public async run(context: RuleExecutionContext): Promise<AuditPolicyResult> {
+  public async run(context: AuditContext): Promise<AuditPolicyResult> {
     const ruleResultPromises = Array<Promise<PolicyRuleExecutionResult>>();
     for (const rule of this.rules) {
       ruleResultPromises.push(rule.run(context));
@@ -24,17 +25,18 @@ export default class ProfilePolicy {
 }
 
 function resolveRules(
-  ruleConfigs?: Record<string, PolicyRuleConfig>,
-  profiles?: PermissionSetLikeMap
+  auditContext: AuditRunConfig,
+  ruleConfigs?: Record<string, PolicyRuleConfig>
 ): RowLevelPolicyRule[] {
   if (isEmpty(ruleConfigs)) {
     return [];
   }
   const resolved = new Array<RowLevelPolicyRule>();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [ruleName, ruleConfig] of Object.entries(ruleConfigs!)) {
     switch (ruleName) {
       case 'EnforceClassificationPresets':
-        resolved.push(new EnforceClassificationPresets(ruleConfig, profiles));
+        resolved.push(new EnforceClassificationPresets(auditContext));
         break;
       default:
         break;

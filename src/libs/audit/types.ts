@@ -27,7 +27,7 @@ export type RuleComponentMessage = {
    * Path to a component. This can be a developer name of a connected app,
    * permission set name or the permission within a profile.
    */
-  identifier: string;
+  identifier: string | string[];
   /**
    * Descriptive message of the error, warning or violation.
    */

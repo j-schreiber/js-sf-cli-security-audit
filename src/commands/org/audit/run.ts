@@ -1,8 +1,7 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import ProfilePolicy from '../../../libs/policies/profilePolicy.js';
-import PolicySet from '../../../libs/policies/policySet.js';
 import { AuditResult } from '../../../libs/audit/types.js';
+import AuditRun from '../../../libs/policies/auditRun.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -23,20 +22,20 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     'source-dir': Flags.directory({
       required: true,
       char: 'd',
-      summary: messages.getMessage('flags.output-dir.summary'),
+      summary: messages.getMessage('flags.source-dir.summary'),
     }),
   };
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
-    const auditConfig = PolicySet.load(flags['source-dir']);
-    const profilePolicy = new ProfilePolicy(auditConfig.policies.profiles!);
-    const result = await profilePolicy.run({ targetOrgConnection: flags['target-org'].getConnection(), auditConfig });
-    return {
-      isCompliant: true,
-      policies: {
-        Profiles: result,
-      },
-    };
+    // program flow
+    // load policy (from directory) - initialise all classifications and policies
+    // resolve everything that will be processed
+    //    this is where we can also check, if perms are missing, profiles are invalid, etc
+    //    resolved entities must be cached by "org connection"
+    // when policies are executed, they have access to the cache
+    const auditRun = AuditRun.load(flags['source-dir']);
+    const result = await auditRun.execute(flags['target-org'].getConnection('64.0'));
+    return result;
   }
 }

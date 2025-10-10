@@ -1,20 +1,17 @@
 import { Connection } from '@salesforce/core';
-import { PolicyRuleExecutionResult } from '../../audit/types.js';
-import PolicySet from '../policySet.js';
+import { AuditPolicyResult, PolicyRuleExecutionResult } from '../../audit/types.js';
 
 export type RowLevelPolicyRule = {
-  run(context: RuleExecutionContext): Promise<PolicyRuleExecutionResult>;
+  run(context: AuditContext): Promise<PolicyRuleExecutionResult>;
 };
 
-export type RuleExecutionContext = {
+export type Policy = {
+  run(context: AuditContext): Promise<AuditPolicyResult>;
+};
+
+export type AuditContext = {
   /**
    * Connection to the target org
    */
   targetOrgConnection: Connection;
-
-  /**
-   * The complete and initialised audit config for this run. Use this
-   * to access classifications, other policies, etc.
-   */
-  auditConfig: PolicySet;
 };
