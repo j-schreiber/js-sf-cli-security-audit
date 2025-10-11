@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
+import { StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import OrgAuditRun from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext from '../../../mocks/auditTestContext.js';
@@ -54,8 +55,7 @@ describe('org audit run', () => {
     const executedPolicies = Object.entries(FULL_AUDIT_INIT_RESULT.policies).length;
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([
       messages.getMessage('success.summary', [executedPolicies]),
-      '',
-      messages.getMessage('summary-non-compliant'),
+      StandardColors.error(messages.getMessage('summary-non-compliant')),
       '',
     ]);
     expect($$.sfCommandStubs.table.callCount).to.equal(5);

@@ -65,10 +65,15 @@ export default class AuditRun {
     const executablePolicies = resolvePolicies(this.configs);
     const results = await runPolicies(executablePolicies, targetOrgConnection);
     return {
-      isCompliant: true,
+      isCompliant: isCompliant(results),
       policies: results,
     };
   }
+}
+
+function isCompliant(results: ResultsMap): boolean {
+  const list = Object.values(results);
+  return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
 
 async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection): Promise<ResultsMap> {

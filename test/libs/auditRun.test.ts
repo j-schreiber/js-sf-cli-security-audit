@@ -133,10 +133,28 @@ describe('audit run', () => {
       expect(auditResult.isCompliant).to.be.true;
       assert.isDefined(auditResult.policies.Profiles);
       assert.isDefined(auditResult.policies.PermissionSets);
+      expect(auditResult.policies.Profiles.isCompliant).to.be.true;
+      expect(auditResult.policies.PermissionSets.isCompliant).to.be.true;
       expect(Object.keys(auditResult.policies.Profiles.executedRules)).to.deep.equal(['EnforceClassificationPresets']);
       expect(Object.keys(auditResult.policies.PermissionSets.executedRules)).to.deep.equal([
         'EnforceClassificationPresets',
       ]);
+    });
+
+    it('reports non-compliance if one policy is not compliant', async () => {
+      // Arrange
+      const dirPath = buildPath('non-compliant');
+      const audit = AuditRun.load(dirPath);
+
+      // Act
+      const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+
+      // Assert
+      expect(auditResult.isCompliant).to.be.false;
+      assert.isDefined(auditResult.policies.Profiles);
+      expect(auditResult.policies.Profiles.isCompliant).to.be.false;
+      assert.isDefined(auditResult.policies.Profiles.executedRules.EnforceClassificationPresets);
+      expect(auditResult.policies.Profiles.executedRules.EnforceClassificationPresets.isCompliant).to.be.false;
     });
   });
 });

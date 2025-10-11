@@ -1,0 +1,7 @@
+enabled: true
+profiles:
+  System Administrator:
+    preset: Admin
+rules:
+  EnforceClassificationPresets:
+    enabled: true

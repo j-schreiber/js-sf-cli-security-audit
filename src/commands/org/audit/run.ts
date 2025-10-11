@@ -45,10 +45,9 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
   private printPoliciesSummary(result: AuditResult): void {
     const polSummaries = transposePoliciesToTable(result);
     this.log(`Successfully executed ${polSummaries.length} policies.`);
-    this.log('');
     if (result.isCompliant) {
       this.logSuccess(messages.getMessage('success.all-policies-compliant'));
-      this.logSuccess('');
+      this.log('');
     } else {
       this.log(StandardColors.error(messages.getMessage('summary-non-compliant')));
       this.log('');

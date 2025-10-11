@@ -1,41 +1,41 @@
 permissions:
   UseAnyApiClient:
     label: Use Any API Client
-    classification: Blocked
+    classification: Low
     reason: Imposes security risk, effectively bypasses all restrictions.
   CustomizeApplication:
     label: Customize Application
-    classification: Critical
+    classification: Low
     reason: Allows to modify all parts of the app, including security settings.
   ViewSetup:
     label: View Setup and Configuration
-    classification: Critical
+    classification: Low
     reason: Allows to browse setup and view sensitive configurations.
   AuthorApex:
     label: Author Apex
-    classification: Critical
+    classification: Low
     reason: Apex can perform harmful actions, and deployed Apex runs in system mode.
   ManageAuthProviders:
     label: Manage Auth. Providers
-    classification: Critical
+    classification: Low
     reason: Enables the user to set up external identity provider for SSO.
   ModifyAllData:
     label: Modify All Data
-    classification: High
+    classification: Low
     reason: Bypass all sharing, making all sharing architecture obsolete.
   ViewAllData:
     label: View All Data
-    classification: High
+    classification: Low
     reason: Bypass all sharing, making all sharing architecture obsolete.
   ApiEnabled:
     label: API Enabled
-    classification: High
+    classification: Low
     reason: >-
       Api access allows to perform a vast amount of actions and should be
       restricted to integrations, admins, and developers.
   ManageTwoFactor:
     label: Manage MFA in API
-    classification: High
+    classification: Low
     reason: Set up and reset the connected MFA for a user.
   EmailSingle:
     label: Send Email

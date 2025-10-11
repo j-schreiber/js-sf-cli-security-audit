@@ -27,11 +27,16 @@ export default class Policy implements IPolicy {
       ruleResult.isCompliant = ruleResult.violations.length === 0;
     }
     return {
-      isCompliant: true,
+      isCompliant: isCompliant(executedRules),
       enabled: true,
       executedRules,
       skippedRules: [],
       auditedEntities: this.entities,
     };
   }
+}
+
+function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): boolean {
+  const list = Object.values(ruleResults);
+  return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
