@@ -41,8 +41,8 @@ describe('audit run', () => {
       // Assert
       assert.isDefined(audit.configs.classifications.customPermissions);
       assert.isDefined(audit.configs.classifications.userPermissions);
-      assert.isDefined(audit.configs.policies.profiles);
-      assert.isDefined(audit.configs.policies.permissionSets);
+      assert.isDefined(audit.configs.policies.Profiles);
+      assert.isDefined(audit.configs.policies.PermissionSets);
       expect(audit.configs.classifications.customPermissions.filePath).to.equal(
         path.join(dirPath, 'classification', 'customPermissions.yml')
       );
@@ -53,13 +53,13 @@ describe('audit run', () => {
       );
       const userPerms = Object.entries(audit.configs.classifications.userPermissions.content.permissions);
       expect(userPerms.length).to.equal(USER_PERMS_COUNT);
-      expect(audit.configs.policies.profiles.filePath).to.equal(path.join(dirPath, 'policies', 'profiles.yml'));
-      const profiles = Object.entries(audit.configs.policies.profiles.content.profiles);
+      expect(audit.configs.policies.Profiles.filePath).to.equal(path.join(dirPath, 'policies', 'profiles.yml'));
+      const profiles = Object.entries(audit.configs.policies.Profiles.content.profiles);
       expect(profiles.length).to.equal(4);
-      expect(audit.configs.policies.permissionSets.filePath).to.equal(
+      expect(audit.configs.policies.PermissionSets.filePath).to.equal(
         path.join(dirPath, 'policies', 'permissionSets.yml')
       );
-      const permSets = Object.entries(audit.configs.policies.permissionSets.content.permissionSets);
+      const permSets = Object.entries(audit.configs.policies.PermissionSets.content.permissionSets);
       expect(permSets.length).to.equal(7);
     });
 
@@ -73,8 +73,8 @@ describe('audit run', () => {
       // Assert
       expect(audit.configs.classifications.customPermissions).to.be.undefined;
       expect(audit.configs.classifications.userPermissions).not.to.be.undefined;
-      expect(audit.configs.policies.profiles).not.to.be.undefined;
-      expect(audit.configs.policies.permissionSets).to.be.undefined;
+      expect(audit.configs.policies.Profiles).not.to.be.undefined;
+      expect(audit.configs.policies.PermissionSets).to.be.undefined;
     });
 
     it('successfully loads and resolves empty audit run', async () => {
@@ -87,8 +87,8 @@ describe('audit run', () => {
       // Assert
       expect(audit.configs.classifications.customPermissions).to.be.undefined;
       expect(audit.configs.classifications.userPermissions).to.be.undefined;
-      expect(audit.configs.policies.profiles).to.be.undefined;
-      expect(audit.configs.policies.permissionSets).to.be.undefined;
+      expect(audit.configs.policies.Profiles).to.be.undefined;
+      expect(audit.configs.policies.PermissionSets).to.be.undefined;
     });
   });
 
@@ -113,10 +113,10 @@ describe('audit run', () => {
       expect(conf.classifications.customPermissions.filePath).to.equal(path.join(testPath, CUSTOM_PERMISSIONS_PATH));
       const customPerms = Object.entries(conf.classifications.customPermissions.content.permissions);
       expect(customPerms.length).to.equal(3);
-      assert.isDefined(conf.policies.profiles);
-      expect(conf.policies.profiles.filePath).to.equal(path.join(testPath, PROFILE_POLICY_PATH));
-      assert.isDefined(conf.policies.permissionSets);
-      expect(conf.policies.permissionSets.filePath).to.equal(path.join(testPath, PERMSET_POLICY_PATH));
+      assert.isDefined(conf.policies.Profiles);
+      expect(conf.policies.Profiles.filePath).to.equal(path.join(testPath, PROFILE_POLICY_PATH));
+      assert.isDefined(conf.policies.PermissionSets);
+      expect(conf.policies.PermissionSets.filePath).to.equal(path.join(testPath, PERMSET_POLICY_PATH));
     });
   });
 

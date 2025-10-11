@@ -2,12 +2,17 @@ import { Connection } from '@salesforce/core';
 import { DescribeSObjectResult } from '@jsforce/jsforce-node';
 import { DEFAULT_CLASSIFICATIONS } from '../config/defaultPolicyClassification.js';
 import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../config/queries.js';
-import AuditRunConfig, { AuditClassificationDef } from './interfaces/auditRunConfig.js';
+import AuditRunConfig, {
+  AuditClassificationDef,
+  AuditPolicyDef,
+  PolicyConfigPermissionSets,
+  PolicyConfigProfiles,
+} from './interfaces/auditRunConfig.js';
 import {
   NamedPermissionsClassification,
   PermissionsClassification,
-  PermSetsPolicyConfig,
-  ProfilesPolicyConfig,
+  PermSetsPolicyFileContent,
+  ProfilesPolicyFileContent,
 } from './schema.js';
 import { PermissionRiskLevelPresets, PolicyRiskLevel, resolveRiskLevelOrdinalValue } from './types.js';
 import { CustomPermission, PermissionSet } from './salesforceStandardTypes.js';
@@ -18,8 +23,8 @@ export default class AuditRunConfigInitialiser {
     // TODO: Shouldn't be too hard to delegate initialisation to single modules
     conf.classifications.userPermissions = await initUserPermissions(con);
     conf.classifications.customPermissions = await resolveCustomPermissions(con);
-    conf.policies.profiles = await ProfilesPolicyInitialiser.init(con);
-    conf.policies.permissionSets = await PermissionSetsPolicyInitialiser.init(con);
+    conf.policies.Profiles = await ProfilesPolicyInitialiser.init(con);
+    conf.policies.PermissionSets = await PermissionSetsPolicyInitialiser.init(con);
     return conf;
   }
 }
@@ -86,31 +91,31 @@ function parsePermissionsFromPermSet(describe: DescribeSObjectResult): NamedPerm
 }
 
 class ProfilesPolicyInitialiser {
-  public static async init(con: Connection): Promise<{ content: ProfilesPolicyConfig }> {
+  public static async init(con: Connection): Promise<AuditPolicyDef<PolicyConfigProfiles>> {
     const profiles = await con.query<PermissionSet>(PROFILES_QUERY);
-    const profilesPolicy = {
+    const policyContent = {
       enabled: true,
       profiles: {},
       rules: {},
-    } as ProfilesPolicyConfig;
+    } as ProfilesPolicyFileContent;
     profiles.records.forEach((profileRecord) => {
-      profilesPolicy.profiles[profileRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+      policyContent.profiles[profileRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
-    profilesPolicy.rules['EnforceClassificationPresets'] = {
+    policyContent.rules['EnforceClassificationPresets'] = {
       enabled: true,
     };
-    return { content: profilesPolicy };
+    return new AuditPolicyDef({ config: new PolicyConfigProfiles(policyContent) });
   }
 }
 
 class PermissionSetsPolicyInitialiser {
-  public static async init(con: Connection): Promise<{ content: PermSetsPolicyConfig }> {
+  public static async init(con: Connection): Promise<AuditPolicyDef<PolicyConfigPermissionSets>> {
     const permSets = await con.query<PermissionSet>(PERMISSION_SETS_QUERY);
     const permSetsPolicy = {
       enabled: true,
       permissionSets: {},
       rules: {},
-    } as PermSetsPolicyConfig;
+    } as PermSetsPolicyFileContent;
     permSets.records
       .filter((permsetRecord) => permsetRecord.IsCustom)
       .forEach((permsetRecord) => {
@@ -119,7 +124,7 @@ class PermissionSetsPolicyInitialiser {
     permSetsPolicy.rules['EnforceClassificationPresets'] = {
       enabled: true,
     };
-    return { content: permSetsPolicy };
+    return new AuditPolicyDef({ config: new PolicyConfigPermissionSets(permSetsPolicy) });
   }
 }
 

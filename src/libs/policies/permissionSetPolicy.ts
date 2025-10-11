@@ -1,12 +1,12 @@
 import { isEmpty } from '@salesforce/kit';
 import { RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
-import { PermSetsPolicyConfig, PolicyRuleConfig } from './schema.js';
+import { PermSetsPolicyFileContent, PolicyRuleConfig } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import EnforceClassificationPresetsPermSets from './rules/enforceClassificationPresetsPermSets.js';
 import Policy from './policy.js';
 
 export default class PermissionSetPolicy extends Policy {
-  public constructor(public config: PermSetsPolicyConfig, public auditContext: AuditRunConfig) {
+  public constructor(public config: PermSetsPolicyFileContent, public auditContext: AuditRunConfig) {
     super(auditContext);
     this.rules.push(...resolveRules(auditContext, config.rules));
   }
@@ -20,8 +20,8 @@ function resolveRules(
     return [];
   }
   const resolved = new Array<RowLevelPolicyRule>();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for (const [ruleName, ruleConfig] of Object.entries(ruleConfigs!)) {
+  // need to rewrite to Object.entries when I need ruleConfig
+  for (const ruleName of Object.keys(ruleConfigs!)) {
     switch (ruleName) {
       case 'EnforceClassificationPresets':
         resolved.push(new EnforceClassificationPresetsPermSets(auditContext));

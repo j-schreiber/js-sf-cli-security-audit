@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
-import z, { ZodObject } from 'zod';
+import { ZodObject } from 'zod';
 import {
   CLASSIFICATION_SUBDIR,
   CUSTOM_PERMISSIONS_PATH,
@@ -14,10 +14,39 @@ import {
   NamedPermissionsClassification,
   PermissionsConfig,
   PermissionsConfigSchema,
+  PermissionSetLikeMap,
   PermSetsPolicyConfigSchema,
-  PolicyConfig,
+  BasePolicyFileContent,
+  ProfilesPolicyFileContent,
   ProfilesPolicyConfigSchema,
+  RuleMap,
+  PermSetsPolicyFileContent,
 } from './../schema.js';
+
+export type AuditClassification = {
+  content: PermissionsConfig;
+  filePath?: string;
+};
+
+export type AuditPolicy = {
+  filePath?: string;
+  content: BasePolicyFileContent;
+  getValues(): Record<string, unknown>;
+};
+
+export type AuditPolicyDefOptions = {
+  filePath?: string;
+  schema?: ZodObject;
+  config?: PolicyConfigBase;
+};
+
+export function isClassification(cls: unknown): cls is AuditClassification {
+  return (cls as AuditClassification).content?.permissions !== undefined;
+}
+
+export function isPolicy(cls: unknown): cls is AuditPolicy {
+  return (cls as AuditPolicy).content !== undefined && (cls as AuditPolicy).getValues !== undefined;
+}
 
 /**
  * Holds all parsed and validated configration file contents
@@ -59,7 +88,7 @@ export default class AuditRunConfig {
   }
 }
 
-class AuditRunClassifications {
+export class AuditRunClassifications {
   public userPermissions?: AuditClassificationDef;
   public customPermissions?: AuditClassificationDef;
 
@@ -91,21 +120,22 @@ class AuditRunClassifications {
   }
 }
 
-class AuditRunPolicies {
-  public profiles?: AuditPolicyDef<z.infer<typeof ProfilesPolicyConfigSchema>>;
-  public permissionSets?: AuditPolicyDef<z.infer<typeof PermSetsPolicyConfigSchema>>;
+export class AuditRunPolicies {
+  public Profiles?: AuditPolicyDef<PolicyConfigProfiles>;
+  public PermissionSets?: AuditPolicyDef<PolicyConfigPermissionSets>;
 
   public constructor(directoryPath?: string) {
-    if (directoryPath) {
-      if (existsSync(path.join(directoryPath, PROFILE_POLICY_PATH))) {
-        this.profiles = new AuditPolicyDef(path.join(directoryPath, PROFILE_POLICY_PATH), ProfilesPolicyConfigSchema);
-      }
-      if (existsSync(path.join(directoryPath, PERMSET_POLICY_PATH))) {
-        this.permissionSets = new AuditPolicyDef(
-          path.join(directoryPath, PERMSET_POLICY_PATH),
-          PermSetsPolicyConfigSchema
-        );
-      }
+    if (directoryPath && existsSync(path.join(directoryPath, PROFILE_POLICY_PATH))) {
+      this.Profiles = new AuditPolicyDef({
+        filePath: path.join(directoryPath, PROFILE_POLICY_PATH),
+        schema: ProfilesPolicyConfigSchema,
+      });
+    }
+    if (directoryPath && existsSync(path.join(directoryPath, PERMSET_POLICY_PATH))) {
+      this.PermissionSets = new AuditPolicyDef({
+        filePath: path.join(directoryPath, PERMSET_POLICY_PATH),
+        schema: PermSetsPolicyConfigSchema,
+      });
     }
   }
 
@@ -117,20 +147,12 @@ class AuditRunPolicies {
    */
   public write(targetDirPath: string): void {
     mkdirSync(path.join(targetDirPath, POLICIES_SUBDIR), { recursive: true });
-    if (this.profiles) {
-      const filePath = path.join(targetDirPath, PROFILE_POLICY_PATH);
-      writeAsYaml(this.profiles.content, filePath);
-      this.profiles.filePath = filePath;
-    }
-    if (this.permissionSets) {
-      const filePath = path.join(targetDirPath, PERMSET_POLICY_PATH);
-      writeAsYaml(this.permissionSets.content, filePath);
-      this.permissionSets.filePath = filePath;
-    }
+    this.Profiles?.write(path.join(targetDirPath, PROFILE_POLICY_PATH));
+    this.PermissionSets?.write(path.join(targetDirPath, PERMSET_POLICY_PATH));
   }
 }
 
-export class AuditClassificationDef {
+export class AuditClassificationDef implements AuditClassification {
   public content: PermissionsConfig;
 
   public constructor(public filePath?: string) {
@@ -142,7 +164,6 @@ export class AuditClassificationDef {
   }
 
   public write(targetFilePath: string): void {
-    // const usersPath = path.join(targetDirPath, USER_PERMISSIONS_PATH);
     const isNew = !this.filePath;
     if (Object.entries(this.content.permissions).length > 0 && isNew) {
       writeAsYaml(this.content, targetFilePath);
@@ -151,19 +172,73 @@ export class AuditClassificationDef {
   }
 }
 
-class AuditPolicyDef<T extends PolicyConfig> {
+export class AuditPolicyDef<T extends PolicyConfigBase> implements AuditPolicy {
   public content: T;
+  public filePath?: string;
 
-  public constructor(public filePath?: string, private schema?: ZodObject) {
-    if (this.filePath && this.schema) {
-      this.content = this.schema.parse(yaml.load(readFileSync(this.filePath, 'utf-8'))) as T;
+  public constructor(opts: AuditPolicyDefOptions) {
+    if (opts.filePath && opts.schema) {
+      this.content = opts.schema.parse(yaml.load(readFileSync(opts.filePath, 'utf-8'))) as T;
+      this.filePath = opts.filePath;
+    } else if (opts.config) {
+      this.content = opts.config as T;
     } else {
-      this.content = {} as T;
+      throw Error('Cannot instantiate empty policy definition');
     }
+  }
+
+  public write(targetFilePath: string): void {
+    const isNew = !this.filePath;
+    if (Object.entries(this.getValues()).length > 0 || isNew) {
+      writeAsYaml(this.content, targetFilePath);
+      this.filePath = targetFilePath;
+    }
+  }
+
+  public getValues(): Record<string, unknown> {
+    return this.content.getValues();
   }
 }
 
 function writeAsYaml(fileContent: unknown, filePath: string): void {
   const yamlContent = yaml.dump(fileContent);
   writeFileSync(filePath, yamlContent);
+}
+
+abstract class PolicyConfigBase {
+  public enabled: boolean;
+  public rules: RuleMap;
+
+  public constructor(conf: BasePolicyFileContent) {
+    this.enabled = conf.enabled;
+    this.rules = conf.rules;
+  }
+
+  public abstract getValues(): Record<string, unknown>;
+}
+
+export class PolicyConfigProfiles extends PolicyConfigBase implements ProfilesPolicyFileContent {
+  public profiles: PermissionSetLikeMap;
+
+  public constructor(conf: ProfilesPolicyFileContent) {
+    super(conf);
+    this.profiles = conf.profiles;
+  }
+
+  public getValues(): PermissionSetLikeMap {
+    return this.profiles;
+  }
+}
+
+export class PolicyConfigPermissionSets extends PolicyConfigBase implements PermSetsPolicyFileContent {
+  public permissionSets!: PermissionSetLikeMap;
+
+  public constructor(conf: PermSetsPolicyFileContent) {
+    super(conf);
+    this.permissionSets = conf.permissionSets;
+  }
+
+  public getValues(): PermissionSetLikeMap {
+    return this.permissionSets;
+  }
 }

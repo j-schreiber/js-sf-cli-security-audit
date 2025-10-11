@@ -84,11 +84,11 @@ async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection)
 
 function resolvePolicies(config: AuditRunConfig): PolicyMap {
   const pols: PolicyMap = {};
-  if (config.policies.profiles) {
-    pols.Profiles = new ProfilePolicy(config.policies.profiles.content, config);
+  if (config.policies.Profiles) {
+    pols.Profiles = new ProfilePolicy(config.policies.Profiles.content, config);
   }
-  if (config.policies.permissionSets) {
-    pols.PermissionSets = new PermissionSetPolicy(config.policies.permissionSets.content, config);
+  if (config.policies.PermissionSets) {
+    pols.PermissionSets = new PermissionSetPolicy(config.policies.PermissionSets.content, config);
   }
   return pols;
 }

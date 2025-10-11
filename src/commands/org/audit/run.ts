@@ -28,12 +28,6 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
-    // program flow
-    // load policy (from directory) - initialise all classifications and policies
-    // resolve everything that will be processed
-    //    this is where we can also check, if perms are missing, profiles are invalid, etc
-    //    resolved entities must be cached by "org connection"
-    // when policies are executed, they have access to the cache
     const auditRun = AuditRun.load(flags['source-dir']);
     const result = await auditRun.execute(flags['target-org'].getConnection('64.0'));
     return result;

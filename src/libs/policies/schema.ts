@@ -20,9 +20,11 @@ const PolicyRuleConfigSchema = z.object({
   config: z.unknown().optional(),
 });
 
+const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
+
 export const PolicyConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  rules: z.record(z.string(), PolicyRuleConfigSchema),
+  rules: RuleMapSchema,
 });
 
 const PermSetConfig = z.object({
@@ -47,8 +49,9 @@ export type PermissionsClassification = z.infer<typeof PermissionsClassification
 export type NamedPermissionsClassification = z.infer<typeof NamedPermissionsClassificationSchema>;
 export type PermissionsConfig = z.infer<typeof PermissionsConfigSchema>;
 export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
-export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
-export type ProfilesPolicyConfig = z.infer<typeof ProfilesPolicyConfigSchema>;
-export type PermSetsPolicyConfig = z.infer<typeof PermSetsPolicyConfigSchema>;
+export type BasePolicyFileContent = z.infer<typeof PolicyConfigSchema>;
+export type ProfilesPolicyFileContent = z.infer<typeof ProfilesPolicyConfigSchema>;
+export type PermSetsPolicyFileContent = z.infer<typeof PermSetsPolicyConfigSchema>;
 export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
 export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;
+export type RuleMap = z.infer<typeof RuleMapSchema>;

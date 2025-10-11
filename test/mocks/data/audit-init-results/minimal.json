@@ -1,0 +1,58 @@
+{
+  "classifications": {
+    "userPermissions": {
+      "content": {
+        "permissions": {
+          "CustomizeApplication": {
+            "label": "Customize Application",
+            "classification": "Critical",
+            "reason": "Allows to modify all parts of the app, including security settings."
+          },
+          "InstallPackaging": {
+            "label": "Download AppExchange Packages",
+            "classification": "Critical",
+            "reason": "Allows to create, manage and install packages."
+          },
+          "AuthorApex": {
+            "label": "Author Apex",
+            "classification": "Critical",
+            "reason": "Apex can perform harmful actions, and deployed Apex runs in system mode."
+          }
+        }
+      },
+      "filePath": "tmp/prod/classification/userPermissions.yml"
+    },
+    "customPermissions": {
+      "content": {
+        "permissions": {}
+      }
+    }
+  },
+  "policies": {
+    "Profiles": {
+      "content": {
+        "enabled": true,
+        "profiles": {
+          "Minimum Access - API Only Integrations": {
+            "preset": "Unknown"
+          },
+          "Standard User": {
+            "preset": "Unknown"
+          },
+          "System Administrator": {
+            "preset": "Unknown"
+          }
+        },
+        "rules": {
+          "EnforceClassificationPresets": {
+            "enabled": true
+          }
+        }
+      },
+      "filePath": "tmp/prod/policies/profiles.yml"
+    },
+    "PermissionSets": {
+      "content": {}
+    }
+  }
+}

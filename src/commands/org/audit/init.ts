@@ -1,7 +1,12 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import AuditRun from '../../../libs/policies/auditRun.js';
-import AuditRunConfig from '../../../libs/policies/interfaces/auditRunConfig.js';
+import AuditRunConfig, {
+  AuditRunClassifications,
+  AuditRunPolicies,
+  isClassification,
+  isPolicy,
+} from '../../../libs/policies/interfaces/auditRunConfig.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
@@ -25,66 +30,44 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
       summary: messages.getMessage('flags.output-dir.summary'),
       default: '',
     }),
+    'api-version': Flags.orgApiVersion(),
   };
 
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
-    const auditConfig = await AuditRun.initialiseNewConfig(flags['target-org'].getConnection('64.0'), {
+    const auditConfig = await AuditRun.initialiseNewConfig(flags['target-org'].getConnection(flags['api-version']), {
       directoryPath: flags['output-dir'],
     });
-    this.logResults(auditConfig);
+    this.printResults(auditConfig);
     return auditConfig;
   }
 
-  private logResults(config: AuditRunConfig): void {
-    const userPerms = config.classifications.userPermissions
-      ? Object.entries(config.classifications.userPermissions.content.permissions)
-      : [];
-    if (userPerms.length > 0) {
-      this.logSuccess(
-        messages.getMessage('success.perm-classification-summary', [
-          userPerms.length ?? 0,
-          config.classifications.userPermissions?.filePath,
-        ])
-      );
-    }
-    const customPerms = config.classifications.customPermissions
-      ? Object.entries(config.classifications.customPermissions.content.permissions)
-      : [];
-    if (customPerms.length > 0) {
-      this.logSuccess(
-        messages.getMessage('success.perm-classification-summary', [
-          customPerms.length ?? 0,
-          config.classifications.customPermissions?.filePath,
-        ])
-      );
-    }
-    // if (config.classification.customPermissions.length > 0) {
-    //   this.logSuccess(
-    //     messages.getMessage('success.perm-classification-summary', [
-    //       config.classification.customPermissions?.length ?? 0,
-    //       writeResult.paths.customPermissions,
-    //     ])
-    //   );
-    // }
-    // if (config.policies.profiles) {
-    //   const writtenProfiles = Object.keys(config.policies.profiles.profiles).length;
-    //   if (writtenProfiles > 0) {
-    //     this.logSuccess(
-    //       messages.getMessage('success.profile-policy-summary', [writtenProfiles, writeResult.paths.profilePolicy])
-    //     );
-    //   }
-    // }
-    // if (config.policies.permissionSets) {
-    //   const writtenPermSets = Object.keys(config.policies.permissionSets.permissionSets).length;
-    //   if (writtenPermSets > 0) {
-    //     this.logSuccess(
-    //       messages.getMessage('success.permset-policy-summary', [
-    //         writtenPermSets,
-    //         writeResult.paths.permissionSetPolicy,
-    //       ])
-    //     );
-    //   }
-    // }
+  private printResults(config: AuditRunConfig): void {
+    this.printClassifications(config.classifications);
+    this.printPolicies(config.policies);
+  }
+
+  private printClassifications(classifications: AuditRunClassifications): void {
+    Object.values(classifications).forEach((def) => {
+      if (isClassification(def)) {
+        const perms = def.content.permissions ? Object.entries(def.content.permissions) : [];
+        if (perms.length > 0) {
+          this.logSuccess(
+            messages.getMessage('success.perm-classification-summary', [perms.length ?? 0, def.filePath])
+          );
+        }
+      }
+    });
+  }
+
+  private printPolicies(policies: AuditRunPolicies): void {
+    Object.entries(policies).forEach(([name, def]) => {
+      if (isPolicy(def)) {
+        const vals = def.getValues() ? Object.entries(def.getValues()) : [];
+        if (vals.length > 0) {
+          this.logSuccess(messages.getMessage('success.policy-summary', [name, vals.length ?? 0, def.filePath]));
+        }
+      }
+    });
   }
 }

@@ -17,8 +17,8 @@ export default class EnforceClassificationPresetsPermSets implements RowLevelPol
   private definitivePermSets: PermissionSetLikeMap;
 
   public constructor(private auditContext: AuditRunConfig) {
-    if (auditContext.policies.permissionSets) {
-      this.definitivePermSets = auditContext.policies.permissionSets.content.permissionSets;
+    if (auditContext.policies.PermissionSets) {
+      this.definitivePermSets = auditContext.policies.PermissionSets.content.permissionSets;
     } else {
       this.definitivePermSets = {};
     }

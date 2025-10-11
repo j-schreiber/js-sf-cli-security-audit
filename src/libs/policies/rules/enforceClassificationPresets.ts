@@ -23,8 +23,8 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
   private definitiveProfiles: PermissionSetLikeMap;
 
   public constructor(private auditContext: AuditRunConfig) {
-    if (auditContext.policies.profiles) {
-      this.definitiveProfiles = auditContext.policies.profiles.content.profiles;
+    if (auditContext.policies.Profiles) {
+      this.definitiveProfiles = auditContext.policies.Profiles.content.profiles;
     } else {
       this.definitiveProfiles = {};
     }
