@@ -1,4 +1,4 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
 import AuditRun from '../../../libs/policies/auditRun.js';
@@ -35,14 +35,25 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
   }
 
   private printResults(result: AuditResult): void {
-    const polSummaries = transposePoliciesToTable(result);
-    this.log(`Successfully executed ${polSummaries.length} policies.`);
-    this.log('');
-    this.table({ data: polSummaries, title: '=== Summary ===', titleOptions: { bold: true } });
+    this.printPoliciesSummary(result);
     Object.entries(result.policies).forEach(([policyName, policyDetails]) => {
       this.printExecutedRulesSummary(policyName, policyDetails);
       this.printRuleViolations(policyDetails.executedRules);
     });
+  }
+
+  private printPoliciesSummary(result: AuditResult): void {
+    const polSummaries = transposePoliciesToTable(result);
+    this.log(`Successfully executed ${polSummaries.length} policies.`);
+    this.log('');
+    if (result.isCompliant) {
+      this.logSuccess(messages.getMessage('success.all-policies-compliant'));
+      this.logSuccess('');
+    } else {
+      this.log(StandardColors.error(messages.getMessage('summary-non-compliant')));
+      this.log('');
+    }
+    this.table({ data: polSummaries, title: '=== Summary ===', titleOptions: { bold: true } });
   }
 
   private printExecutedRulesSummary(policyName: string, policyDetails: AuditPolicyResult): void {

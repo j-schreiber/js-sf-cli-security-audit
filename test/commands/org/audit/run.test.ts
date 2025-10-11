@@ -55,6 +55,8 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([
       messages.getMessage('success.summary', [executedPolicies]),
       '',
+      messages.getMessage('summary-non-compliant'),
+      '',
     ]);
     expect($$.sfCommandStubs.table.callCount).to.equal(5);
     expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({

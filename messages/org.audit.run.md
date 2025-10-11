@@ -24,10 +24,10 @@ Directory where policies and classifications are created. If empty, the root dir
 
 Successfully executed %s policies.
 
-# success.profile-policy-summary
+# success.all-policies-compliant
 
-Initialised policy with %s profiles at %s.
+All policies are compliant.
 
-# success.permset-policy-summary
+# summary-non-compliant
 
-Initialised policy with %s permission sets at %s.
+At least one policy is not compliant. Review details below.

@@ -1,3 +1,4 @@
+// import fs from 'node:fs';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit/types.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
@@ -57,6 +58,10 @@ export default class AuditRun {
    * @returns
    */
   public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
+    // const mockResult = JSON.parse(
+    //   fs.readFileSync('test/mocks/data/audit-lib-results/run/full-non-compliant.json', 'utf8')
+    // ) as AuditResult;
+    // return mockResult;
     const executablePolicies = resolvePolicies(this.configs);
     const results = await runPolicies(executablePolicies, targetOrgConnection);
     return {
