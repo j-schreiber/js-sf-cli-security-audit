@@ -111,6 +111,12 @@ export type AuditPolicyResult = {
    * Path to the config file that was processed for this audit.
    */
   configPath?: string;
+
+  /**
+   * A full list of audited entities. Use together with violations to see, which
+   * entities were not compliant.
+   */
+  auditedEntities: string[];
 };
 
 export type AuditResult = {

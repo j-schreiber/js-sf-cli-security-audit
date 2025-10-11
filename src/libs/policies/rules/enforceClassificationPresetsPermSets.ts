@@ -49,7 +49,7 @@ export default class EnforceClassificationPresetsPermSets implements RowLevelPol
           } else if (!permissionAllowedInPreset(classifiedUserPerm.classification, permset.preset)) {
             result.violations.push({
               identifier,
-              message: `Permission is classified as ${classifiedUserPerm.classification} but profile uses preset ${permset.preset}`,
+              message: `Permission is classified as ${classifiedUserPerm.classification} but used preset is ${permset.preset}`,
             });
           } else if (classifiedUserPerm.classification === PolicyRiskLevel.UNKNOWN) {
             result.warnings.push({

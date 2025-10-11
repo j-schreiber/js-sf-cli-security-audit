@@ -7,8 +7,7 @@ import Policy from './policy.js';
 
 export default class PermissionSetPolicy extends Policy {
   public constructor(public config: PermSetsPolicyFileContent, public auditContext: AuditRunConfig) {
-    super(auditContext);
-    this.rules.push(...resolveRules(auditContext, config.rules));
+    super(auditContext, Object.keys(config.permissionSets), resolveRules(auditContext, config.rules));
   }
 }
 

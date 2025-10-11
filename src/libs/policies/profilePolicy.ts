@@ -7,8 +7,7 @@ import Policy from './policy.js';
 
 export default class ProfilePolicy extends Policy {
   public constructor(public config: ProfilesPolicyFileContent, public auditContext: AuditRunConfig) {
-    super(auditContext);
-    this.rules.push(...resolveRules(auditContext, config.rules));
+    super(auditContext, Object.keys(config.profiles), resolveRules(auditContext, config.rules));
   }
 }
 

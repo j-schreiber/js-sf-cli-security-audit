@@ -10,7 +10,7 @@ import { PermissionSetLikeMap } from '../../../../src/libs/policies/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
-const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-init-results');
+const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-lib-results', 'init');
 
 const FULL_AUDIT_INIT_RESULT = parseMockAuditConfig('full.json');
 const MINIMAL_AUDIT_INIT_RESULT = parseMockAuditConfig('minimal.json');

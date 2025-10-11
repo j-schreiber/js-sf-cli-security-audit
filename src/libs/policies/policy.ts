@@ -3,9 +3,11 @@ import AuditRunConfig from './interfaces/auditRunConfig.js';
 import { AuditContext, IPolicy, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
 
 export default class Policy implements IPolicy {
-  protected rules: RowLevelPolicyRule[] = [];
-
-  public constructor(public auditContext: AuditRunConfig) {}
+  public constructor(
+    public auditContext: AuditRunConfig,
+    protected entities: string[],
+    protected rules: RowLevelPolicyRule[]
+  ) {}
 
   /**
    * Runs all rules of a policy
@@ -20,7 +22,16 @@ export default class Policy implements IPolicy {
     }
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
-    ruleResults.forEach((rr) => (executedRules[rr.ruleName] = rr));
-    return { isCompliant: true, enabled: true, executedRules, skippedRules: [] };
+    for (const ruleResult of ruleResults) {
+      executedRules[ruleResult.ruleName] = ruleResult;
+      ruleResult.isCompliant = ruleResult.violations.length === 0;
+    }
+    return {
+      isCompliant: true,
+      enabled: true,
+      executedRules,
+      skippedRules: [],
+      auditedEntities: this.entities,
+    };
   }
 }
