@@ -1,24 +1,28 @@
 # summary
 
-Initialises classifications and policies for a security audit.
+Audit your org.
 
 # description
 
-Exports permissions (standard and custom), permission sets, profiles, users, etc from the target org. All classifications are initialised with sane defaults that you can customize later.
+Loads a given audit config (a set of classifications and policies) and runs the policies against the target org. The audit run creates a comprehensive report that lists all executed policies and all resolved entities that were audited.
 
 # flags.target-org.summary
 
-Target org to analyse to initialise classifications for permissions
+The org that is audited.
 
 # flags.source-dir.summary
 
-Directory where policies and classifications are created. If empty, the root directory will be used.
+Location of the audit config.
+
+# flags.source-dir.description
+
+Loads all classifications and policies from the directory and uses them to audit the org. Only policies that are enabled and that exist in the directory are executed.
 
 # examples
 
-- Initialise audit policies at the root directory
+- Audit the org MyTargetOrg with the config in configs/prod
 
-  <%= config.bin %> <%= command.id %> -o MyTargetOrg
+  <%= config.bin %> <%= command.id %> -o MyTargetOrg -d configs/prod
 
 # success.summary
 

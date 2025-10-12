@@ -8,11 +8,11 @@ Exports permissions (standard and custom), permission sets, profiles, users, etc
 
 # flags.target-org.summary
 
-Target org to analyse to initialise classifications for permissions
+Target org to export permissions, profiles, users, etc.
 
 # flags.output-dir.summary
 
-Directory where policies and classifications are created. If empty, the root directory will be used.
+Directory where the audit config is initialised. If not set, the root directory will be used.
 
 # examples
 

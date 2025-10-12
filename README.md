@@ -22,27 +22,31 @@ Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.co
 <!-- commands -->
 
 - [`sf org audit init`](#sf-org-audit-init)
+- [`sf org audit run`](#sf-org-audit-run)
 
 ## `sf org audit init`
 
-Initialises policies for a security audit
+Initialises classifications and policies for a security audit.
 
 ```
 USAGE
-  $ sf org audit init -o <value> [--json] [--flags-dir <value>] [-d <value>]
+  $ sf org audit init -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>]
 
 FLAGS
-  -d, --output-dir=<value>  Top level directory, where policies are initialised.
-  -o, --target-org=<value>  (required) Target org to check.
+  -d, --output-dir=<value>   Directory where the audit config is initialised. If not set, the root directory will be
+                             used.
+  -o, --target-org=<value>   (required) Target org to export permissions, profiles, users, etc.
+      --api-version=<value>  Override the api version used for api requests made by this command
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
   --json               Format output as json.
 
 DESCRIPTION
-  Initialises policies for a security audit
+  Initialises classifications and policies for a security audit.
 
-  Exports all available custom permissions and initialises policies
+  Exports permissions (standard and custom), permission sets, profiles, users, etc from the target org. All
+  classifications are initialised with sane defaults that you can customize later.
 
 EXAMPLES
   Initialise audit policies at the root directory
@@ -51,6 +55,37 @@ EXAMPLES
 ```
 
 _See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.1.0/src/commands/org/audit/init.ts)_
+
+## `sf org audit run`
+
+Audit your org.
+
+```
+USAGE
+  $ sf org audit run -o <value> -d <value> [--json] [--flags-dir <value>] [--api-version <value>]
+
+FLAGS
+  -d, --source-dir=<value>   (required) Location of the audit config.
+  -o, --target-org=<value>   (required) The org that is audited.
+      --api-version=<value>  Override the api version used for api requests made by this command
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Audit your org.
+
+  Loads a given audit config (a set of classifications and policies) and runs the policies against the target org. The
+  audit run creates a comprehensive report that lists all executed policies and all resolved entities that were audited.
+
+EXAMPLES
+  Audit the org MyTargetOrg with the config in configs/prod
+
+    $ sf org audit run -o MyTargetOrg -d configs/prod
+```
+
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.1.0/src/commands/org/audit/run.ts)_
 
 <!-- commandsstop -->
 
