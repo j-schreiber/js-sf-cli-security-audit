@@ -66,8 +66,8 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.table.callCount).to.equal(5);
     expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
       data: [
-        { policy: 'Profiles', isCompliant: false, rulesExecuted: 2, auditedEntities: 3 },
-        { policy: 'PermissionSets', isCompliant: false, rulesExecuted: 1, auditedEntities: 3 },
+        { policy: 'Profiles', isCompliant: false, rulesExecuted: 2, auditedEntities: 3, ignoredEntities: 1 },
+        { policy: 'PermissionSets', isCompliant: false, rulesExecuted: 1, auditedEntities: 3, ignoredEntities: 0 },
       ],
     });
     expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({

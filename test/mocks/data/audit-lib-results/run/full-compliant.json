@@ -5,6 +5,7 @@
       "isCompliant": true,
       "enabled": true,
       "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
+      "ignoredEntities": [{ "name": "Some Other Profile", "message": "Not found on target org" }],
       "executedRules": {
         "EnforceClassificationPresets": {
           "ruleName": "EnforceClassificationPresets",
@@ -34,6 +35,7 @@
         "Standard_User_Permission_Set_2",
         "Power_User_Permission_Set_1"
       ],
+      "ignoredEntities": [],
       "executedRules": {
         "EnforceClassificationPresets": {
           "ruleName": "EnforceClassificationPresets",

@@ -1,13 +1,13 @@
-import { AuditPolicyResult, PolicyRuleExecutionResult } from '../audit/types.js';
+import { AuditPolicyResult, PolicyEntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import { AuditContext, IPolicy, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
 
-export default class Policy implements IPolicy {
-  public constructor(
-    public auditContext: AuditRunConfig,
-    protected entities: string[],
-    protected rules: RowLevelPolicyRule[]
-  ) {}
+export type ResolveEntityResult = {
+  resolvedEntities: Record<string, unknown>;
+  ignoredEntities: PolicyEntityResolveError[];
+};
+export default abstract class Policy implements IPolicy {
+  public constructor(public auditContext: AuditRunConfig, protected rules: RowLevelPolicyRule[]) {}
 
   /**
    * Runs all rules of a policy
@@ -16,9 +16,10 @@ export default class Policy implements IPolicy {
    * @returns
    */
   public async run(context: AuditContext): Promise<AuditPolicyResult> {
+    const resolveResult = await this.resolveEntities(context);
     const ruleResultPromises = Array<Promise<PolicyRuleExecutionResult>>();
     for (const rule of this.rules) {
-      ruleResultPromises.push(rule.run(context));
+      ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
     }
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
@@ -31,9 +32,12 @@ export default class Policy implements IPolicy {
       enabled: true,
       executedRules,
       skippedRules: [],
-      auditedEntities: this.entities,
+      auditedEntities: Object.keys(resolveResult.resolvedEntities),
+      ignoredEntities: resolveResult.ignoredEntities,
     };
   }
+
+  protected abstract resolveEntities(context: AuditContext): Promise<ResolveEntityResult>;
 }
 
 function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): boolean {

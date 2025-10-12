@@ -113,7 +113,8 @@ function transposePoliciesToTable(result: AuditResult): PolicyResultsSummary[] {
       policy: policyName,
       isCompliant: policyDetails.isCompliant,
       rulesExecuted,
-      auditedEntities: policyDetails.auditedEntities.length,
+      auditedEntities: policyDetails.auditedEntities?.length ?? 0,
+      ignoredEntities: policyDetails.ignoredEntities?.length ?? 0,
     };
   });
 }

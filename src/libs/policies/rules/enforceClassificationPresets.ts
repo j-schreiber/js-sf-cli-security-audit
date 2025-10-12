@@ -1,39 +1,17 @@
-/* eslint-disable class-methods-use-this */
-import { QueryResult } from '@jsforce/jsforce-node';
-import { Connection, Messages } from '@salesforce/core';
-import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { Messages } from '@salesforce/core';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../audit/types.js';
-import { RowLevelPolicyRule, AuditContext } from '../interfaces/policyRuleInterfaces.js';
-import { PermissionSetLikeMap } from '../schema.js';
-import { permissionAllowedInPreset, PermissionRiskLevelPresets, PolicyRiskLevel } from '../types.js';
+import { RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { permissionAllowedInPreset, PolicyRiskLevel } from '../types.js';
 import AuditRunConfig from '../interfaces/auditRunConfig.js';
+import { ResolvedProfile } from '../profilePolicy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-type ResolvedProfile = {
-  name: string;
-  preset: string;
-  metadata: Profile;
-};
-
-type ProfileMetadata = {
-  Name: string;
-  Metadata: Profile;
-};
-
 export default class EnforceClassificationPresets implements RowLevelPolicyRule {
-  private definitiveProfiles: PermissionSetLikeMap;
+  public constructor(private auditContext: AuditRunConfig) {}
 
-  public constructor(private auditContext: AuditRunConfig) {
-    if (auditContext.policies.Profiles) {
-      this.definitiveProfiles = auditContext.policies.Profiles.content.profiles;
-    } else {
-      this.definitiveProfiles = {};
-    }
-  }
-
-  public async run(context: AuditContext): Promise<PolicyRuleExecutionResult> {
+  public run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult> {
     const result = {
       ruleName: 'EnforceClassificationPresets',
       isCompliant: true,
@@ -42,7 +20,7 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
       warnings: new Array<RuleComponentMessage>(),
       errors: [],
     };
-    const resolvedProfiles = await this.resolveProfiles(context.targetOrgConnection);
+    const resolvedProfiles = context.resolvedEntities as Record<string, ResolvedProfile>;
     Object.values(resolvedProfiles).forEach((profile) => {
       profile.metadata.userPermissions.forEach((userPerm) => {
         const identifier = [profile.name, userPerm.name];
@@ -75,31 +53,6 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
         }
       });
     });
-    return result;
-  }
-
-  private async resolveProfiles(con: Connection): Promise<Record<string, ResolvedProfile>> {
-    const profileQueryResults = Array<Promise<QueryResult<ProfileMetadata>>>();
-    Object.entries(this.definitiveProfiles).forEach(([profileName, profileDef]) => {
-      if (profileDef.preset !== PermissionRiskLevelPresets.UNKNOWN) {
-        const qr = Promise.resolve(
-          con.tooling.query<ProfileMetadata>(`SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`)
-        );
-        profileQueryResults.push(qr);
-      }
-    });
-    const queryResults = await Promise.all(profileQueryResults);
-    const profileMetadata: Record<string, ResolvedProfile> = {};
-    queryResults.forEach((qr) => {
-      if (qr.records && qr.records.length > 0) {
-        const record = qr.records[0];
-        profileMetadata[record.Name] = {
-          name: record.Name,
-          preset: this.definitiveProfiles[record.Name].preset,
-          metadata: record.Metadata,
-        };
-      }
-    });
-    return profileMetadata;
+    return Promise.resolve(result);
   }
 }

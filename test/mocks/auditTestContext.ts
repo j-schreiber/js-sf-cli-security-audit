@@ -60,9 +60,17 @@ export function clearAuditReports(workingDir: string): void {
 async function retrievePermsetsStub(cmpNames: string[]): Promise<Record<string, PermissionSet>> {
   const result: Record<string, PermissionSet> = {};
   cmpNames.forEach((cname) => {
-    result[cname] = parseAsPermissionset(
-      path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets', `${cname}.permissionset-meta.xml`)
+    const permsetFullPath = path.join(
+      'test',
+      'mocks',
+      'data',
+      'retrieves',
+      'full-permsets',
+      `${cname}.permissionset-meta.xml`
     );
+    if (fs.existsSync(permsetFullPath)) {
+      result[cname] = parseAsPermissionset(permsetFullPath);
+    }
   });
   return result;
 }

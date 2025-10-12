@@ -22,6 +22,22 @@ export type PolicyRuleViolationMute = PolicyRuleViolation & {
   allowListEntryPath?: string;
 };
 
+/**
+ * Details about the config entity of a policy (such as a profile, perm set, user)
+ * that did not resolve for the target org and therefore was not processed by
+ * the policy's rules.
+ */
+export type PolicyEntityResolveError = {
+  /**
+   * Identifier, e.g. profile name or username
+   */
+  name: string;
+  /**
+   * Message that explains, why the entity was not successfully resolved
+   */
+  message: string;
+};
+
 export type RuleComponentMessage = {
   /**
    * Path to a component. This can be a developer name of a connected app,
@@ -117,6 +133,12 @@ export type AuditPolicyResult = {
    * entities were not compliant.
    */
   auditedEntities: string[];
+
+  /**
+   * Full list of entities that were present in the config file, but could not
+   * be resolved for this org.
+   */
+  ignoredEntities: PolicyEntityResolveError[];
 };
 
 export type AuditResult = {
