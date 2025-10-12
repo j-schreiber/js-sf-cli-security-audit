@@ -7,11 +7,14 @@ export type CustomPermission = Record & {
   DeveloperName: string;
 };
 
-export type Profile = Record & {
+export type Profile = ProfileBasic & {
+  Metadata: JsForceProfile;
+};
+
+type ProfileBasic = Record & {
   Id: string;
   Name: string;
   UserType: string;
-  Metadata: JsForceProfile;
 };
 
 export type PermissionSet = Record & {
@@ -20,5 +23,5 @@ export type PermissionSet = Record & {
   IsCustom: boolean;
   Name: string;
   Label: string;
-  Profile: Omit<Profile, 'Metadata'>;
+  Profile: ProfileBasic;
 };

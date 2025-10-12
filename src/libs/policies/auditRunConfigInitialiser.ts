@@ -98,8 +98,8 @@ class ProfilesPolicyInitialiser {
       profiles: {},
       rules: {},
     } as ProfilesPolicyFileContent;
-    profiles.records.forEach((profileRecord) => {
-      policyContent.profiles[profileRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+    profiles.records.forEach((permsetRecord) => {
+      policyContent.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
     policyContent.rules['EnforceClassificationPresets'] = {
       enabled: true,
