@@ -57,14 +57,15 @@ export default class AuditRun {
    * @param targetOrgConnection
    * @returns
    */
-  public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
+  public async execute(targetCon: Connection): Promise<Omit<AuditResult, 'orgId'>> {
     // const mockResult = JSON.parse(
     //   fs.readFileSync('test/mocks/data/audit-lib-results/run/full-non-compliant.json', 'utf8')
     // ) as AuditResult;
     // return mockResult;
     const executablePolicies = resolvePolicies(this.configs);
-    const results = await runPolicies(executablePolicies, targetOrgConnection);
+    const results = await runPolicies(executablePolicies, targetCon);
     return {
+      auditDate: new Date().toISOString(),
       isCompliant: isCompliant(results),
       policies: results,
     };

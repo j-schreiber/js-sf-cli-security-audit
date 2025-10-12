@@ -126,6 +126,16 @@ export type AuditResult = {
   isCompliant: boolean;
 
   /**
+   * Id of the audited org.
+   */
+  orgId: string;
+
+  /**
+   * ISO date time of the audit
+   */
+  auditDate: string;
+
+  /**
    * Record map of all modules (policies) that were run.
    */
   policies: {

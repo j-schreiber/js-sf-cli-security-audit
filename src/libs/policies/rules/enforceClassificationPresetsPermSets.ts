@@ -1,4 +1,4 @@
-import { Connection } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../audit/types.js';
 import { RowLevelPolicyRule, AuditContext } from '../interfaces/policyRuleInterfaces.js';
@@ -6,6 +6,9 @@ import { PermissionSetLikeMap } from '../schema.js';
 import { permissionAllowedInPreset, PermissionRiskLevelPresets, PolicyRiskLevel } from '../types.js';
 import AuditRunConfig from '../interfaces/auditRunConfig.js';
 import MdapiRetriever from '../../mdapiRetriever.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
 type ResolvedPermissionSet = {
   name: string;
@@ -35,7 +38,6 @@ export default class EnforceClassificationPresetsPermSets implements RowLevelPol
     };
     const resolvedPermsets = await this.resolvePermissionSets(context.targetOrgConnection);
     Object.values(resolvedPermsets).forEach((permset) => {
-      // console.log(`Resolved Profile "${profile.name}" as ${profile.preset}`);
       const userPerms = permset.metadata.userPermissions ?? [];
       userPerms.forEach((userPerm) => {
         const identifier = [permset.name, userPerm.name];
@@ -44,23 +46,26 @@ export default class EnforceClassificationPresetsPermSets implements RowLevelPol
           if (classifiedUserPerm.classification === PolicyRiskLevel.BLOCKED) {
             result.violations.push({
               identifier,
-              message: 'Permission is blocked.',
+              message: messages.getMessage('violations.permission-is-blocked'),
             });
           } else if (!permissionAllowedInPreset(classifiedUserPerm.classification, permset.preset)) {
             result.violations.push({
               identifier,
-              message: `Permission is classified as ${classifiedUserPerm.classification} but used preset is ${permset.preset}`,
+              message: messages.getMessage('violations.classification-preset-mismatch', [
+                classifiedUserPerm.classification,
+                permset.preset,
+              ]),
             });
           } else if (classifiedUserPerm.classification === PolicyRiskLevel.UNKNOWN) {
             result.warnings.push({
               identifier,
-              message: 'Permission was not classified. Update classification to LOW or higher to resolve.',
+              message: messages.getMessage('warnings.permission-unknown'),
             });
           }
         } else {
           result.warnings.push({
             identifier,
-            message: 'Permission is enabled, but not classified. Refresh classifications to resolve this warning.',
+            message: messages.getMessage('warnings.permission-not-classified-in-permission-set'),
           });
         }
       });

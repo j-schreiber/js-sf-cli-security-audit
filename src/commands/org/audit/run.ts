@@ -1,3 +1,6 @@
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
@@ -6,7 +9,11 @@ import AuditRun from '../../../libs/policies/auditRun.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
-export type OrgAuditRunResult = AuditResult;
+export type OrgAuditRunResult = AuditResult & {
+  filePath: string;
+};
+
+type OrgAuditRunFlags = Interfaces.InferredFlags<typeof OrgAuditRun.flags>;
 
 export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
   public static readonly summary = messages.getMessage('summary');
@@ -24,14 +31,17 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       char: 'd',
       summary: messages.getMessage('flags.source-dir.summary'),
     }),
+    'api-version': Flags.orgApiVersion(),
   };
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
     const auditRun = AuditRun.load(flags['source-dir']);
-    const result = await auditRun.execute(flags['target-org'].getConnection('64.0'));
+    const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
+    const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
     this.printResults(result);
-    return result;
+    const filePath = this.writeReport(result, flags);
+    return { ...result, filePath };
   }
 
   private printResults(result: AuditResult): void {
@@ -70,6 +80,14 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       .forEach((uncompliantRule) => {
         this.table({ data: uncompliantRule.violations, title: `Violations for ${uncompliantRule.ruleName}` });
       });
+  }
+
+  private writeReport(result: AuditResult, flags: OrgAuditRunFlags): string {
+    const fileName = `report_${flags['target-org'].getOrgId()}_${Date.now()}.json`;
+    const fullPath = path.join(flags['source-dir'], fileName);
+    writeFileSync(fullPath, JSON.stringify(result, null, 2));
+    this.info(messages.getMessage('info.report-file-location', [fullPath]));
+    return fullPath;
   }
 }
 

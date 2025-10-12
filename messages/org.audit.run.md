@@ -31,3 +31,7 @@ All policies are compliant.
 # summary-non-compliant
 
 At least one policy is not compliant. Review details below.
+
+# info.report-file-location
+
+Full report was written to: %s.

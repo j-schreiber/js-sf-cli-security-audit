@@ -131,6 +131,7 @@ describe('audit run', () => {
 
       // Assert
       expect(auditResult.isCompliant).to.be.true;
+      assert.isDefined(auditResult.policies);
       assert.isDefined(auditResult.policies.Profiles);
       assert.isDefined(auditResult.policies.PermissionSets);
       expect(auditResult.policies.Profiles.isCompliant).to.be.true;
@@ -151,6 +152,7 @@ describe('audit run', () => {
 
       // Assert
       expect(auditResult.isCompliant).to.be.false;
+      assert.isDefined(auditResult.policies);
       assert.isDefined(auditResult.policies.Profiles);
       expect(auditResult.policies.Profiles.isCompliant).to.be.false;
       assert.isDefined(auditResult.policies.Profiles.executedRules.EnforceClassificationPresets);

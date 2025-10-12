@@ -1,12 +1,15 @@
 /* eslint-disable class-methods-use-this */
 import { QueryResult } from '@jsforce/jsforce-node';
-import { Connection } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../audit/types.js';
 import { RowLevelPolicyRule, AuditContext } from '../interfaces/policyRuleInterfaces.js';
 import { PermissionSetLikeMap } from '../schema.js';
 import { permissionAllowedInPreset, PermissionRiskLevelPresets, PolicyRiskLevel } from '../types.js';
 import AuditRunConfig from '../interfaces/auditRunConfig.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
 type ResolvedProfile = {
   name: string;
@@ -48,23 +51,26 @@ export default class EnforceClassificationPresets implements RowLevelPolicyRule 
           if (classifiedUserPerm.classification === PolicyRiskLevel.BLOCKED) {
             result.violations.push({
               identifier,
-              message: 'Permission is blocked.',
+              message: messages.getMessage('violations.permission-is-blocked'),
             });
           } else if (!permissionAllowedInPreset(classifiedUserPerm.classification, profile.preset)) {
             result.violations.push({
               identifier,
-              message: `Permission is classified as ${classifiedUserPerm.classification} but profile uses preset ${profile.preset}`,
+              message: messages.getMessage('violations.classification-preset-mismatch', [
+                classifiedUserPerm.classification,
+                profile.preset,
+              ]),
             });
           } else if (classifiedUserPerm.classification === PolicyRiskLevel.UNKNOWN) {
             result.warnings.push({
               identifier,
-              message: 'Permission was not classified. Update classification to LOW or higher to resolve.',
+              message: messages.getMessage('warnings.permission-unknown'),
             });
           }
         } else {
           result.warnings.push({
             identifier,
-            message: 'Profile is enabled, but not found in classification. Refresh classifications to resolve.',
+            message: messages.getMessage('warnings.permission-not-classified-in-profile'),
           });
         }
       });

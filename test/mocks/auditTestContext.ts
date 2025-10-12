@@ -51,6 +51,12 @@ export default class AuditTestContext {
   }
 }
 
+export function clearAuditReports(workingDir: string): void {
+  fs.readdirSync(workingDir)
+    .filter((fn) => fn.match(/(report_).*\.json$/) !== null)
+    .forEach((reportFile) => fs.rmSync(path.join(workingDir, reportFile)));
+}
+
 async function retrievePermsetsStub(cmpNames: string[]): Promise<Record<string, PermissionSet>> {
   const result: Record<string, PermissionSet> = {};
   cmpNames.forEach((cname) => {
