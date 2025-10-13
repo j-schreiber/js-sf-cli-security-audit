@@ -272,7 +272,8 @@
           "enabled": true,
           "name": "ViewTrustMeasures"
         }
-      ]
+      ],
+      "customPermissions": [{ "name": "CriticalCustomPermission", "enabled": true }]
     }
   }
 ]

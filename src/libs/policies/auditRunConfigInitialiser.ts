@@ -104,6 +104,9 @@ class ProfilesPolicyInitialiser {
     policyContent.rules['EnforceUserPermissionClassifications'] = {
       enabled: true,
     };
+    policyContent.rules['EnforceCustomPermissionClassifications'] = {
+      enabled: true,
+    };
     return new AuditPolicyDef({ config: new PolicyConfigProfiles(policyContent) });
   }
 }

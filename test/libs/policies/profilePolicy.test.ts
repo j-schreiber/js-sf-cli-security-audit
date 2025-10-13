@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
-import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
-import AuditRunConfig from '../../../src/libs/policies/interfaces/auditRunConfig.js';
+import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../../src/libs/policies/types.js';
+import AuditRunConfig, { AuditClassificationDef } from '../../../src/libs/policies/interfaces/auditRunConfig.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
 import { ProfilesPolicyFileContent } from '../../../src/libs/policies/schema.js';
@@ -83,6 +83,51 @@ describe('profile policy', () => {
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
     expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
+  });
+
+  it('returns compliant for custom permissions rule when context has no custom permissions', async () => {
+    // Arrange
+    const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
+    CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
+
+    // Act
+    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT);
+    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+
+    // Assert
+    expect(policyResult.isCompliant).to.equal(true);
+    const executedRuleNames = Object.keys(policyResult.executedRules);
+    expect(executedRuleNames).to.deep.equal(['EnforceCustomPermissionClassifications']);
+    assert.isDefined(policyResult.executedRules.EnforceCustomPermissionClassifications);
+    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.isCompliant).to.be.true;
+  });
+
+  it('reports error in custom perms rule if permission classification does not match preset', async () => {
+    // Arrange
+    const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
+    CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
+    const AUDIT_CONTEXT = new AuditRunConfig();
+    AUDIT_CONTEXT.classifications.customPermissions = new AuditClassificationDef();
+    AUDIT_CONTEXT.classifications.customPermissions.content.permissions = {
+      CriticalCustomPermission: { classification: PolicyRiskLevel.CRITICAL },
+    };
+
+    // Act
+    const pol = new ProfilePolicy(CONFIG, AUDIT_CONTEXT);
+    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+
+    // Assert
+    expect(policyResult.isCompliant).to.equal(false);
+    const executedRuleNames = Object.keys(policyResult.executedRules);
+    expect(executedRuleNames).to.deep.equal(['EnforceCustomPermissionClassifications']);
+    assert.isDefined(policyResult.executedRules.EnforceCustomPermissionClassifications);
+    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.isCompliant).to.be.false;
+    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.violations).to.deep.equal([
+      {
+        identifier: ['Standard User', 'CriticalCustomPermission'],
+        message: 'Permission is classified as "Critical" and not allowed in preset "Standard User".',
+      },
+    ]);
   });
 
   it('resolves profiles from config to actual profile metadata from org', async () => {

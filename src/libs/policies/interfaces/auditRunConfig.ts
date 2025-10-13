@@ -86,6 +86,24 @@ export default class AuditRunConfig {
       return undefined;
     }
   }
+
+  /**
+   * Resolves a custom permission from the underlying classification, if it exists.
+   *
+   * @param permissionName
+   * @returns
+   */
+  public resolveCustomPermission(permissionName: string): NamedPermissionsClassification | undefined {
+    const classification = this.classifications.customPermissions?.content.permissions[permissionName];
+    if (classification) {
+      return {
+        name: permissionName,
+        ...classification,
+      };
+    } else {
+      return undefined;
+    }
+  }
 }
 
 export class AuditRunClassifications {

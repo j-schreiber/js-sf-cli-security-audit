@@ -10,6 +10,7 @@ import Policy, { ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
 import { PermissionRiskLevelPresets } from './types.js';
 import EnforceUserPermsClassificationOnProfiles from './rules/enforceUserPermsClassificationOnProfiles.js';
+import EnforceCustomPermsClassificationOnProfiles from './rules/enforceCustomPermsClassificationOnProfiles.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -79,6 +80,9 @@ function resolveRules(
     switch (ruleName) {
       case 'EnforceUserPermissionClassifications':
         resolved.push(new EnforceUserPermsClassificationOnProfiles(auditContext));
+        break;
+      case 'EnforceCustomPermissionClassifications':
+        resolved.push(new EnforceCustomPermsClassificationOnProfiles(auditContext));
         break;
       default:
         break;
