@@ -15,5 +15,5 @@ permissionSets:
   Test_Standard_User_Permission_Set_2:
     preset: Standard User
 rules:
-  EnforceClassificationPresets:
+  EnforceUserPermissionClassifications:
     enabled: true

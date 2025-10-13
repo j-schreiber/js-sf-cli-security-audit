@@ -136,9 +136,11 @@ describe('audit run', () => {
       assert.isDefined(auditResult.policies.PermissionSets);
       expect(auditResult.policies.Profiles.isCompliant).to.be.true;
       expect(auditResult.policies.PermissionSets.isCompliant).to.be.true;
-      expect(Object.keys(auditResult.policies.Profiles.executedRules)).to.deep.equal(['EnforceClassificationPresets']);
+      expect(Object.keys(auditResult.policies.Profiles.executedRules)).to.deep.equal([
+        'EnforceUserPermissionClassifications',
+      ]);
       expect(Object.keys(auditResult.policies.PermissionSets.executedRules)).to.deep.equal([
-        'EnforceClassificationPresets',
+        'EnforceUserPermissionClassifications',
       ]);
     });
 
@@ -155,8 +157,8 @@ describe('audit run', () => {
       assert.isDefined(auditResult.policies);
       assert.isDefined(auditResult.policies.Profiles);
       expect(auditResult.policies.Profiles.isCompliant).to.be.false;
-      assert.isDefined(auditResult.policies.Profiles.executedRules.EnforceClassificationPresets);
-      expect(auditResult.policies.Profiles.executedRules.EnforceClassificationPresets.isCompliant).to.be.false;
+      assert.isDefined(auditResult.policies.Profiles.executedRules.EnforceUserPermissionClassifications);
+      expect(auditResult.policies.Profiles.executedRules.EnforceUserPermissionClassifications.isCompliant).to.be.false;
     });
   });
 });

@@ -6,9 +6,9 @@ import { PolicyEntityResolveError } from '../audit/types.js';
 import { AuditContext, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
 import { PermissionSetLikeMap, PermSetsPolicyFileContent, PolicyRuleConfig } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
-import EnforceClassificationPresetsPermSets from './rules/enforceClassificationPresetsPermSets.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { PermissionRiskLevelPresets } from './types.js';
+import EnforceUserPermsClassificationOnPermSets from './rules/enforceUserPermsClassificationOnPermSets.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -71,8 +71,8 @@ function resolveRules(
   // need to rewrite to Object.entries when I need ruleConfig
   for (const ruleName of Object.keys(ruleConfigs!)) {
     switch (ruleName) {
-      case 'EnforceClassificationPresets':
-        resolved.push(new EnforceClassificationPresetsPermSets(auditContext));
+      case 'EnforceUserPermissionClassifications':
+        resolved.push(new EnforceUserPermsClassificationOnPermSets(auditContext));
         break;
       default:
         break;

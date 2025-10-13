@@ -50,7 +50,7 @@
           }
         },
         "rules": {
-          "EnforceClassificationPresets": {
+          "EnforceUserPermissionClassifications": {
             "enabled": true
           }
         }
@@ -69,7 +69,7 @@
           }
         },
         "rules": {
-          "EnforceClassificationPresets": {
+          "EnforceUserPermissionClassifications": {
             "enabled": true
           }
         }

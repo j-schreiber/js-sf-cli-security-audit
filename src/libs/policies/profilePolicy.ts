@@ -4,12 +4,12 @@ import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyEntityResolveError } from '../audit/types.js';
 import { AuditContext, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
-import EnforceClassificationPresets from './rules/enforceClassificationPresets.js';
 import { PolicyRuleConfig, ProfilesPolicyFileContent } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
 import { PermissionRiskLevelPresets } from './types.js';
+import EnforceUserPermsClassificationOnProfiles from './rules/enforceUserPermsClassificationOnProfiles.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -77,8 +77,8 @@ function resolveRules(
   // need to rewrite to Object.entries when I need ruleConfig
   for (const ruleName of Object.keys(ruleConfigs!)) {
     switch (ruleName) {
-      case 'EnforceClassificationPresets':
-        resolved.push(new EnforceClassificationPresets(auditContext));
+      case 'EnforceUserPermissionClassifications':
+        resolved.push(new EnforceUserPermsClassificationOnProfiles(auditContext));
         break;
       default:
         break;

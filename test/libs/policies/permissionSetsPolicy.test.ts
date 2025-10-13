@@ -5,11 +5,11 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
 import AuditRunConfig from '../../../src/libs/policies/interfaces/auditRunConfig.js';
-import { PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
+import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
 import { PermSetsPolicyFileContent } from '../../../src/libs/policies/schema.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
 import { parseAsPermissionset } from '../../../src/libs/mdapiRetriever.js';
-import EnforceClassificationPresetsPermSets from '../../../src/libs/policies/rules/enforceClassificationPresetsPermSets.js';
+import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnPermSets.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -28,14 +28,14 @@ const DEFAULT_PERMSET_CONFIG = {
     },
   },
   rules: {
-    EnforceClassificationPresets: {
+    EnforceUserPermissionClassifications: {
       enabled: true,
     },
   },
 } as PermSetsPolicyFileContent;
 
 const MOCK_RULE_RESULT = {
-  ruleName: 'EnforceClassificationPresets',
+  ruleName: 'EnforceUserPermissionClassifications',
   isCompliant: true,
   violations: new Array<PolicyRuleViolation>(),
   mutedViolations: [],
@@ -45,6 +45,10 @@ const MOCK_RULE_RESULT = {
 
 describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
+
+  function stubUserClassificationRule(mockResult: PolicyRuleExecutionResult) {
+    return $$.context.SANDBOX.stub(EnforceUserPermsClassificationOnPermSets.prototype, 'run').resolves(mockResult);
+  }
 
   beforeEach(async () => {
     await $$.init();
@@ -62,14 +66,12 @@ describe('permission sets policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceClassificationPresets']);
+    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
   });
 
   it('resolves permission sets from config to actual perm set metadata from org', async () => {
     // Arrange
-    const ruleSpy = $$.context.SANDBOX.stub(EnforceClassificationPresetsPermSets.prototype, 'run').resolves(
-      MOCK_RULE_RESULT
-    );
+    const ruleSpy = stubUserClassificationRule(MOCK_RULE_RESULT);
 
     // Act
     const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);

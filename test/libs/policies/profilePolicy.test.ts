@@ -7,10 +7,10 @@ import AuditTestContext from '../../mocks/auditTestContext.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
 import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
 import AuditRunConfig from '../../../src/libs/policies/interfaces/auditRunConfig.js';
-import EnforceClassificationPresets from '../../../src/libs/policies/rules/enforceClassificationPresets.js';
-import { PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
+import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
 import { ProfilesPolicyFileContent } from '../../../src/libs/policies/schema.js';
+import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnProfiles.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -29,23 +29,27 @@ const DEFAULT_PROFILE_CONFIG = {
     },
   },
   rules: {
-    EnforceClassificationPresets: {
+    EnforceUserPermissionClassifications: {
       enabled: true,
     },
   },
 } as ProfilesPolicyFileContent;
 
 const MOCK_RULE_RESULT = {
-  ruleName: 'EnforceClassificationPresets',
+  ruleName: 'EnforceUserPermissionClassifications',
   isCompliant: true,
   violations: new Array<PolicyRuleViolation>(),
   mutedViolations: [],
   warnings: new Array<RuleComponentMessage>(),
   errors: [],
-};
+} as PolicyRuleExecutionResult;
 
 describe('profile policy', () => {
   const $$ = new AuditTestContext();
+
+  function stubUserClassificationRule(mockResult: PolicyRuleExecutionResult) {
+    return $$.context.SANDBOX.stub(EnforceUserPermsClassificationOnProfiles.prototype, 'run').resolves(mockResult);
+  }
 
   beforeEach(async () => {
     await $$.init();
@@ -63,12 +67,27 @@ describe('profile policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceClassificationPresets']);
+    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
+  });
+
+  it('ignores configured rules that cannot be resolved by implementation', async () => {
+    // Arrange
+    const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
+    CONFIG.rules['UnknownRuleDoesNotExist'] = { enabled: true };
+
+    // Act
+    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT);
+    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+
+    // Assert
+    expect(policyResult.isCompliant).to.equal(true);
+    const executedRuleNames = Object.keys(policyResult.executedRules);
+    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
   });
 
   it('resolves profiles from config to actual profile metadata from org', async () => {
     // Arrange
-    const ruleSpy = $$.context.SANDBOX.stub(EnforceClassificationPresets.prototype, 'run').resolves(MOCK_RULE_RESULT);
+    const ruleSpy = stubUserClassificationRule(MOCK_RULE_RESULT);
 
     // Act
     const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, MOCK_AUDIT_CONTEXT);
@@ -89,6 +108,7 @@ describe('profile policy', () => {
         metadata: standardProfile,
       },
     };
+    expect(ruleSpy.callCount).to.equal(1);
     expect(ruleSpy.args.flat()[0]).to.deep.contain({
       resolvedEntities: expectedResolvedEntities,
     });
@@ -98,7 +118,7 @@ describe('profile policy', () => {
 
   it('ignores profiles from config that cannot be resolved from target org', async () => {
     // Arrange
-    $$.context.SANDBOX.stub(EnforceClassificationPresets.prototype, 'run').resolves(MOCK_RULE_RESULT);
+    stubUserClassificationRule(MOCK_RULE_RESULT);
     $$.mocks.setQueryMock(
       "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
       path.join(QUERY_RESULTS_DIR, 'empty.json')
@@ -119,7 +139,7 @@ describe('profile policy', () => {
 
   it('ignores profiles with UNKNOWN preset without attempting to resolve', async () => {
     // Arrange
-    $$.context.SANDBOX.stub(EnforceClassificationPresets.prototype, 'run').resolves(MOCK_RULE_RESULT);
+    stubUserClassificationRule(MOCK_RULE_RESULT);
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.UNKNOWN };
 

@@ -101,7 +101,7 @@ class ProfilesPolicyInitialiser {
     profiles.records.forEach((permsetRecord) => {
       policyContent.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
-    policyContent.rules['EnforceClassificationPresets'] = {
+    policyContent.rules['EnforceUserPermissionClassifications'] = {
       enabled: true,
     };
     return new AuditPolicyDef({ config: new PolicyConfigProfiles(policyContent) });
@@ -121,7 +121,7 @@ class PermissionSetsPolicyInitialiser {
       .forEach((permsetRecord) => {
         permSetsPolicy.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
       });
-    permSetsPolicy.rules['EnforceClassificationPresets'] = {
+    permSetsPolicy.rules['EnforceUserPermissionClassifications'] = {
       enabled: true,
     };
     return new AuditPolicyDef({ config: new PolicyConfigPermissionSets(permSetsPolicy) });

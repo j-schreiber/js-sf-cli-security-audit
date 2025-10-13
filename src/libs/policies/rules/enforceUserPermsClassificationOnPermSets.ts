@@ -1,25 +1,20 @@
 import { Messages } from '@salesforce/core';
-import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../audit/types.js';
-import { RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { PolicyRuleExecutionResult } from '../../audit/types.js';
+import { RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import { permissionAllowedInPreset, PolicyRiskLevel } from '../types.js';
 import AuditRunConfig from '../interfaces/auditRunConfig.js';
 import { ResolvedPermissionSet } from '../permissionSetPolicy.js';
+import PolicyRule from './policyRule.js';
 
-Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-export default class EnforceClassificationPresetsPermSets implements RowLevelPolicyRule {
-  public constructor(private auditContext: AuditRunConfig) {}
+export default class EnforceUserPermsClassificationOnPermSets extends PolicyRule {
+  public constructor(auditContext: AuditRunConfig) {
+    super({ auditContext, ruleDisplayName: 'EnforceUserPermissionClassifications' });
+  }
 
   public run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult> {
-    const result = {
-      ruleName: 'EnforceClassificationPresets',
-      isCompliant: true,
-      violations: new Array<PolicyRuleViolation>(),
-      mutedViolations: [],
-      warnings: new Array<RuleComponentMessage>(),
-      errors: [],
-    };
+    const result = this.initResult();
     const resolvedPermsets = context.resolvedEntities as Record<string, ResolvedPermissionSet>;
     Object.values(resolvedPermsets).forEach((permset) => {
       const userPerms = permset.metadata.userPermissions ?? [];

@@ -42,5 +42,8 @@ export default abstract class Policy implements IPolicy {
 
 function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): boolean {
   const list = Object.values(ruleResults);
+  if (list.length === 0) {
+    return true;
+  }
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
