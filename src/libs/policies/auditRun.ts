@@ -1,5 +1,6 @@
 // import fs from 'node:fs';
 import { Connection } from '@salesforce/core';
+import { Optional } from '@salesforce/ts-types';
 import { AuditPolicyResult, AuditResult } from '../audit/types.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import ProfilePolicy from './profilePolicy.js';
@@ -32,8 +33,8 @@ export default class AuditRun {
    * @param directoryPath
    * @returns
    */
-  public static load(directoryPath: string): AuditRun {
-    const ps = new AuditRun(directoryPath);
+  public static load(directoryPath: Optional<string> | null): AuditRun {
+    const ps = new AuditRun(directoryPath ?? '.');
     return ps;
   }
 

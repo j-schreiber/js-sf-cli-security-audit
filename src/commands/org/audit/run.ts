@@ -27,9 +27,10 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       required: true,
     }),
     'source-dir': Flags.directory({
-      required: true,
+      required: false,
       char: 'd',
       summary: messages.getMessage('flags.source-dir.summary'),
+      default: '',
     }),
     'api-version': Flags.orgApiVersion(),
   };

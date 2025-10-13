@@ -90,6 +90,27 @@ describe('audit run', () => {
       expect(audit.configs.policies.Profiles).to.be.undefined;
       expect(audit.configs.policies.PermissionSets).to.be.undefined;
     });
+
+    it('loads audit run config from root directory, if path is nullish', async () => {
+      // Arrange
+      fs.cpSync(buildPath('full-valid'), '.', { recursive: true });
+
+      // Act
+      const nullishDirValues = [undefined, null, '', '.'];
+      nullishDirValues.forEach((dirPath) => {
+        const audit = AuditRun.load(dirPath);
+
+        // Assert
+        assert.isDefined(audit.configs.classifications.userPermissions, 'for dirPath: ' + dirPath);
+        assert.isDefined(audit.configs.classifications.customPermissions, 'for dirPath: ' + dirPath);
+        assert.isDefined(audit.configs.policies.PermissionSets, 'for dirPath: ' + dirPath);
+        assert.isDefined(audit.configs.policies.Profiles, 'for dirPath: ' + dirPath);
+      });
+
+      // Cleanup
+      fs.rmSync('classification', { recursive: true });
+      fs.rmSync('policies', { recursive: true });
+    });
   });
 
   describe('initialise new from org', () => {

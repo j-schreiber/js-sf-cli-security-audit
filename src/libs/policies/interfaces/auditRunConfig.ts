@@ -57,8 +57,9 @@ export default class AuditRunConfig {
   public policies;
 
   public constructor(directoryPath?: string) {
-    this.classifications = new AuditRunClassifications(directoryPath);
-    this.policies = new AuditRunPolicies(directoryPath);
+    const sanitisedPath = directoryPath && directoryPath.length > 0 ? directoryPath : '.';
+    this.classifications = new AuditRunClassifications(sanitisedPath);
+    this.policies = new AuditRunPolicies(sanitisedPath);
   }
 
   /**

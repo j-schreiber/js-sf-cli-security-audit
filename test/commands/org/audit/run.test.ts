@@ -15,6 +15,7 @@ const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-lib-results'
 const DEFAULT_WORKING_DIR = path.join('test', 'mocks', 'data', 'audit-configs', 'full-valid');
 
 const NON_COMPLIANT_RESULT = parseMockAuditConfig('full-non-compliant.json');
+const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
   return readAuditResultFromFile(path.join(DEFAULT_DATA_PATH, filePath));
@@ -42,15 +43,15 @@ describe('org audit run', () => {
 
   it('reports summary of all executed policies and their status for non-compliant result', async () => {
     // Arrange
-    const initMock = mockResult(NON_COMPLIANT_RESULT);
+    const libMock = mockResult(NON_COMPLIANT_RESULT);
 
     // Act
     const result = await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
 
     // Assert
     // ensure contract - all relevant params are actually passed to lib
-    expect(initMock.callCount).to.equal(1);
-    const conParam = initMock.args.flat()[0];
+    expect(libMock.callCount).to.equal(1);
+    const conParam = libMock.args.flat()[0];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
 
     // lib result is passed through as command result
@@ -112,5 +113,19 @@ describe('org audit run', () => {
     expect(result.filePath).to.contain(expectedFullPath);
     const fileContent = readAuditResultFromFile(result.filePath);
     expect(fileContent).to.deep.contain(NON_COMPLIANT_RESULT);
+  });
+
+  it('loads config from root directory if --source-dir flag is empty', async () => {
+    // Arrange
+    mockResult(COMPLIANT_RESULT);
+
+    // Act
+    const result = await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
+
+    // Assert
+    expect(result.isCompliant).to.be.true;
+    expect(result.filePath).not.to.be.undefined;
+    expect(fs.existsSync(result.filePath)).to.be.true;
+    fs.rmSync(result.filePath);
   });
 });
