@@ -2,18 +2,14 @@ import { Messages } from '@salesforce/core';
 import { PolicyRuleExecutionResult } from '../../audit/types.js';
 import { RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import { permissionAllowedInPreset, PolicyRiskLevel } from '../types.js';
-import AuditRunConfig from '../interfaces/auditRunConfig.js';
 import { ResolvedProfile } from '../profilePolicy.js';
-import PolicyRule from './policyRule.js';
+import PolicyRule, { RuleOptions } from './policyRule.js';
 
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
 export default class EnforceUserPermsClassificationOnProfiles extends PolicyRule {
-  public constructor(auditContext: AuditRunConfig) {
-    super({
-      auditContext,
-      ruleDisplayName: 'EnforceUserPermissionClassifications',
-    });
+  public constructor(opts: RuleOptions) {
+    super(opts);
   }
 
   public run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult> {

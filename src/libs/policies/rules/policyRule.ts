@@ -13,6 +13,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 export type RuleOptions = {
   auditContext: AuditRunConfig;
   ruleDisplayName: string;
+  ruleConfig?: unknown;
 };
 
 export default abstract class PolicyRule implements RowLevelPolicyRule {

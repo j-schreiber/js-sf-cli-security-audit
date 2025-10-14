@@ -4,6 +4,7 @@ import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext from '../../mocks/auditTestContext.js';
+import ProfilePolicyRegistry from '../../../src/libs/config/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
 import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../../src/libs/policies/types.js';
 import AuditRunConfig, { AuditClassificationDef } from '../../../src/libs/policies/interfaces/auditRunConfig.js';
@@ -11,6 +12,7 @@ import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } 
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
 import { ProfilesPolicyFileContent } from '../../../src/libs/policies/schema.js';
 import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnProfiles.js';
+import RuleRegistry from '../../../src/libs/config/registries/ruleRegistry.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -44,6 +46,19 @@ const MOCK_RULE_RESULT = {
   errors: [],
 } as PolicyRuleExecutionResult;
 
+const EXPECTED_RESOLVED_DEFAULT_ENTITIES = {
+  'System Administrator': {
+    preset: 'Admin',
+    name: 'System Administrator',
+    metadata: loadProfileMetadata('admin-profile-with-metadata.json'),
+  },
+  'Standard User': {
+    preset: 'Standard User',
+    name: 'Standard User',
+    metadata: loadProfileMetadata('standard-profile-with-metadata.json'),
+  },
+};
+
 describe('profile policy', () => {
   const $$ = new AuditTestContext();
 
@@ -57,6 +72,34 @@ describe('profile policy', () => {
 
   afterEach(async () => {
     $$.reset();
+  });
+
+  it('initialises all registered rules from policy registry', async () => {
+    // Act
+    const reg = new ProfilePolicyRegistry();
+    const resolvedRules = reg.resolveEnabledRules(DEFAULT_PROFILE_CONFIG.rules, MOCK_AUDIT_CONTEXT);
+
+    // Assert
+    expect(resolvedRules.length).to.equal(1);
+    const ruleResult = await resolvedRules[0].run({
+      targetOrgConnection: await $$.targetOrg.getConnection(),
+      resolvedEntities: EXPECTED_RESOLVED_DEFAULT_ENTITIES,
+    });
+    expect(ruleResult.isCompliant).to.be.true;
+  });
+
+  it('uses custom registry to resolve rules when its passed to the constructor', async () => {
+    // Arrange
+    const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
+    CONFIG.rules = { TestRule: { enabled: true } };
+    const reg = new TestProfilesRegistry();
+
+    // Act
+    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT, reg);
+    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+
+    // Assert
+    expect(Object.keys(policyResult.executedRules)).to.deep.equal(['TestRule']);
   });
 
   it('runs all rules in policy configuration with fully valid config', async () => {
@@ -139,25 +182,11 @@ describe('profile policy', () => {
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
-    const adminProfile = loadProfileMetadata('admin-profile-with-metadata.json');
-    const standardProfile = loadProfileMetadata('standard-profile-with-metadata.json');
-    const expectedResolvedEntities = {
-      'System Administrator': {
-        preset: 'Admin',
-        name: 'System Administrator',
-        metadata: adminProfile,
-      },
-      'Standard User': {
-        preset: 'Standard User',
-        name: 'Standard User',
-        metadata: standardProfile,
-      },
-    };
     expect(ruleSpy.callCount).to.equal(1);
     expect(ruleSpy.args.flat()[0]).to.deep.contain({
-      resolvedEntities: expectedResolvedEntities,
+      resolvedEntities: EXPECTED_RESOLVED_DEFAULT_ENTITIES,
     });
-    expect(policyResult.auditedEntities).to.deep.equal(Object.keys(expectedResolvedEntities));
+    expect(policyResult.auditedEntities).to.deep.equal(Object.keys(EXPECTED_RESOLVED_DEFAULT_ENTITIES));
     expect(policyResult.ignoredEntities.length).to.equal(0);
   });
 
@@ -204,4 +233,12 @@ function loadProfileMetadata(profileFileName: string): ProfileMetadata {
   const content = fs.readFileSync(path.join(QUERY_RESULTS_DIR, profileFileName), 'utf-8');
   const records = JSON.parse(content) as Profile[];
   return records[0].Metadata;
+}
+
+class TestProfilesRegistry extends RuleRegistry {
+  public constructor() {
+    super({
+      TestRule: EnforceUserPermsClassificationOnProfiles,
+    });
+  }
 }

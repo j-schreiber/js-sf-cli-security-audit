@@ -12,6 +12,7 @@ import {
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/config/queries.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
+const DEFAULT_TEST_OUTPUT_DIR = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
 const USER_PERMS_COUNT = 486;
 
 function buildPath(dirName: string) {
@@ -27,7 +28,7 @@ describe('audit run', () => {
 
   afterEach(async () => {
     $$.reset();
-    fs.rmSync(path.join(TEST_DIR_BASE_PATH, 'tmp-1'), { recursive: true, force: true });
+    fs.rmSync(DEFAULT_TEST_OUTPUT_DIR, { recursive: true, force: true });
   });
 
   describe('loading', () => {
@@ -120,7 +121,7 @@ describe('audit run', () => {
         CUSTOM_PERMS_QUERY,
         path.join('test', 'mocks', 'data', 'queryResults', 'customPermissions.json')
       );
-      const testPath = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
+      const testPath = DEFAULT_TEST_OUTPUT_DIR;
 
       // Act
       const conf = await AuditRun.initialiseNewConfig(await $$.targetOrg.getConnection(), { directoryPath: testPath });
@@ -138,6 +139,31 @@ describe('audit run', () => {
       expect(conf.policies.Profiles.filePath).to.equal(path.join(testPath, PROFILE_POLICY_PATH));
       assert.isDefined(conf.policies.PermissionSets);
       expect(conf.policies.PermissionSets.filePath).to.equal(path.join(testPath, PERMSET_POLICY_PATH));
+    });
+
+    it('removes line breaks in perm labels when adding the permissions', async () => {
+      // Arrange
+      // for some reason, the labels on some of the Permissions* fields on Permission set
+      // have unnecessary line breaks, which causes permissions to be initialised like this
+      // {
+      //   label: 'Associate Releases and Change Requests\n        ',
+      //   classification: 'Unknown',
+      //   reason: undefined
+      // }
+      $$.mocks.setDescribeMock(
+        'PermissionSet',
+        path.join('test', 'mocks', 'data', 'describeResults', 'PermissionSetWithLineBreaks.json')
+      );
+
+      // Act
+      const conf = await AuditRun.initialiseNewConfig(await $$.targetOrg.getConnection(), {
+        directoryPath: DEFAULT_TEST_OUTPUT_DIR,
+      });
+
+      // Assert
+      assert.isDefined(conf.classifications.userPermissions);
+      expect(conf.classifications.userPermissions.content.permissions['EmailMass'].label).to.equal('Mass Email');
+      expect(conf.classifications.userPermissions.content.permissions['EmailSingle'].label).to.equal('Send Email');
     });
   });
 

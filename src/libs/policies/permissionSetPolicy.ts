@@ -1,14 +1,14 @@
 import { Messages } from '@salesforce/core';
-import { isEmpty } from '@salesforce/kit';
 import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import MdapiRetriever from '../mdapiRetriever.js';
+import PermSetsRuleRegistry from '../config/registries/permissionSets.js';
+import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { PolicyEntityResolveError } from '../audit/types.js';
-import { AuditContext, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
-import { PermissionSetLikeMap, PermSetsPolicyFileContent, PolicyRuleConfig } from './schema.js';
+import { AuditContext } from './interfaces/policyRuleInterfaces.js';
+import { PermissionSetLikeMap, PermSetsPolicyFileContent } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { PermissionRiskLevelPresets } from './types.js';
-import EnforceUserPermsClassificationOnPermSets from './rules/enforceUserPermsClassificationOnPermSets.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -19,8 +19,12 @@ export type ResolvedPermissionSet = {
   metadata: PermissionSet;
 };
 export default class PermissionSetPolicy extends Policy {
-  public constructor(public config: PermSetsPolicyFileContent, public auditContext: AuditRunConfig) {
-    super(auditContext, resolveRules(auditContext, config.rules));
+  public constructor(
+    public config: PermSetsPolicyFileContent,
+    public auditContext: AuditRunConfig,
+    registry: RuleRegistry = new PermSetsRuleRegistry()
+  ) {
+    super(auditContext, registry.resolveEnabledRules(config.rules, auditContext));
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
@@ -58,25 +62,4 @@ function filterCategorizedPermsets(permSets: PermissionSetLikeMap): string[] {
     }
   });
   return filteredNames;
-}
-
-function resolveRules(
-  auditContext: AuditRunConfig,
-  ruleConfigs?: Record<string, PolicyRuleConfig>
-): RowLevelPolicyRule[] {
-  if (isEmpty(ruleConfigs)) {
-    return [];
-  }
-  const resolved = new Array<RowLevelPolicyRule>();
-  // need to rewrite to Object.entries when I need ruleConfig
-  for (const ruleName of Object.keys(ruleConfigs!)) {
-    switch (ruleName) {
-      case 'EnforceUserPermissionClassifications':
-        resolved.push(new EnforceUserPermsClassificationOnPermSets(auditContext));
-        break;
-      default:
-        break;
-    }
-  }
-  return resolved;
 }

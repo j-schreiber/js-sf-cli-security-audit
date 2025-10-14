@@ -1,6 +1,8 @@
 import { Connection } from '@salesforce/core';
 import { DescribeSObjectResult } from '@jsforce/jsforce-node';
 import { DEFAULT_CLASSIFICATIONS } from '../config/defaultPolicyClassification.js';
+import ProfilesRuleRegistry from '../config/registries/profiles.js';
+import PermSetsRuleRegistry from '../config/registries/permissionSets.js';
 import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../config/queries.js';
 import AuditRunConfig, {
   AuditClassificationDef,
@@ -31,19 +33,16 @@ export default class AuditRunConfigInitialiser {
 
 async function initUserPermissions(con: Connection): Promise<AuditClassificationDef> {
   const permSet = await con.describe('PermissionSet');
-  const strippedPerms: Record<string, PermissionsClassification> = {};
+  const result = new AuditClassificationDef();
   const perms = parsePermissionsFromPermSet(permSet);
   perms.sort(classificationSorter);
-  perms.forEach(
-    (perm) =>
-      (strippedPerms[perm.name] = {
-        label: perm.label,
-        classification: perm.classification,
-        reason: perm.reason,
-      })
+  perms.forEach((perm) =>
+    result.set(perm.name, {
+      label: perm.label,
+      classification: perm.classification,
+      reason: perm.reason,
+    })
   );
-  const result = new AuditClassificationDef();
-  result.content.permissions = strippedPerms;
   return result;
 }
 
@@ -101,12 +100,12 @@ class ProfilesPolicyInitialiser {
     profiles.records.forEach((permsetRecord) => {
       policyContent.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
-    policyContent.rules['EnforceUserPermissionClassifications'] = {
-      enabled: true,
-    };
-    policyContent.rules['EnforceCustomPermissionClassifications'] = {
-      enabled: true,
-    };
+    const defaultReg = new ProfilesRuleRegistry();
+    defaultReg.registeredRules().forEach((ruleName) => {
+      policyContent.rules[ruleName] = {
+        enabled: true,
+      };
+    });
     return new AuditPolicyDef({ config: new PolicyConfigProfiles(policyContent) });
   }
 }
@@ -124,9 +123,12 @@ class PermissionSetsPolicyInitialiser {
       .forEach((permsetRecord) => {
         permSetsPolicy.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
       });
-    permSetsPolicy.rules['EnforceUserPermissionClassifications'] = {
-      enabled: true,
-    };
+    const defaultReg = new PermSetsRuleRegistry();
+    defaultReg.registeredRules().forEach((ruleName) => {
+      permSetsPolicy.rules[ruleName] = {
+        enabled: true,
+      };
+    });
     return new AuditPolicyDef({ config: new PolicyConfigPermissionSets(permSetsPolicy) });
   }
 }

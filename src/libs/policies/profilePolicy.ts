@@ -1,16 +1,15 @@
-import { isEmpty } from '@salesforce/kit';
 import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyEntityResolveError } from '../audit/types.js';
-import { AuditContext, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
-import { PolicyRuleConfig, ProfilesPolicyFileContent } from './schema.js';
+import RuleRegistry from '../config/registries/ruleRegistry.js';
+import ProfilesRuleRegistry from '../config/registries/profiles.js';
+import { AuditContext } from './interfaces/policyRuleInterfaces.js';
+import { ProfilesPolicyFileContent } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
 import { PermissionRiskLevelPresets } from './types.js';
-import EnforceUserPermsClassificationOnProfiles from './rules/enforceUserPermsClassificationOnProfiles.js';
-import EnforceCustomPermsClassificationOnProfiles from './rules/enforceCustomPermsClassificationOnProfiles.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -22,8 +21,12 @@ export type ResolvedProfile = {
 };
 
 export default class ProfilePolicy extends Policy {
-  public constructor(public config: ProfilesPolicyFileContent, public auditContext: AuditRunConfig) {
-    super(auditContext, resolveRules(auditContext, config.rules));
+  public constructor(
+    public config: ProfilesPolicyFileContent,
+    public auditContext: AuditRunConfig,
+    profilesRegistry: RuleRegistry = new ProfilesRuleRegistry()
+  ) {
+    super(auditContext, profilesRegistry.resolveEnabledRules(config.rules, auditContext));
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
@@ -65,28 +68,4 @@ export default class ProfilePolicy extends Policy {
     });
     return { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };
   }
-}
-
-function resolveRules(
-  auditContext: AuditRunConfig,
-  ruleConfigs?: Record<string, PolicyRuleConfig>
-): RowLevelPolicyRule[] {
-  if (isEmpty(ruleConfigs)) {
-    return [];
-  }
-  const resolved = new Array<RowLevelPolicyRule>();
-  // need to rewrite to Object.entries when I need ruleConfig
-  for (const ruleName of Object.keys(ruleConfigs!)) {
-    switch (ruleName) {
-      case 'EnforceUserPermissionClassifications':
-        resolved.push(new EnforceUserPermsClassificationOnProfiles(auditContext));
-        break;
-      case 'EnforceCustomPermissionClassifications':
-        resolved.push(new EnforceCustomPermsClassificationOnProfiles(auditContext));
-        break;
-      default:
-        break;
-    }
-  }
-  return resolved;
 }

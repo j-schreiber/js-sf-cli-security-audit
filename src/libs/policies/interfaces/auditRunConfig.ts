@@ -21,6 +21,7 @@ import {
   ProfilesPolicyConfigSchema,
   RuleMap,
   PermSetsPolicyFileContent,
+  PermissionsClassification,
 } from './../schema.js';
 
 export type AuditClassification = {
@@ -77,15 +78,7 @@ export default class AuditRunConfig {
    * @returns
    */
   public resolveUserPermission(permissionName: string): NamedPermissionsClassification | undefined {
-    const classification = this.classifications.userPermissions?.content.permissions[permissionName];
-    if (classification) {
-      return {
-        name: permissionName,
-        ...classification,
-      };
-    } else {
-      return undefined;
-    }
+    return this.classifications.userPermissions?.resolve(permissionName);
   }
 
   /**
@@ -95,15 +88,7 @@ export default class AuditRunConfig {
    * @returns
    */
   public resolveCustomPermission(permissionName: string): NamedPermissionsClassification | undefined {
-    const classification = this.classifications.customPermissions?.content.permissions[permissionName];
-    if (classification) {
-      return {
-        name: permissionName,
-        ...classification,
-      };
-    } else {
-      return undefined;
-    }
+    return this.classifications.customPermissions?.resolve(permissionName);
   }
 }
 
@@ -182,6 +167,34 @@ export class AuditClassificationDef implements AuditClassification {
     }
   }
 
+  /**
+   * Adds a permission config to the internal content map and sanitises
+   * strings from invalid characters.
+   *
+   * @param permName
+   * @param permConfig
+   */
+  public set(permName: string, permConfig: PermissionsClassification): void {
+    this.content.permissions[permName] = { ...permConfig, label: permConfig.label?.replace(/[ \t]+$|[\r\n]+/g, '') };
+  }
+
+  /**
+   * Resolves a permission name to a "named config" that contains the name
+   * or undefined, if the permission does not exist.
+   *
+   * @param permName
+   */
+  public resolve(permName: string): NamedPermissionsClassification | undefined {
+    if (this.content.permissions[permName]) {
+      return {
+        name: permName,
+        ...this.content.permissions[permName],
+      };
+    } else {
+      return undefined;
+    }
+  }
+
   public write(targetFilePath: string): void {
     const isNew = !this.filePath;
     if (Object.entries(this.content.permissions).length > 0 && isNew) {
@@ -220,7 +233,7 @@ export class AuditPolicyDef<T extends PolicyConfigBase> implements AuditPolicy {
 }
 
 function writeAsYaml(fileContent: unknown, filePath: string): void {
-  const yamlContent = yaml.dump(fileContent);
+  const yamlContent = yaml.dump(fileContent, { lineWidth: 140 });
   writeFileSync(filePath, yamlContent);
 }
 

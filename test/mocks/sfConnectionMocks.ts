@@ -16,7 +16,7 @@ export default class SfConnectionMocks {
     this.queries = {};
     if (config.describes) {
       Object.entries(config.describes).forEach(([sobjectName, describePath]) => {
-        this.describes[sobjectName] = loadDescribeResult(describePath);
+        this.setDescribeMock(sobjectName, describePath);
       });
     }
     if (config.queries) {
@@ -28,6 +28,16 @@ export default class SfConnectionMocks {
 
   public setQueryMock(queryString: string, resultsPath: PathLike): void {
     this.queries[queryString] = loadRecords(resultsPath);
+  }
+
+  /**
+   * Overrides the default describe mocks for a given sobject type
+   *
+   * @param sobjectName
+   * @param resultPath
+   */
+  public setDescribeMock(sobjectName: string, resultPath: PathLike): void {
+    this.describes[sobjectName] = loadDescribeResult(resultPath);
   }
 
   /**
