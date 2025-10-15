@@ -6,6 +6,7 @@
     "type": "https",
     "url": "https://github.com/j-schreiber/js-sf-cli-security-audit"
   },
+  "homepage": "https://github.com/j-schreiber/js-sf-cli-security-audit/wiki",
   "dependencies": {
     "@jsforce/jsforce-node": "^3.4.2",
     "@oclif/core": "^4",

@@ -2,15 +2,23 @@
 
 > This plugin is still in beta and under active development. Command signatures may be subject to change.
 
+For an in-depth documentation that goes beyond command signatures and explains the core concepts, design decisions, and a variety of use cases [see our Wiki](https://github.com/j-schreiber/js-sf-cli-security-audit/wiki).
+
 # Installation
 
-This plugin is not yet published on NPM. You must check out the repo and link it locally.
+To build from source, follow these steps
 
 ```bash
-git clone https://...
+git clone https://github.com/j-schreiber/js-sf-cli-security-audit
 mkdir sf-cli-security-audit
 yarn && yarn build
 sf plugins link .
+```
+
+To install the latest version from NPM
+
+```bash
+sf plugins install @j-schreiber/sf-cli-security-audit
 ```
 
 # Contribute
