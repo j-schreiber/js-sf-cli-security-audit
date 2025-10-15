@@ -64,7 +64,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     Object.entries(policies).forEach(([name, def]) => {
       if (isPolicy(def)) {
         const vals = def.getValues() ? Object.entries(def.getValues()) : [];
-        if (vals.length > 0) {
+        if (def.filePath) {
           this.logSuccess(messages.getMessage('success.policy-summary', [name, vals.length ?? 0, def.filePath]));
         }
       }

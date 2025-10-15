@@ -1,15 +1,22 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
+import { Connection } from '@salesforce/core';
 import { ZodObject } from 'zod';
 import {
   CLASSIFICATION_SUBDIR,
+  CONNECTED_APPS_POLICY_PATH,
   CUSTOM_PERMISSIONS_PATH,
   PERMSET_POLICY_PATH,
   POLICIES_SUBDIR,
   PROFILE_POLICY_PATH,
   USER_PERMISSIONS_PATH,
 } from '../../config/filePaths.js';
+import { PermissionRiskLevelPresets } from '../types.js';
+import { PERMISSION_SETS_QUERY } from '../../config/queries.js';
+import { PermissionSet } from '../salesforceStandardTypes.js';
+import PermSetsRuleRegistry from '../../config/registries/permissionSets.js';
+import ConnectedAppsRuleRegistry from '../../config/registries/connectedApps.js';
 import {
   NamedPermissionsClassification,
   PermissionsConfig,
@@ -22,6 +29,7 @@ import {
   RuleMap,
   PermSetsPolicyFileContent,
   PermissionsClassification,
+  PolicyConfigSchema,
 } from './../schema.js';
 
 export type AuditClassification = {
@@ -61,6 +69,17 @@ export default class AuditRunConfig {
     const sanitisedPath = directoryPath && directoryPath.length > 0 ? directoryPath : '.';
     this.classifications = new AuditRunClassifications(sanitisedPath);
     this.policies = new AuditRunPolicies(sanitisedPath);
+  }
+
+  /**
+   * Initialise a new audit run config from target org
+   *
+   * @param con
+   */
+  public static async init(con: Connection): Promise<AuditRunConfig> {
+    const conf = new AuditRunConfig();
+    await conf.policies.init(con);
+    return conf;
   }
 
   /**
@@ -127,6 +146,7 @@ export class AuditRunClassifications {
 export class AuditRunPolicies {
   public Profiles?: AuditPolicyDef<PolicyConfigProfiles>;
   public PermissionSets?: AuditPolicyDef<PolicyConfigPermissionSets>;
+  public ConnectedApps?: AuditPolicyDef<PolicyConfigConnectedApps>;
 
   public constructor(directoryPath?: string) {
     if (directoryPath && existsSync(path.join(directoryPath, PROFILE_POLICY_PATH))) {
@@ -141,6 +161,22 @@ export class AuditRunPolicies {
         schema: PermSetsPolicyConfigSchema,
       });
     }
+    if (directoryPath && existsSync(path.join(directoryPath, CONNECTED_APPS_POLICY_PATH))) {
+      this.ConnectedApps = new AuditPolicyDef({
+        filePath: path.join(directoryPath, CONNECTED_APPS_POLICY_PATH),
+        schema: PolicyConfigSchema,
+      });
+    }
+  }
+
+  /**
+   * Initialises empty policies from a target org connection
+   *
+   * @param con
+   */
+  public async init(con: Connection): Promise<void> {
+    this.ConnectedApps = new AuditPolicyDef({ config: PolicyConfigConnectedApps.init() });
+    this.PermissionSets = new AuditPolicyDef({ config: await PolicyConfigPermissionSets.init(con) });
   }
 
   /**
@@ -153,6 +189,7 @@ export class AuditRunPolicies {
     mkdirSync(path.join(targetDirPath, POLICIES_SUBDIR), { recursive: true });
     this.Profiles?.write(path.join(targetDirPath, PROFILE_POLICY_PATH));
     this.PermissionSets?.write(path.join(targetDirPath, PERMSET_POLICY_PATH));
+    this.ConnectedApps?.write(path.join(targetDirPath, CONNECTED_APPS_POLICY_PATH));
   }
 }
 
@@ -263,14 +300,56 @@ export class PolicyConfigProfiles extends PolicyConfigBase implements ProfilesPo
 }
 
 export class PolicyConfigPermissionSets extends PolicyConfigBase implements PermSetsPolicyFileContent {
-  public permissionSets!: PermissionSetLikeMap;
+  public permissionSets: PermissionSetLikeMap;
 
   public constructor(conf: PermSetsPolicyFileContent) {
     super(conf);
     this.permissionSets = conf.permissionSets;
   }
 
+  public static async init(con: Connection): Promise<PolicyConfigPermissionSets> {
+    const permSets = await con.query<PermissionSet>(PERMISSION_SETS_QUERY);
+    const permSetsPolicy = {
+      enabled: true,
+      permissionSets: {},
+      rules: {},
+    } as PermSetsPolicyFileContent;
+    permSets.records
+      .filter((permsetRecord) => permsetRecord.IsCustom)
+      .forEach((permsetRecord) => {
+        permSetsPolicy.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+      });
+    const defaultReg = new PermSetsRuleRegistry();
+    defaultReg.registeredRules().forEach((ruleName) => {
+      permSetsPolicy.rules[ruleName] = {
+        enabled: true,
+      };
+    });
+    return new PolicyConfigPermissionSets(permSetsPolicy);
+  }
+
   public getValues(): PermissionSetLikeMap {
     return this.permissionSets;
+  }
+}
+export class PolicyConfigConnectedApps extends PolicyConfigBase implements BasePolicyFileContent {
+  public constructor(conf: BasePolicyFileContent) {
+    super(conf);
+  }
+
+  public static init(): PolicyConfigConnectedApps {
+    const enabledRules: RuleMap = {};
+    const defaultReg = new ConnectedAppsRuleRegistry();
+    defaultReg.registeredRules().forEach((ruleName) => {
+      enabledRules[ruleName] = {
+        enabled: true,
+      };
+    });
+    return new PolicyConfigConnectedApps({ enabled: true, rules: enabledRules });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public getValues(): Record<string, unknown> {
+    return {};
   }
 }

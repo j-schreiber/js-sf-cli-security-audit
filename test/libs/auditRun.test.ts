@@ -12,12 +12,17 @@ import {
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/config/queries.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
+// const QUERIES_BASE_PATH = path.join('test', 'mocks', 'data', 'queryResults');
 const DEFAULT_TEST_OUTPUT_DIR = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
 const USER_PERMS_COUNT = 486;
 
 function buildPath(dirName: string) {
   return path.join(TEST_DIR_BASE_PATH, dirName);
 }
+
+// function queryResultPath(fileName: string) {
+//   return path.join(QUERIES_BASE_PATH, fileName);
+// }
 
 describe('audit run', () => {
   const $$ = new AuditTestContext();
@@ -164,6 +169,17 @@ describe('audit run', () => {
       assert.isDefined(conf.classifications.userPermissions);
       expect(conf.classifications.userPermissions.content.permissions['EmailMass'].label).to.equal('Mass Email');
       expect(conf.classifications.userPermissions.content.permissions['EmailSingle'].label).to.equal('Send Email');
+    });
+
+    it('initialises connected apps policy with all registered rules', async () => {
+      // Act
+      const conf = await AuditRun.initialiseNewConfig(await $$.targetOrg.getConnection(), {
+        directoryPath: DEFAULT_TEST_OUTPUT_DIR,
+      });
+
+      // Assert
+      assert.isDefined(conf.policies.ConnectedApps);
+      expect(fs.existsSync(conf.policies.ConnectedApps.filePath!)).to.be.true;
     });
   });
 

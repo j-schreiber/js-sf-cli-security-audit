@@ -7,6 +7,23 @@ export type CustomPermission = Record & {
   DeveloperName: string;
 };
 
+export type ConnectedApp = Record & {
+  Id: string;
+  Name: string;
+  OptionsAllowAdminApprovedUsersOnly: boolean;
+};
+
+export type OauthToken = Record & {
+  Id: string;
+  User: Pick<User, 'Username'>;
+  AppName: string;
+  UseCount: number;
+};
+
+export type User = Record & {
+  Username: string;
+};
+
 export type Profile = ProfileBasic & {
   Metadata: JsForceProfile;
 };

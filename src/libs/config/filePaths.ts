@@ -7,3 +7,4 @@ export const USER_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'userPermi
 export const CUSTOM_PERMISSIONS_PATH = path.join(CLASSIFICATION_SUBDIR, 'customPermissions.yml');
 export const PROFILE_POLICY_PATH = path.join(POLICIES_SUBDIR, 'profiles.yml');
 export const PERMSET_POLICY_PATH = path.join(POLICIES_SUBDIR, 'permissionSets.yml');
+export const CONNECTED_APPS_POLICY_PATH = path.join(POLICIES_SUBDIR, 'connectedApps.yml');

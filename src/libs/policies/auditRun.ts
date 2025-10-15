@@ -7,6 +7,7 @@ import ProfilePolicy from './profilePolicy.js';
 import Policy from './policy.js';
 import PermissionSetPolicy from './permissionSetPolicy.js';
 import AuditRunConfigInitialiser from './auditRunConfigInitialiser.js';
+import ConnectedAppPolicy from './connectedAppPolicy.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy>;
@@ -101,6 +102,9 @@ function resolvePolicies(config: AuditRunConfig): PolicyMap {
   }
   if (config.policies.PermissionSets) {
     pols.PermissionSets = new PermissionSetPolicy(config.policies.PermissionSets.content, config);
+  }
+  if (config.policies.ConnectedApps) {
+    pols.ConnectedApps = new ConnectedAppPolicy(config.policies.ConnectedApps.content, config);
   }
   return pols;
 }

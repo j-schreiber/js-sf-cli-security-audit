@@ -1,0 +1,42 @@
+[
+  {
+    "attributes": {
+      "type": "ConnectedApplication",
+      "url": "/services/data/v63.0/sobjects/ConnectedApplication/0H43X0000000tw9SAA"
+    },
+    "Id": "0H43X0000000tw9SAA",
+    "Name": "Chatter Desktop"
+  },
+  {
+    "attributes": {
+      "type": "ConnectedApplication",
+      "url": "/services/data/v63.0/sobjects/ConnectedApplication/0H43X0000000twASAQ"
+    },
+    "Id": "0H43X0000000twASAQ",
+    "Name": "Salesforce for Android"
+  },
+  {
+    "attributes": {
+      "type": "ConnectedApplication",
+      "url": "/services/data/v63.0/sobjects/ConnectedApplication/0H43X0000000twBSAQ"
+    },
+    "Id": "0H43X0000000twBSAQ",
+    "Name": "Chatter Mobile for BlackBerry"
+  },
+  {
+    "attributes": {
+      "type": "ConnectedApplication",
+      "url": "/services/data/v63.0/sobjects/ConnectedApplication/0H43X0000000twCSAQ"
+    },
+    "Id": "0H43X0000000twCSAQ",
+    "Name": "Salesforce for iOS"
+  },
+  {
+    "attributes": {
+      "type": "ConnectedApplication",
+      "url": "/services/data/v63.0/sobjects/ConnectedApplication/0H43X0000000twDSAQ"
+    },
+    "Id": "0H43X0000000twDSAQ",
+    "Name": "Test App 1"
+  }
+]

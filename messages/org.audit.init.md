@@ -26,4 +26,4 @@ Initialised %s permissions at %s.
 
 # success.policy-summary
 
-Initialised policy "%s" with %s items at %s.
+Initialised policy "%s" with %s entities at %s.
