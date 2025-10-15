@@ -1,0 +1,61 @@
+{
+  "isCompliant": true,
+  "policies": {
+    "Profiles": {
+      "isCompliant": true,
+      "enabled": true,
+      "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
+      "ignoredEntities": [{ "name": "Some Other Profile", "message": "Not found on target org" }],
+      "executedRules": {
+        "EnforceUserPermissionClassifications": {
+          "ruleName": "EnforceUserPermissionClassifications",
+          "isCompliant": true,
+          "violations": [],
+          "mutedViolations": [],
+          "warnings": [
+            {
+              "identifier": ["Standard User", "ActivitiesAccess"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            },
+            {
+              "identifier": ["Standard User", "AddDirectMessageMembers"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            }
+          ],
+          "errors": []
+        }
+      },
+      "skippedRules": []
+    },
+    "PermissionSets": {
+      "isCompliant": true,
+      "enabled": true,
+      "auditedEntities": [
+        "Standard_User_Permission_Set_1",
+        "Standard_User_Permission_Set_2",
+        "Power_User_Permission_Set_1"
+      ],
+      "ignoredEntities": [],
+      "executedRules": {
+        "EnforceUserPermissionClassifications": {
+          "ruleName": "EnforceUserPermissionClassifications",
+          "isCompliant": true,
+          "violations": [],
+          "mutedViolations": [],
+          "warnings": [
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "ActivitiesAccess"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "AddDirectMessageMembers"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            }
+          ],
+          "errors": []
+        }
+      },
+      "skippedRules": []
+    }
+  }
+}

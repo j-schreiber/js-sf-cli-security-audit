@@ -25,6 +25,7 @@ lib
 .nyc_output
 coverage
 test_session*
+report_*.json
 
 # generated docs
 docs

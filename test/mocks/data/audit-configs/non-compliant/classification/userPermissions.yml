@@ -1,0 +1,5 @@
+permissions:
+  AIViewInsightObjects:
+    label: AIViewInsightObjects
+    classification: Blocked
+    reason: This permissions is returned by "admin-profile-with-metadata.json" and ensures that the audit fails.
