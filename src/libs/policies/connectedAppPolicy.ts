@@ -2,6 +2,7 @@ import { PolicyEntityResolveError } from '../audit/types.js';
 import ConnectedAppsRuleRegistry from '../config/registries/connectedApps.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
+import MdapiRetriever from '../mdapiRetriever.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
 import { BasePolicyFileContent } from './schema.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
@@ -11,7 +12,8 @@ import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 export type ResolvedConnectedApp = {
   name: string;
   origin: 'Installed' | 'OauthToken' | 'Owned';
-  usersCanSelfAuthorize: boolean;
+  onlyAdminApprovedUsersAllowed: boolean;
+  overrideByApiSecurityAccess: boolean;
   useCount: number;
   users: string[];
 };
@@ -29,16 +31,19 @@ export default class ConnectedAppPolicy extends Policy {
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, PolicyEntityResolveError> = {};
-    // query connected apps from non-tooling
-    // looks like if OPTIONSALLOWADMINAPPROVEDUSERSONLY is not reliable -> its "false" even though
-    // the apps appear to be true. Maybe this is related to the "API Access" setting that simply overrides this?
-    // -> retrieve "ConnectedApp.settings-meta.xml" to check and use this to override
+    const metadataApi = new MdapiRetriever(context.targetOrgConnection);
+    let overrideByApiSecurityAccess = false;
+    const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();
+    if (apiSecurityAccessSetting && apiSecurityAccessSetting.enableAdminApprovedAppsOnly) {
+      overrideByApiSecurityAccess = true;
+    }
     const installedApps = await context.targetOrgConnection.query<ConnectedApp>(CONNECTED_APPS_QUERY);
     installedApps.records.forEach((installedApp) => {
       successfullyResolved[installedApp.Name] = {
         name: installedApp.Name,
         origin: 'Installed',
-        usersCanSelfAuthorize: !installedApp.OptionsAllowAdminApprovedUsersOnly,
+        onlyAdminApprovedUsersAllowed: installedApp.OptionsAllowAdminApprovedUsersOnly,
+        overrideByApiSecurityAccess,
         useCount: 0,
         users: [],
       };
@@ -49,7 +54,8 @@ export default class ConnectedAppPolicy extends Policy {
         successfullyResolved[token.AppName] = {
           name: token.AppName,
           origin: 'OauthToken',
-          usersCanSelfAuthorize: true,
+          onlyAdminApprovedUsersAllowed: false,
+          overrideByApiSecurityAccess,
           useCount: token.UseCount,
           users: [token.User.Username],
         };

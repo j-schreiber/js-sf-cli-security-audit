@@ -16,11 +16,18 @@ export default class NoUserCanSelfAuthorize extends PolicyRule {
     const result = this.initResult();
     const resolvedConnectedApps = context.resolvedEntities as Record<string, ResolvedConnectedApp>;
     Object.values(resolvedConnectedApps).forEach((app) => {
-      if (app.usersCanSelfAuthorize) {
-        result.violations.push({
-          identifier: [app.name],
-          message: messages.getMessage('violations.users-can-self-authorize'),
-        });
+      if (!app.onlyAdminApprovedUsersAllowed) {
+        if (app.overrideByApiSecurityAccess) {
+          result.warnings.push({
+            identifier: [app.name],
+            message: messages.getMessage('warnings.users-can-self-authorize-but-setting-overrides'),
+          });
+        } else {
+          result.violations.push({
+            identifier: [app.name],
+            message: messages.getMessage('violations.users-can-self-authorize'),
+          });
+        }
       }
     });
     return Promise.resolve(result);
