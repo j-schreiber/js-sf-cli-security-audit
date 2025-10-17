@@ -23,13 +23,13 @@ export type PolicyRuleViolationMute = PolicyRuleViolation & {
 };
 
 /**
- * Details about the config entity of a policy (such as a profile, perm set, user)
- * that did not resolve for the target org and therefore was not processed by
- * the policy's rules.
+ * Details about s config entity of a policy (such as a profile, perm set, user)
+ * that did not resolve successfully. This may be because the entity does not exist
+ * on the target org or because it is not registered.
  */
-export type PolicyEntityResolveError = {
+export type EntityResolveError = {
   /**
-   * Identifier, e.g. profile name or username
+   * Identifier of the entity, e.g. profile name, username, rule, policy, etc
    */
   name: string;
   /**
@@ -54,7 +54,7 @@ export type PolicyRuleSkipResult = {
   /**
    * Identifier of the rule, as it is configured in the policy.yml.
    */
-  ruleName: string;
+  name: string;
   /**
    * Descriptive message why the rule was skipped.
    */
@@ -138,7 +138,7 @@ export type AuditPolicyResult = {
    * Full list of entities that were present in the config file, but could not
    * be resolved for this org.
    */
-  ignoredEntities: PolicyEntityResolveError[];
+  ignoredEntities: EntityResolveError[];
 };
 
 export type AuditResult = {

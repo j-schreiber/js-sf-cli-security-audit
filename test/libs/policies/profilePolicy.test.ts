@@ -77,11 +77,13 @@ describe('profile policy', () => {
   it('initialises all registered rules from policy registry', async () => {
     // Act
     const reg = new ProfilePolicyRegistry();
-    const resolvedRules = reg.resolveEnabledRules(DEFAULT_PROFILE_CONFIG.rules, MOCK_AUDIT_CONTEXT);
+    const resolveResult = reg.resolveRules(DEFAULT_PROFILE_CONFIG.rules, MOCK_AUDIT_CONTEXT);
 
     // Assert
-    expect(resolvedRules.length).to.equal(1);
-    const ruleResult = await resolvedRules[0].run({
+    expect(resolveResult.enabledRules.length).to.equal(1);
+    expect(resolveResult.skippedRules).to.deep.equal([]);
+    expect(resolveResult.resolveErrors).to.deep.equal([]);
+    const ruleResult = await resolveResult.enabledRules[0].run({
       targetOrgConnection: await $$.targetOrg.getConnection(),
       resolvedEntities: EXPECTED_RESOLVED_DEFAULT_ENTITIES,
     });

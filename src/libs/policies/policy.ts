@@ -1,13 +1,24 @@
-import { AuditPolicyResult, PolicyEntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
+import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
+import RuleRegistry from '../config/registries/ruleRegistry.js';
+import { RegistryRuleResolveResult } from '../config/registries/types.js';
 import AuditRunConfig from './interfaces/auditRunConfig.js';
-import { AuditContext, IPolicy, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
+import { AuditContext, IPolicy } from './interfaces/policyRuleInterfaces.js';
+import { BasePolicyFileContent } from './schema.js';
 
 export type ResolveEntityResult = {
   resolvedEntities: Record<string, unknown>;
-  ignoredEntities: PolicyEntityResolveError[];
+  ignoredEntities: EntityResolveError[];
 };
 export default abstract class Policy implements IPolicy {
-  public constructor(public auditContext: AuditRunConfig, protected rules: RowLevelPolicyRule[]) {}
+  protected resolvedRules: RegistryRuleResolveResult;
+
+  public constructor(
+    public auditContext: AuditRunConfig,
+    public config: BasePolicyFileContent,
+    protected registry: RuleRegistry
+  ) {
+    this.resolvedRules = registry.resolveRules(config.rules, auditContext);
+  }
 
   /**
    * Runs all rules of a policy
@@ -16,9 +27,19 @@ export default abstract class Policy implements IPolicy {
    * @returns
    */
   public async run(context: AuditContext): Promise<AuditPolicyResult> {
+    if (!this.config.enabled) {
+      return {
+        isCompliant: true,
+        enabled: false,
+        executedRules: {},
+        skippedRules: [],
+        auditedEntities: [],
+        ignoredEntities: [],
+      };
+    }
     const resolveResult = await this.resolveEntities(context);
     const ruleResultPromises = Array<Promise<PolicyRuleExecutionResult>>();
-    for (const rule of this.rules) {
+    for (const rule of this.resolvedRules.enabledRules) {
       ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
     }
     const ruleResults = await Promise.all(ruleResultPromises);
@@ -31,7 +52,7 @@ export default abstract class Policy implements IPolicy {
       isCompliant: isCompliant(executedRules),
       enabled: true,
       executedRules,
-      skippedRules: [],
+      skippedRules: this.resolvedRules.skippedRules,
       auditedEntities: Object.keys(resolveResult.resolvedEntities),
       ignoredEntities: resolveResult.ignoredEntities,
     };

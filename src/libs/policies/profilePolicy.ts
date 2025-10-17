@@ -1,7 +1,7 @@
 import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { PolicyEntityResolveError } from '../audit/types.js';
+import { EntityResolveError } from '../audit/types.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import ProfilesRuleRegistry from '../config/registries/profiles.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
@@ -24,14 +24,14 @@ export default class ProfilePolicy extends Policy {
   public constructor(
     public config: ProfilesPolicyFileContent,
     public auditContext: AuditRunConfig,
-    profilesRegistry: RuleRegistry = new ProfilesRuleRegistry()
+    registry: RuleRegistry = new ProfilesRuleRegistry()
   ) {
-    super(auditContext, profilesRegistry.resolveEnabledRules(config.rules, auditContext));
+    super(auditContext, config, registry);
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedProfile> = {};
-    const ignoredEntities: Record<string, PolicyEntityResolveError> = {};
+    const ignoredEntities: Record<string, EntityResolveError> = {};
     type resultType = Pick<Profile, 'Name' | 'Metadata'>;
     const profileQueryResults = Array<Promise<QueryResult<resultType>>>();
     const definitiveProfiles = this.config.profiles ?? {};

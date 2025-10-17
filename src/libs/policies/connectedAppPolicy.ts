@@ -1,4 +1,4 @@
-import { PolicyEntityResolveError } from '../audit/types.js';
+import { EntityResolveError } from '../audit/types.js';
 import ConnectedAppsRuleRegistry from '../config/registries/connectedApps.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
@@ -22,15 +22,15 @@ export default class ConnectedAppPolicy extends Policy {
   public constructor(
     public config: BasePolicyFileContent,
     public auditContext: AuditRunConfig,
-    profilesRegistry: RuleRegistry = new ConnectedAppsRuleRegistry()
+    registry: RuleRegistry = new ConnectedAppsRuleRegistry()
   ) {
-    super(auditContext, profilesRegistry.resolveEnabledRules(config.rules, auditContext));
+    super(auditContext, config, registry);
   }
 
   // eslint-disable-next-line class-methods-use-this
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
-    const ignoredEntities: Record<string, PolicyEntityResolveError> = {};
+    const ignoredEntities: Record<string, EntityResolveError> = {};
     const metadataApi = new MdapiRetriever(context.targetOrgConnection);
     let overrideByApiSecurityAccess = false;
     const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();

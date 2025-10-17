@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, assert } from 'chai';
-import AuditTestContext from '../mocks/auditTestContext.js';
+import { Messages } from '@salesforce/core';
+import AuditTestContext, { QUERY_RESULTS_BASE } from '../mocks/auditTestContext.js';
 import AuditRun from '../../src/libs/policies/auditRun.js';
 import {
   CUSTOM_PERMISSIONS_PATH,
@@ -20,9 +21,8 @@ function buildPath(dirName: string) {
   return path.join(TEST_DIR_BASE_PATH, dirName);
 }
 
-// function queryResultPath(fileName: string) {
-//   return path.join(QUERIES_BASE_PATH, fileName);
-// }
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const generalPolicyMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 describe('audit run', () => {
   const $$ = new AuditTestContext();
@@ -122,10 +122,7 @@ describe('audit run', () => {
   describe('initialise new from org', () => {
     it('initialises new config and writes files to target logation', async () => {
       // Arrange
-      $$.mocks.setQueryMock(
-        CUSTOM_PERMS_QUERY,
-        path.join('test', 'mocks', 'data', 'queryResults', 'customPermissions.json')
-      );
+      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, path.join(QUERY_RESULTS_BASE, 'custom-permissions.json'));
       const testPath = DEFAULT_TEST_OUTPUT_DIR;
 
       // Act
@@ -222,6 +219,46 @@ describe('audit run', () => {
       expect(auditResult.policies.Profiles.isCompliant).to.be.false;
       assert.isDefined(auditResult.policies.Profiles.executedRules.EnforceUserPermissionClassifications);
       expect(auditResult.policies.Profiles.executedRules.EnforceUserPermissionClassifications.isCompliant).to.be.false;
+    });
+
+    it('runs only enabled policies', async () => {
+      // Arrange
+      const dirPath = buildPath('full-valid');
+      const audit = AuditRun.load(dirPath);
+      audit.configs.policies.Profiles!.content.enabled = false;
+
+      // Act
+      const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+
+      // Assert
+      expect(auditResult.isCompliant).to.be.true;
+      assert.isDefined(auditResult.policies);
+      assert.isDefined(auditResult.policies.Profiles);
+      expect(auditResult.policies.Profiles.enabled).to.equal(false);
+      expect(auditResult.policies.Profiles.executedRules).to.deep.equal({});
+    });
+
+    it('runs only enabled rules on policy', async () => {
+      // Arrange
+      const dirPath = buildPath('full-valid');
+      const audit = AuditRun.load(dirPath);
+      audit.configs.policies.ConnectedApps!.content.rules.AllUsedAppsUnderManagement.enabled = false;
+
+      // Act
+      const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+
+      // Assert
+      expect(auditResult.isCompliant).to.be.true;
+      assert.isDefined(auditResult.policies);
+      assert.isDefined(auditResult.policies.ConnectedApps);
+      expect(auditResult.policies.ConnectedApps.enabled).to.equal(true);
+      expect(Object.keys(auditResult.policies.ConnectedApps.executedRules)).to.deep.equal(['NoUserCanSelfAuthorize']);
+      expect(auditResult.policies.ConnectedApps.skippedRules).to.deep.equal([
+        {
+          name: 'AllUsedAppsUnderManagement',
+          skipReason: generalPolicyMessages.getMessage('skip-reason.rule-not-enabled'),
+        },
+      ]);
     });
   });
 });
