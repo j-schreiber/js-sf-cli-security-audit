@@ -52,6 +52,9 @@
         "rules": {
           "EnforceUserPermissionClassifications": {
             "enabled": true
+          },
+          "EnforceCustomPermissionClassifications": {
+            "enabled": true
           }
         }
       },

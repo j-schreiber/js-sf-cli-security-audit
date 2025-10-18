@@ -1,8 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { EntityResolveError, PolicyRuleSkipResult } from '../../audit/types.js';
-import AuditRunConfig from '../../policies/interfaces/auditRunConfig.js';
+import { AuditRunConfig, RuleMap } from '../audit-run/schema.js';
 import { RowLevelPolicyRule } from '../../policies/interfaces/policyRuleInterfaces.js';
-import { RuleMap } from '../../policies/schema.js';
 import { RegistryRuleResolveResult } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -37,23 +36,20 @@ export default class RuleRegistry {
    * @returns
    */
   public resolveRules(ruleObjs: RuleMap, auditContext: AuditRunConfig): RegistryRuleResolveResult {
-    if (ruleObjs) {
-      const enabledRules = new Array<RowLevelPolicyRule>();
-      const skippedRules = new Array<PolicyRuleSkipResult>();
-      const resolveErrors = new Array<EntityResolveError>();
-      Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {
-        if (this.rules[ruleName] && ruleConfig.enabled) {
-          enabledRules.push(
-            new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.config })
-          );
-        } else if (!ruleConfig.enabled) {
-          skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });
-        } else {
-          resolveErrors.push({ name: ruleName, message: messages.getMessage('resolve-error.rule-not-registered') });
-        }
-      });
-      return { enabledRules, skippedRules, resolveErrors };
-    }
-    return { enabledRules: [], skippedRules: [], resolveErrors: [] };
+    const enabledRules = new Array<RowLevelPolicyRule>();
+    const skippedRules = new Array<PolicyRuleSkipResult>();
+    const resolveErrors = new Array<EntityResolveError>();
+    Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {
+      if (this.rules[ruleName] && ruleConfig.enabled) {
+        enabledRules.push(
+          new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.config })
+        );
+      } else if (!ruleConfig.enabled) {
+        skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });
+      } else {
+        resolveErrors.push({ name: ruleName, message: messages.getMessage('resolve-error.rule-not-registered') });
+      }
+    });
+    return { enabledRules, skippedRules, resolveErrors };
   }
 }

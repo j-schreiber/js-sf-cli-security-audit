@@ -4,17 +4,15 @@ import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
-import AuditRunConfig from '../../../src/libs/policies/interfaces/auditRunConfig.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
-import { PermSetsPolicyFileContent } from '../../../src/libs/policies/schema.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
 import { parseAsPermissionset } from '../../../src/libs/mdapiRetriever.js';
 import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnPermSets.js';
+import { PermSetsPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-const MOCK_AUDIT_CONTEXT = new AuditRunConfig();
 const RETRIEVE_DIR = path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets');
 
 const DEFAULT_PERMSET_CONFIG = {
@@ -60,7 +58,7 @@ describe('permission sets policy', () => {
 
   it('runs all rules in policy configuration with fully valid config', async () => {
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -74,7 +72,7 @@ describe('permission sets policy', () => {
     const ruleSpy = stubUserClassificationRule(MOCK_RULE_RESULT);
 
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -110,7 +108,7 @@ describe('permission sets policy', () => {
     PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: PermissionRiskLevelPresets.STANDARD_USER };
 
     // Act
-    const pol = new PermissionSetPolicy(PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert

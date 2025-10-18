@@ -19,7 +19,7 @@ export default class EnforceUserPermsClassificationOnPermSets extends PolicyRule
       const userPerms = permset.metadata.userPermissions ?? [];
       userPerms.forEach((userPerm) => {
         const identifier = [permset.name, userPerm.name];
-        const classifiedUserPerm = this.auditContext.resolveUserPermission(userPerm.name);
+        const classifiedUserPerm = this.resolveUserPermission(userPerm.name);
         if (classifiedUserPerm) {
           if (classifiedUserPerm.classification === PolicyRiskLevel.BLOCKED) {
             result.violations.push({

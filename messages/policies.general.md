@@ -2,6 +2,10 @@
 
 Entity was not found on the target org.
 
+# profile-invalid-no-metadata
+
+Org did not return valid metadata for the profile. Entity cannot be processed.
+
 # preset-unknown
 
 %ss with preset UNKNOWN are ignored.

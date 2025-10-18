@@ -41,4 +41,5 @@ export type PermissionSet = Record & {
   Name: string;
   Label: string;
   Profile: ProfileBasic;
+  NamespacePrefix?: string;
 };

@@ -19,7 +19,7 @@ export default class EnforceCustomPermsClassificationOnProfiles extends PolicyRu
       const customPerms = profile.metadata.customPermissions ?? [];
       customPerms.forEach((perm) => {
         const identifier = [profile.name, perm.name];
-        const classifiedPerm = this.auditContext.resolveCustomPermission(perm.name);
+        const classifiedPerm = this.resolveCustomPermission(perm.name);
         if (classifiedPerm) {
           if (classifiedPerm.classification === PolicyRiskLevel.BLOCKED) {
             result.violations.push({

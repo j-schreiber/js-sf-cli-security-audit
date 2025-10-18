@@ -2,11 +2,10 @@ import { Messages } from '@salesforce/core';
 import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import MdapiRetriever from '../mdapiRetriever.js';
 import PermSetsRuleRegistry from '../config/registries/permissionSets.js';
+import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../config/audit-run/schema.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { EntityResolveError } from '../audit/types.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import { PermissionSetLikeMap, PermSetsPolicyFileContent } from './schema.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { PermissionRiskLevelPresets } from './types.js';
 
@@ -24,7 +23,7 @@ export default class PermissionSetPolicy extends Policy {
     public auditContext: AuditRunConfig,
     registry: RuleRegistry = new PermSetsRuleRegistry()
   ) {
-    super(auditContext, config, registry);
+    super(config, auditContext, registry);
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {

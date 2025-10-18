@@ -1,11 +1,10 @@
 import { EntityResolveError } from '../audit/types.js';
 import ConnectedAppsRuleRegistry from '../config/registries/connectedApps.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
 import MdapiRetriever from '../mdapiRetriever.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import { BasePolicyFileContent } from './schema.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
@@ -21,10 +20,10 @@ export type ResolvedConnectedApp = {
 export default class ConnectedAppPolicy extends Policy {
   public constructor(
     public config: BasePolicyFileContent,
-    public auditContext: AuditRunConfig,
+    public auditConfig: AuditRunConfig,
     registry: RuleRegistry = new ConnectedAppsRuleRegistry()
   ) {
-    super(auditContext, config, registry);
+    super(config, auditConfig, registry);
   }
 
   // eslint-disable-next-line class-methods-use-this

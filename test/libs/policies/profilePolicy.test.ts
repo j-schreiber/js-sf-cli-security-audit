@@ -7,20 +7,18 @@ import AuditTestContext from '../../mocks/auditTestContext.js';
 import ProfilePolicyRegistry from '../../../src/libs/config/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
 import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../../src/libs/policies/types.js';
-import AuditRunConfig, { AuditClassificationDef } from '../../../src/libs/policies/interfaces/auditRunConfig.js';
 import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
-import { ProfilesPolicyFileContent } from '../../../src/libs/policies/schema.js';
 import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnProfiles.js';
 import RuleRegistry from '../../../src/libs/config/registries/ruleRegistry.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-const MOCK_AUDIT_CONTEXT = new AuditRunConfig();
 const QUERY_RESULTS_DIR = path.join('test', 'mocks', 'data', 'queryResults');
 
-const DEFAULT_PROFILE_CONFIG = {
+const DEFAULT_PROFILE_CONFIG: ProfilesPolicyFileContent = {
   enabled: true,
   profiles: {
     'System Administrator': {
@@ -35,7 +33,7 @@ const DEFAULT_PROFILE_CONFIG = {
       enabled: true,
     },
   },
-} as ProfilesPolicyFileContent;
+};
 
 const MOCK_RULE_RESULT = {
   ruleName: 'EnforceUserPermissionClassifications',
@@ -77,7 +75,7 @@ describe('profile policy', () => {
   it('initialises all registered rules from policy registry', async () => {
     // Act
     const reg = new ProfilePolicyRegistry();
-    const resolveResult = reg.resolveRules(DEFAULT_PROFILE_CONFIG.rules, MOCK_AUDIT_CONTEXT);
+    const resolveResult = reg.resolveRules(DEFAULT_PROFILE_CONFIG.rules, $$.mockAuditConfig);
 
     // Assert
     expect(resolveResult.enabledRules.length).to.equal(1);
@@ -97,7 +95,7 @@ describe('profile policy', () => {
     const reg = new TestProfilesRegistry();
 
     // Act
-    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT, reg);
+    const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig, reg);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -106,7 +104,7 @@ describe('profile policy', () => {
 
   it('runs all rules in policy configuration with fully valid config', async () => {
     // Act
-    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -121,7 +119,7 @@ describe('profile policy', () => {
     CONFIG.rules['UnknownRuleDoesNotExist'] = { enabled: true };
 
     // Act
-    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -136,7 +134,7 @@ describe('profile policy', () => {
     CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
 
     // Act
-    const pol = new ProfilePolicy(CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -151,14 +149,21 @@ describe('profile policy', () => {
     // Arrange
     const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
-    const AUDIT_CONTEXT = new AuditRunConfig();
-    AUDIT_CONTEXT.classifications.customPermissions = new AuditClassificationDef();
-    AUDIT_CONTEXT.classifications.customPermissions.content.permissions = {
-      CriticalCustomPermission: { classification: PolicyRiskLevel.CRITICAL },
+    const auditConfig: AuditRunConfig = {
+      policies: {},
+      classifications: {
+        customPermissions: {
+          content: {
+            permissions: {
+              CriticalCustomPermission: { classification: PolicyRiskLevel.CRITICAL },
+            },
+          },
+        },
+      },
     };
 
     // Act
-    const pol = new ProfilePolicy(CONFIG, AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(CONFIG, auditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -180,7 +185,7 @@ describe('profile policy', () => {
     const ruleSpy = stubUserClassificationRule(MOCK_RULE_RESULT);
 
     // Act
-    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -203,7 +208,7 @@ describe('profile policy', () => {
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.POWER_USER };
 
     // Act
-    const pol = new ProfilePolicy(PROFILE_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -220,12 +225,33 @@ describe('profile policy', () => {
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.UNKNOWN };
 
     // Act
-    const pol = new ProfilePolicy(PROFILE_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
     expect(policyResult.ignoredEntities).to.deep.equal([
       { name: 'Custom Profile', message: messages.getMessage('preset-unknown', ['Profile']) },
+    ]);
+    expect(policyResult.auditedEntities).to.deep.equal(['System Administrator', 'Standard User']);
+  });
+
+  it('ignores profile from config where metadata resolves to null', async () => {
+    // Arrange
+    stubUserClassificationRule(MOCK_RULE_RESULT);
+    $$.mocks.setQueryMock(
+      "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
+      path.join(QUERY_RESULTS_DIR, 'profile-with-null-metadata.json')
+    );
+    const config = structuredClone(DEFAULT_PROFILE_CONFIG);
+    config.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.POWER_USER };
+
+    // Act
+    const pol = new ProfilePolicy(config, $$.mockAuditConfig);
+    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+
+    // Assert
+    expect(policyResult.ignoredEntities).to.deep.equal([
+      { name: 'Custom Profile', message: messages.getMessage('profile-invalid-no-metadata') },
     ]);
     expect(policyResult.auditedEntities).to.deep.equal(['System Administrator', 'Standard User']);
   });

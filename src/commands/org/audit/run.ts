@@ -4,7 +4,7 @@ import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
-import AuditRun from '../../../libs/policies/auditRun.js';
+import { startAuditRun } from '../../../libs/policies/auditRun.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -37,7 +37,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
-    const auditRun = AuditRun.load(flags['source-dir']);
+    const auditRun = startAuditRun(flags['source-dir']);
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
     this.printResults(result);

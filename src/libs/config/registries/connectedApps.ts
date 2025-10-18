@@ -10,3 +10,5 @@ export default class ConnectedAppsRuleRegistry extends RuleRegistry {
     });
   }
 }
+
+export const ConnectedAppsRegistry = new ConnectedAppsRuleRegistry();

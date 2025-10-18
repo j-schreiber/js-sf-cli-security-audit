@@ -1,69 +1,35 @@
 // import fs from 'node:fs';
 import { Connection } from '@salesforce/core';
-import { Optional } from '@salesforce/ts-types';
 import { AuditPolicyResult, AuditResult } from '../audit/types.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
+import { AuditRunConfig } from '../config/audit-run/schema.js';
 import ProfilePolicy from './profilePolicy.js';
 import Policy from './policy.js';
 import PermissionSetPolicy from './permissionSetPolicy.js';
-import AuditRunConfigInitialiser from './auditRunConfigInitialiser.js';
 import ConnectedAppPolicy from './connectedAppPolicy.js';
+import AuditConfig from './initialisation/auditConfig.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy>;
 
-type InitOptions = {
-  directoryPath: string;
-  refreshDefinitions?: boolean;
-  mergeFiles?: boolean;
-};
+export function startAuditRun(directoryPath: string): AuditRun {
+  const conf = AuditConfig.load(directoryPath);
+  return new AuditRun(conf);
+}
 
 /**
  * Instance of an audit run that manages high-level operations
  */
 export default class AuditRun {
-  public configs: AuditRunConfig;
-
-  private constructor(directoryPath?: string) {
-    this.configs = new AuditRunConfig(directoryPath);
-  }
+  public constructor(public configs: AuditRunConfig) {}
 
   /**
-   * Loads an existing config from disk to prepare a new audit run
-   *
-   * @param directoryPath
-   * @returns
-   */
-  public static load(directoryPath: Optional<string> | null): AuditRun {
-    const ps = new AuditRun(directoryPath ?? '.');
-    return ps;
-  }
-
-  /**
-   * Initialises a new audit run config from a target org with default
-   * options and writes config files to a target directory.
-   *
-   * @param con
-   * @param options
-   * @returns
-   */
-  public static async initialiseNewConfig(con: Connection, options: InitOptions): Promise<AuditRunConfig> {
-    const result = await AuditRunConfigInitialiser.initConfigFromOrg(con);
-    result.write(options.directoryPath);
-    return result;
-  }
-
-  /**
-   * Executes an initialised audit run instance
+   * Executes an initialised audit run. This runs enabled policies
+   * in parallel and runs all enabled rules per policy.
    *
    * @param targetOrgConnection
    * @returns
    */
   public async execute(targetCon: Connection): Promise<Omit<AuditResult, 'orgId'>> {
-    // const mockResult = JSON.parse(
-    //   fs.readFileSync('test/mocks/data/audit-lib-results/run/full-non-compliant.json', 'utf8')
-    // ) as AuditResult;
-    // return mockResult;
     const executablePolicies = resolvePolicies(this.configs);
     const results = await runPolicies(executablePolicies, targetCon);
     return {

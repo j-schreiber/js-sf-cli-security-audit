@@ -1,9 +1,11 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
+import { Connection } from '@salesforce/core';
 import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import MdapiRetriever, { parseAsConnectedAppSetting, parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
+import { AuditRunConfig } from '../../src/libs/config/audit-run/schema.js';
 import {
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
@@ -27,12 +29,14 @@ export const RETRIEVES_BASE = path.join(MOCK_DATA_BASE_PATH, 'retrieves');
 export default class AuditTestContext {
   public context: TestContext;
   public targetOrg: MockTestOrgData;
+  public targetOrgConnection!: Connection;
   public outputDirectory: PathLike;
   public defaultPath = path.join('my-test-org');
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public mocks: SfConnectionMocks;
   public mockAppSetting: string;
   public mockPermSets: string;
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -54,6 +58,7 @@ export default class AuditTestContext {
 
   public async init() {
     await this.context.stubAuths(this.targetOrg);
+    this.targetOrgConnection = await this.targetOrg.getConnection();
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
@@ -84,6 +89,11 @@ export default class AuditTestContext {
     });
     return Promise.resolve(result);
   };
+}
+
+export function parseFileAsJson<T>(...filePath: string[]): T {
+  const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
+  return JSON.parse(fileContent) as T;
 }
 
 export function clearAuditReports(workingDir: string): void {

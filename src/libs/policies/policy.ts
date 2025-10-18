@@ -1,9 +1,8 @@
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { RegistryRuleResolveResult } from '../config/registries/types.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
 import { AuditContext, IPolicy } from './interfaces/policyRuleInterfaces.js';
-import { BasePolicyFileContent } from './schema.js';
 
 export type ResolveEntityResult = {
   resolvedEntities: Record<string, unknown>;
@@ -13,11 +12,11 @@ export default abstract class Policy implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
 
   public constructor(
-    public auditContext: AuditRunConfig,
     public config: BasePolicyFileContent,
+    public auditConfig: AuditRunConfig,
     protected registry: RuleRegistry
   ) {
-    this.resolvedRules = registry.resolveRules(config.rules, auditContext);
+    this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
   }
 
   /**
