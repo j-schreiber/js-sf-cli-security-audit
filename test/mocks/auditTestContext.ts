@@ -3,7 +3,6 @@ import path from 'node:path';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { MultiStageOutput } from '@oclif/multi-stage-output';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import MdapiRetriever, { parseAsConnectedAppSetting, parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
@@ -17,7 +16,7 @@ import {
 } from '../../src/libs/config/queries.js';
 import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/audit/types.js';
 import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
-import AuditRunMultiStageOutput, { MultiStageData } from '../../src/ux/auditRunMultiStage.js';
+import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -119,8 +118,8 @@ export function clearAuditReports(workingDir: string): void {
     .forEach((reportFile) => fs.rmSync(path.join(workingDir, reportFile)));
 }
 
-export function stubMultiStageUx(sandbox: SinonSandbox): sinon.SinonStubbedInstance<MultiStageOutput<MultiStageData>> {
-  const multiStageStub = sandbox.createStubInstance(MultiStageOutput);
+export function stubMultiStageUx(sandbox: SinonSandbox): AuditRunMultiStageOutput {
+  const multiStageStub = sandbox.createStubInstance(AuditRunMultiStageOutput);
   sandbox.stub(AuditRunMultiStageOutput, 'create').returns(multiStageStub);
   return multiStageStub;
 }

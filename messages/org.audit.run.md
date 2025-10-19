@@ -24,10 +24,6 @@ Loads all classifications and policies from the directory and uses them to audit
 
   <%= config.bin %> <%= command.id %> -o MyTargetOrg -d configs/prod
 
-# success.summary
-
-Successfully executed %s policies.
-
 # success.all-policies-compliant
 
 All policies are compliant.

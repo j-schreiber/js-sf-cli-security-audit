@@ -58,9 +58,7 @@ describe('org audit run', () => {
     expect(result).to.deep.contain(NON_COMPLIANT_RESULT);
 
     // all relevant audit result infos are formatted to stdout
-    const executedPolicies = Object.entries(NON_COMPLIANT_RESULT.policies).length;
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([
-      messages.getMessage('success.summary', [executedPolicies]),
       StandardColors.error(messages.getMessage('summary-non-compliant')),
       '',
     ]);

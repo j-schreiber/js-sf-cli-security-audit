@@ -1,18 +1,11 @@
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { MultiStageOutput } from '@oclif/multi-stage-output';
 import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
 import { startAuditRun } from '../../../libs/policies/auditRun.js';
-import AuditRunMultiStageOutput, {
-  EXECUTE_RULES,
-  FINALISE,
-  LOAD_AUDIT_CONFIG,
-  MultiStageData,
-  RESOLVE_POLICIES,
-} from '../../../ux/auditRunMultiStage.js';
+import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -43,23 +36,20 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     'api-version': Flags.orgApiVersion(),
   };
 
-  private ms?: MultiStageOutput<MultiStageData>;
-
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
-    this.ms = AuditRunMultiStageOutput.create(
+    const stageOutput = AuditRunMultiStageOutput.create(
       { directoryRootPath: flags['source-dir'], targetOrg: flags['target-org'] },
       flags.json
     );
-    this.ms.goto(LOAD_AUDIT_CONFIG);
+    stageOutput.start();
     const auditRun = startAuditRun(flags['source-dir']);
-    this.ms.goto(RESOLVE_POLICIES);
+    stageOutput.startPolicies(auditRun.configs.policies);
     await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
-    this.ms.goto(EXECUTE_RULES);
+    stageOutput.startRuleExecution();
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
-    this.ms.goto(FINALISE);
-    this.ms.stop('completed');
+    stageOutput.finish();
     this.printResults(result);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };
@@ -75,7 +65,6 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   private printPoliciesSummary(result: AuditResult): void {
     const polSummaries = transposePoliciesToTable(result);
-    this.log(`Successfully executed ${polSummaries.length} policies.`);
     if (result.isCompliant) {
       this.logSuccess(messages.getMessage('success.all-policies-compliant'));
       this.log('');
