@@ -78,6 +78,18 @@ export type PolicyRuleExecutionResult = {
   violations: PolicyRuleViolation[];
 
   /**
+   * Identifiers of compliant entities. An entity is compliant, if it has
+   * zero violations.
+   */
+  compliantEntities: string[];
+
+  /**
+   * Identifiers of violated entities. Each entity may have several violations,
+   * depending on the analysis depth of the rule.
+   */
+  violatedEntities: string[];
+
+  /**
    * Violations that were identified, but were muted by a matching allow-list.
    * Muted violations do not affect compliance.
    */

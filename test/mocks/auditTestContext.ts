@@ -13,6 +13,8 @@ import {
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
 } from '../../src/libs/config/queries.js';
+import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/audit/types.js';
+import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -91,6 +93,16 @@ export default class AuditTestContext {
   };
 }
 
+export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
+  return {
+    ruleName: ruleName ?? 'Mock_Rule',
+    violations: new Array<PolicyRuleViolation>(),
+    mutedViolations: new Array<PolicyRuleViolationMute>(),
+    warnings: new Array<RuleComponentMessage>(),
+    errors: [],
+  };
+}
+
 export function parseFileAsJson<T>(...filePath: string[]): T {
   const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
   return JSON.parse(fileContent) as T;
@@ -104,14 +116,21 @@ export function clearAuditReports(workingDir: string): void {
 
 function buildDefaultMocks() {
   const defaults = structuredClone(DEFAULT_MOCKS);
-  defaults.queries[CUSTOM_PERMS_QUERY] = path.join(QUERY_RESULTS_BASE, 'custom-permissions.json');
-  defaults.queries[PROFILES_QUERY] = path.join(QUERY_RESULTS_BASE, 'profiles.json');
-  defaults.queries[PERMISSION_SETS_QUERY] = path.join(QUERY_RESULTS_BASE, 'empty.json');
-  defaults.queries[CONNECTED_APPS_QUERY] = path.join(QUERY_RESULTS_BASE, 'empty.json');
-  defaults.queries[OAUTH_TOKEN_QUERY] = path.join(QUERY_RESULTS_BASE, 'empty.json');
-  defaults.queries["SELECT Name,Metadata FROM Profile WHERE Name = 'System Administrator'"] =
-    'test/mocks/data/queryResults/admin-profile-with-metadata.json';
-  defaults.queries["SELECT Name,Metadata FROM Profile WHERE Name = 'Standard User'"] =
-    'test/mocks/data/queryResults/standard-profile-with-metadata.json';
+  defaults.queries[CUSTOM_PERMS_QUERY] = buildResultsPath('custom-permissions');
+  defaults.queries[PROFILES_QUERY] = buildResultsPath('profiles');
+  defaults.queries[PERMISSION_SETS_QUERY] = buildResultsPath('empty');
+  defaults.queries[CONNECTED_APPS_QUERY] = buildResultsPath('empty');
+  defaults.queries[OAUTH_TOKEN_QUERY] = buildResultsPath('empty');
+  defaults.queries[buildProfilesQuery('System Administrator')] = buildResultsPath('admin-profile-with-metadata');
+  defaults.queries[buildProfilesQuery('Standard User')] = buildResultsPath('standard-profile-with-metadata');
+  defaults.queries[buildProfilesQuery('Custom Profile')] = buildResultsPath('empty');
   return defaults;
+}
+
+function buildProfilesQuery(profileName: string): string {
+  return `SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`;
+}
+
+function buildResultsPath(fileName: string): string {
+  return path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
 }

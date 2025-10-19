@@ -1,7 +1,6 @@
 import { Messages } from '@salesforce/core';
-import { PolicyRuleExecutionResult } from '../../audit/types.js';
 import { ResolvedConnectedApp } from '../connectedAppPolicy.js';
-import { RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { PartialPolicyRuleResult, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -12,7 +11,7 @@ export default class AllUsedAppsUnderManagement extends PolicyRule {
     super(opts);
   }
 
-  public run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult> {
+  public run(context: RuleAuditContext): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const resolvedConnectedApps = context.resolvedEntities as Record<string, ResolvedConnectedApp>;
     Object.values(resolvedConnectedApps).forEach((app) => {

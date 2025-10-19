@@ -1,11 +1,6 @@
 import { Messages } from '@salesforce/core';
-import {
-  PolicyRuleExecutionResult,
-  PolicyRuleViolation,
-  PolicyRuleViolationMute,
-  RuleComponentMessage,
-} from '../../audit/types.js';
-import { RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../audit/types.js';
+import { PartialPolicyRuleResult, RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import {
   AuditRunConfig,
   NamedPermissionsClassification,
@@ -29,10 +24,9 @@ export default abstract class PolicyRule implements RowLevelPolicyRule {
     this.ruleDisplayName = opts.ruleDisplayName;
   }
 
-  protected initResult(): PolicyRuleExecutionResult {
+  protected initResult(): PartialPolicyRuleResult {
     return {
       ruleName: this.ruleDisplayName,
-      isCompliant: true,
       violations: new Array<PolicyRuleViolation>(),
       mutedViolations: new Array<PolicyRuleViolationMute>(),
       warnings: new Array<RuleComponentMessage>(),
@@ -54,7 +48,7 @@ export default abstract class PolicyRule implements RowLevelPolicyRule {
     );
   }
 
-  public abstract run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult>;
+  public abstract run(context: RuleAuditContext): Promise<PartialPolicyRuleResult>;
 }
 
 function nameClassification(

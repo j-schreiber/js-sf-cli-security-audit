@@ -25,6 +25,7 @@
               "message": "Permission is classified as Critical but profile uses preset Admin"
             }
           ],
+          "violatedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
           "mutedViolations": [],
           "warnings": [
             {
@@ -79,6 +80,7 @@
               "message": "Permission is blocked."
             }
           ],
+          "violatedEntities": ["Standard_User_Permission_Set_1", "Integration_User_Permission"],
           "mutedViolations": [],
           "warnings": [
             {

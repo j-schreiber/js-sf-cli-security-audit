@@ -124,6 +124,8 @@ function transposeExecutedPolicyRules(result: AuditPolicyResult): ExecutedRulesR
   return Object.entries(result.executedRules).map(([ruleName, ruleDetails]) => ({
     rule: ruleName,
     isCompliant: ruleDetails.isCompliant,
+    compliantEntities: ruleDetails.compliantEntities?.length ?? 0,
+    violatedEntities: ruleDetails.violatedEntities?.length ?? 0,
     violations: ruleDetails.violations.length,
     warnings: ruleDetails.warnings.length,
     errors: ruleDetails.errors.length,

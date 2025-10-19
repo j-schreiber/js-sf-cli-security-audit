@@ -1,6 +1,5 @@
 import { Messages } from '@salesforce/core';
-import { PolicyRuleExecutionResult } from '../../audit/types.js';
-import { RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { PartialPolicyRuleResult, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import { permissionAllowedInPreset, PolicyRiskLevel } from '../types.js';
 import { ResolvedPermissionSet } from '../permissionSetPolicy.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
@@ -12,7 +11,7 @@ export default class EnforceUserPermsClassificationOnPermSets extends PolicyRule
     super(opts);
   }
 
-  public run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult> {
+  public run(context: RuleAuditContext): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const resolvedPermsets = context.resolvedEntities as Record<string, ResolvedPermissionSet>;
     Object.values(resolvedPermsets).forEach((permset) => {
