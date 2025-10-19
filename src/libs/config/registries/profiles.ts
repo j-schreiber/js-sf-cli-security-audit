@@ -10,3 +10,5 @@ export default class ProfilesRuleRegistry extends RuleRegistry {
     });
   }
 }
+
+export const ProfilesRegistry = new ProfilesRuleRegistry();

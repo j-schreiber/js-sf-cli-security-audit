@@ -2,19 +2,17 @@
 import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
-import AuditTestContext from '../../mocks/auditTestContext.js';
+import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
-import AuditRunConfig from '../../../src/libs/policies/interfaces/auditRunConfig.js';
-import { PolicyRuleExecutionResult, PolicyRuleViolation, RuleComponentMessage } from '../../../src/libs/audit/types.js';
-import { PermSetsPolicyFileContent } from '../../../src/libs/policies/schema.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
 import { parseAsPermissionset } from '../../../src/libs/mdapiRetriever.js';
 import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnPermSets.js';
+import { PermSetsPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
+import { PartialPolicyRuleResult } from '../../../src/libs/policies/interfaces/policyRuleInterfaces.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-const MOCK_AUDIT_CONTEXT = new AuditRunConfig();
 const RETRIEVE_DIR = path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets');
 
 const DEFAULT_PERMSET_CONFIG = {
@@ -34,19 +32,10 @@ const DEFAULT_PERMSET_CONFIG = {
   },
 } as PermSetsPolicyFileContent;
 
-const MOCK_RULE_RESULT = {
-  ruleName: 'EnforceUserPermissionClassifications',
-  isCompliant: true,
-  violations: new Array<PolicyRuleViolation>(),
-  mutedViolations: [],
-  warnings: new Array<RuleComponentMessage>(),
-  errors: [],
-};
-
 describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
 
-  function stubUserClassificationRule(mockResult: PolicyRuleExecutionResult) {
+  function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
     return $$.context.SANDBOX.stub(EnforceUserPermsClassificationOnPermSets.prototype, 'run').resolves(mockResult);
   }
 
@@ -60,7 +49,7 @@ describe('permission sets policy', () => {
 
   it('runs all rules in policy configuration with fully valid config', async () => {
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -71,10 +60,10 @@ describe('permission sets policy', () => {
 
   it('resolves permission sets from config to actual perm set metadata from org', async () => {
     // Arrange
-    const ruleSpy = stubUserClassificationRule(MOCK_RULE_RESULT);
+    const ruleSpy = stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
 
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -110,7 +99,7 @@ describe('permission sets policy', () => {
     PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: PermissionRiskLevelPresets.STANDARD_USER };
 
     // Act
-    const pol = new PermissionSetPolicy(PERMSET_CONFIG, MOCK_AUDIT_CONTEXT);
+    const pol = new PermissionSetPolicy(PERMSET_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert

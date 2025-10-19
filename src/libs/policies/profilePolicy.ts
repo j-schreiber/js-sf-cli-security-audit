@@ -1,12 +1,12 @@
 import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { PolicyEntityResolveError } from '../audit/types.js';
+import { EntityResolveError } from '../audit/types.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../config/audit-run/schema.js';
+import { isNullish } from '../utils.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import ProfilesRuleRegistry from '../config/registries/profiles.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import { ProfilesPolicyFileContent } from './schema.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
 import { PermissionRiskLevelPresets } from './types.js';
@@ -23,15 +23,15 @@ export type ResolvedProfile = {
 export default class ProfilePolicy extends Policy {
   public constructor(
     public config: ProfilesPolicyFileContent,
-    public auditContext: AuditRunConfig,
-    profilesRegistry: RuleRegistry = new ProfilesRuleRegistry()
+    public auditConfig: AuditRunConfig,
+    registry: RuleRegistry = new ProfilesRuleRegistry()
   ) {
-    super(auditContext, profilesRegistry.resolveEnabledRules(config.rules, auditContext));
+    super(config, auditConfig, registry);
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedProfile> = {};
-    const ignoredEntities: Record<string, PolicyEntityResolveError> = {};
+    const ignoredEntities: Record<string, EntityResolveError> = {};
     type resultType = Pick<Profile, 'Name' | 'Metadata'>;
     const profileQueryResults = Array<Promise<QueryResult<resultType>>>();
     const definitiveProfiles = this.config.profiles ?? {};
@@ -54,11 +54,18 @@ export default class ProfilePolicy extends Policy {
     queryResults.forEach((qr) => {
       if (qr.records && qr.records.length > 0) {
         const record = qr.records[0];
-        successfullyResolved[record.Name] = {
-          name: record.Name,
-          preset: definitiveProfiles[record.Name].preset,
-          metadata: record.Metadata,
-        };
+        if (isNullish(record.Metadata)) {
+          ignoredEntities[record.Name] = {
+            name: record.Name,
+            message: messages.getMessage('profile-invalid-no-metadata'),
+          };
+        } else {
+          successfullyResolved[record.Name] = {
+            name: record.Name,
+            preset: definitiveProfiles[record.Name].preset,
+            metadata: record.Metadata,
+          };
+        }
       }
     });
     Object.keys(definitiveProfiles).forEach((profileName) => {

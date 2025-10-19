@@ -73,8 +73,24 @@ describe('org audit run', () => {
     });
     expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
       data: [
-        { rule: 'EnforceUserPermissionClassifications', isCompliant: false, violations: 3, errors: 0, warnings: 2 },
-        { rule: 'SingleAdminProfileInUse', isCompliant: true, violations: 0, errors: 0, warnings: 0 },
+        {
+          rule: 'EnforceUserPermissionClassifications',
+          isCompliant: false,
+          violations: 3,
+          errors: 0,
+          warnings: 2,
+          compliantEntities: 0,
+          violatedEntities: 3,
+        },
+        {
+          rule: 'SingleAdminProfileInUse',
+          isCompliant: true,
+          violations: 0,
+          errors: 0,
+          warnings: 0,
+          compliantEntities: 0,
+          violatedEntities: 0,
+        },
       ],
     });
     expect($$.sfCommandStubs.table.args.flat()[2]).to.deep.contain({

@@ -1,13 +1,23 @@
-import { AuditPolicyResult, PolicyEntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
-import { AuditContext, IPolicy, RowLevelPolicyRule } from './interfaces/policyRuleInterfaces.js';
+import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
+import RuleRegistry from '../config/registries/ruleRegistry.js';
+import { RegistryRuleResolveResult } from '../config/registries/types.js';
+import { AuditContext, IPolicy, PartialPolicyRuleResult } from './interfaces/policyRuleInterfaces.js';
 
 export type ResolveEntityResult = {
   resolvedEntities: Record<string, unknown>;
-  ignoredEntities: PolicyEntityResolveError[];
+  ignoredEntities: EntityResolveError[];
 };
 export default abstract class Policy implements IPolicy {
-  public constructor(public auditContext: AuditRunConfig, protected rules: RowLevelPolicyRule[]) {}
+  protected resolvedRules: RegistryRuleResolveResult;
+
+  public constructor(
+    public config: BasePolicyFileContent,
+    public auditConfig: AuditRunConfig,
+    protected registry: RuleRegistry
+  ) {
+    this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
+  }
 
   /**
    * Runs all rules of a policy
@@ -16,22 +26,37 @@ export default abstract class Policy implements IPolicy {
    * @returns
    */
   public async run(context: AuditContext): Promise<AuditPolicyResult> {
+    if (!this.config.enabled) {
+      return {
+        isCompliant: true,
+        enabled: false,
+        executedRules: {},
+        skippedRules: [],
+        auditedEntities: [],
+        ignoredEntities: [],
+      };
+    }
     const resolveResult = await this.resolveEntities(context);
-    const ruleResultPromises = Array<Promise<PolicyRuleExecutionResult>>();
-    for (const rule of this.rules) {
+    const ruleResultPromises = Array<Promise<PartialPolicyRuleResult>>();
+    for (const rule of this.resolvedRules.enabledRules) {
       ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
     }
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
     for (const ruleResult of ruleResults) {
-      executedRules[ruleResult.ruleName] = ruleResult;
-      ruleResult.isCompliant = ruleResult.violations.length === 0;
+      const { compliantEntities, violatedEntities } = evalResolvedEntities(ruleResult, resolveResult);
+      executedRules[ruleResult.ruleName] = {
+        ...ruleResult,
+        isCompliant: ruleResult.violations.length === 0,
+        compliantEntities,
+        violatedEntities,
+      };
     }
     return {
       isCompliant: isCompliant(executedRules),
       enabled: true,
       executedRules,
-      skippedRules: [],
+      skippedRules: this.resolvedRules.skippedRules,
       auditedEntities: Object.keys(resolveResult.resolvedEntities),
       ignoredEntities: resolveResult.ignoredEntities,
     };
@@ -46,4 +71,23 @@ function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): bo
     return true;
   }
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
+}
+
+function evalResolvedEntities(
+  ruleResult: PartialPolicyRuleResult,
+  entities: ResolveEntityResult
+): { compliantEntities: string[]; violatedEntities: string[] } {
+  const compliantEntities: string[] = [];
+  const violatedEntities = new Set<string>();
+  ruleResult.violations.forEach((vio) => {
+    if (vio.identifier.length > 0) {
+      violatedEntities.add(vio.identifier[0]);
+    }
+  });
+  Object.keys(entities.resolvedEntities).forEach((entityIdentifier) => {
+    if (!violatedEntities.has(entityIdentifier)) {
+      compliantEntities.push(entityIdentifier);
+    }
+  });
+  return { compliantEntities, violatedEntities: Array.from(violatedEntities) };
 }

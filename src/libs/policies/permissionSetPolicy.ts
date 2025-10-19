@@ -2,11 +2,10 @@ import { Messages } from '@salesforce/core';
 import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import MdapiRetriever from '../mdapiRetriever.js';
 import PermSetsRuleRegistry from '../config/registries/permissionSets.js';
+import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../config/audit-run/schema.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
-import { PolicyEntityResolveError } from '../audit/types.js';
+import { EntityResolveError } from '../audit/types.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import { PermissionSetLikeMap, PermSetsPolicyFileContent } from './schema.js';
-import AuditRunConfig from './interfaces/auditRunConfig.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import { PermissionRiskLevelPresets } from './types.js';
 
@@ -24,12 +23,12 @@ export default class PermissionSetPolicy extends Policy {
     public auditContext: AuditRunConfig,
     registry: RuleRegistry = new PermSetsRuleRegistry()
   ) {
-    super(auditContext, registry.resolveEnabledRules(config.rules, auditContext));
+    super(config, auditContext, registry);
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
-    const unresolved: Record<string, PolicyEntityResolveError> = {};
+    const unresolved: Record<string, EntityResolveError> = {};
     const retriever = new MdapiRetriever(context.targetOrgConnection);
     const resolvedPermsets = await retriever.retrievePermissionsets(
       filterCategorizedPermsets(this.config.permissionSets)

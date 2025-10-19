@@ -1,12 +1,13 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import AuditRun from '../../../libs/policies/auditRun.js';
-import AuditRunConfig, {
-  AuditRunClassifications,
-  AuditRunPolicies,
-  isClassification,
-  isPolicy,
-} from '../../../libs/policies/interfaces/auditRunConfig.js';
+import AuditConfig from '../../../libs/policies/initialisation/auditConfig.js';
+import {
+  AuditRunConfig,
+  AuditRunConfigClassifications,
+  AuditRunConfigPolicies,
+  isPermissionsConfig,
+  isPolicyConfig,
+} from '../../../libs/config/audit-run/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
@@ -35,8 +36,8 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
 
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
-    const auditConfig = await AuditRun.initialiseNewConfig(flags['target-org'].getConnection(flags['api-version']), {
-      directoryPath: flags['output-dir'],
+    const auditConfig = await AuditConfig.init(flags['target-org'].getConnection(flags['api-version']), {
+      targetDir: flags['output-dir'],
     });
     this.printResults(auditConfig);
     return auditConfig;
@@ -47,9 +48,9 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     this.printPolicies(config.policies);
   }
 
-  private printClassifications(classifications: AuditRunClassifications): void {
+  private printClassifications(classifications: AuditRunConfigClassifications): void {
     Object.values(classifications).forEach((def) => {
-      if (isClassification(def)) {
+      if (isPermissionsConfig(def)) {
         const perms = def.content.permissions ? Object.entries(def.content.permissions) : [];
         if (perms.length > 0) {
           this.logSuccess(
@@ -60,12 +61,17 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     });
   }
 
-  private printPolicies(policies: AuditRunPolicies): void {
+  private printPolicies(policies: AuditRunConfigPolicies): void {
     Object.entries(policies).forEach(([name, def]) => {
-      if (isPolicy(def)) {
-        const vals = def.getValues() ? Object.entries(def.getValues()) : [];
-        if (vals.length > 0) {
-          this.logSuccess(messages.getMessage('success.policy-summary', [name, vals.length ?? 0, def.filePath]));
+      if (isPolicyConfig(def)) {
+        if (def.filePath) {
+          this.logSuccess(
+            messages.getMessage('success.policy-summary', [
+              name,
+              Object.keys(def.content.rules).length ?? 0,
+              def.filePath,
+            ])
+          );
         }
       }
     });

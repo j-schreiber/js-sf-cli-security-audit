@@ -1,12 +1,11 @@
 import { Messages } from '@salesforce/core';
+import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../audit/types.js';
+import { PartialPolicyRuleResult, RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
 import {
-  PolicyRuleExecutionResult,
-  PolicyRuleViolation,
-  PolicyRuleViolationMute,
-  RuleComponentMessage,
-} from '../../audit/types.js';
-import { RowLevelPolicyRule, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
-import AuditRunConfig from '../interfaces/auditRunConfig.js';
+  AuditRunConfig,
+  NamedPermissionsClassification,
+  PermissionsClassification,
+} from '../../config/audit-run/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -25,10 +24,9 @@ export default abstract class PolicyRule implements RowLevelPolicyRule {
     this.ruleDisplayName = opts.ruleDisplayName;
   }
 
-  protected initResult(): PolicyRuleExecutionResult {
+  protected initResult(): PartialPolicyRuleResult {
     return {
       ruleName: this.ruleDisplayName,
-      isCompliant: true,
       violations: new Array<PolicyRuleViolation>(),
       mutedViolations: new Array<PolicyRuleViolationMute>(),
       warnings: new Array<RuleComponentMessage>(),
@@ -36,5 +34,26 @@ export default abstract class PolicyRule implements RowLevelPolicyRule {
     };
   }
 
-  public abstract run(context: RuleAuditContext): Promise<PolicyRuleExecutionResult>;
+  protected resolveUserPermission(permName: string): NamedPermissionsClassification | undefined {
+    return nameClassification(
+      permName,
+      this.auditContext.classifications.userPermissions?.content.permissions[permName]
+    );
+  }
+
+  protected resolveCustomPermission(permName: string): NamedPermissionsClassification | undefined {
+    return nameClassification(
+      permName,
+      this.auditContext.classifications.customPermissions?.content.permissions[permName]
+    );
+  }
+
+  public abstract run(context: RuleAuditContext): Promise<PartialPolicyRuleResult>;
+}
+
+function nameClassification(
+  permName: string,
+  perm?: PermissionsClassification
+): NamedPermissionsClassification | undefined {
+  return perm ? { name: permName, ...perm } : undefined;
 }
