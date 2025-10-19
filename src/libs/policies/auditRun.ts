@@ -3,7 +3,7 @@ import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit/types.js';
 import { AuditRunConfig } from '../config/audit-run/schema.js';
 import ProfilePolicy from './profilePolicy.js';
-import Policy from './policy.js';
+import Policy, { ResolveEntityResult } from './policy.js';
 import PermissionSetPolicy from './permissionSetPolicy.js';
 import ConnectedAppPolicy from './connectedAppPolicy.js';
 import AuditConfig from './initialisation/auditConfig.js';
@@ -20,18 +20,38 @@ export function startAuditRun(directoryPath: string): AuditRun {
  * Instance of an audit run that manages high-level operations
  */
 export default class AuditRun {
+  private executablePolicies?: PolicyMap;
+
   public constructor(public configs: AuditRunConfig) {}
 
   /**
-   * Executes an initialised audit run. This runs enabled policies
-   * in parallel and runs all enabled rules per policy.
+   * Loads all policies, resolves entities and caches the results.
+   *
+   * @param targetOrgConnection
+   */
+  public async resolve(targetOrgConnection: Connection): Promise<PolicyMap> {
+    if (this.executablePolicies) {
+      return this.executablePolicies;
+    }
+    this.executablePolicies = loadPolicies(this.configs);
+    const resolveResultPromises: Array<Promise<ResolveEntityResult>> = [];
+    Object.values(this.executablePolicies).forEach((executable) => {
+      resolveResultPromises.push(executable.resolve({ targetOrgConnection }));
+    });
+    await Promise.all(resolveResultPromises);
+    return this.executablePolicies;
+  }
+
+  /**
+   * Executes an initialised audit run. Resolves policies entities
+   * and executes all rules.
    *
    * @param targetOrgConnection
    * @returns
    */
   public async execute(targetCon: Connection): Promise<Omit<AuditResult, 'orgId'>> {
-    const executablePolicies = resolvePolicies(this.configs);
-    const results = await runPolicies(executablePolicies, targetCon);
+    this.executablePolicies = await this.resolve(targetCon);
+    const results = await runPolicies(this.executablePolicies, targetCon);
     return {
       auditDate: new Date().toISOString(),
       isCompliant: isCompliant(results),
@@ -61,7 +81,7 @@ async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection)
   return results;
 }
 
-function resolvePolicies(config: AuditRunConfig): PolicyMap {
+function loadPolicies(config: AuditRunConfig): PolicyMap {
   const pols: PolicyMap = {};
   if (config.policies.Profiles) {
     pols.Profiles = new ProfilePolicy(config.policies.Profiles.content, config);

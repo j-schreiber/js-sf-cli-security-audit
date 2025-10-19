@@ -10,6 +10,7 @@ export type ResolveEntityResult = {
 };
 export default abstract class Policy implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
+  protected entities?: ResolveEntityResult;
 
   public constructor(
     public config: BasePolicyFileContent,
@@ -20,7 +21,18 @@ export default abstract class Policy implements IPolicy {
   }
 
   /**
-   * Runs all rules of a policy
+   * Resolves all entities of the policy.
+   */
+  public async resolve(context: AuditContext): Promise<ResolveEntityResult> {
+    if (!this.entities) {
+      this.entities = await this.resolveEntities(context);
+    }
+    return this.entities;
+  }
+
+  /**
+   * Runs all rules of a policy. If the entities are not yet resolved, they are
+   * resolved on the fly before rules are executed.
    *
    * @param context
    * @returns
@@ -36,7 +48,7 @@ export default abstract class Policy implements IPolicy {
         ignoredEntities: [],
       };
     }
-    const resolveResult = await this.resolveEntities(context);
+    const resolveResult = await this.resolve(context);
     const ruleResultPromises = Array<Promise<PartialPolicyRuleResult>>();
     for (const rule of this.resolvedRules.enabledRules) {
       ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));

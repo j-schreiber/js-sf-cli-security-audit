@@ -1,7 +1,9 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { Connection } from '@salesforce/core';
+import { SinonSandbox } from 'sinon';
 import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { MultiStageOutput } from '@oclif/multi-stage-output';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import MdapiRetriever, { parseAsConnectedAppSetting, parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
@@ -15,6 +17,7 @@ import {
 } from '../../src/libs/config/queries.js';
 import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/audit/types.js';
 import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+import AuditRunMultiStageOutput, { MultiStageData } from '../../src/ux/auditRunMultiStage.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -35,6 +38,7 @@ export default class AuditTestContext {
   public outputDirectory: PathLike;
   public defaultPath = path.join('my-test-org');
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
+  public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public mocks: SfConnectionMocks;
   public mockAppSetting: string;
   public mockPermSets: string;
@@ -62,6 +66,7 @@ export default class AuditTestContext {
     await this.context.stubAuths(this.targetOrg);
     this.targetOrgConnection = await this.targetOrg.getConnection();
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
+    this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
     this.context.SANDBOX.stub(MdapiRetriever.prototype, 'retrievePermissionsets').callsFake(this.retrievePermsetsStub);
@@ -112,6 +117,12 @@ export function clearAuditReports(workingDir: string): void {
   fs.readdirSync(workingDir)
     .filter((fn) => fn.match(/(report_).*\.json$/) !== null)
     .forEach((reportFile) => fs.rmSync(path.join(workingDir, reportFile)));
+}
+
+export function stubMultiStageUx(sandbox: SinonSandbox): sinon.SinonStubbedInstance<MultiStageOutput<MultiStageData>> {
+  const multiStageStub = sandbox.createStubInstance(MultiStageOutput);
+  sandbox.stub(AuditRunMultiStageOutput, 'create').returns(multiStageStub);
+  return multiStageStub;
 }
 
 function buildDefaultMocks() {

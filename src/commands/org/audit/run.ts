@@ -1,10 +1,18 @@
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { MultiStageOutput } from '@oclif/multi-stage-output';
 import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
 import { startAuditRun } from '../../../libs/policies/auditRun.js';
+import AuditRunMultiStageOutput, {
+  EXECUTE_RULES,
+  FINALISE,
+  LOAD_AUDIT_CONFIG,
+  MultiStageData,
+  RESOLVE_POLICIES,
+} from '../../../ux/auditRunMultiStage.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -35,11 +43,23 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     'api-version': Flags.orgApiVersion(),
   };
 
+  private ms?: MultiStageOutput<MultiStageData>;
+
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
+    this.ms = AuditRunMultiStageOutput.create(
+      { directoryRootPath: flags['source-dir'], targetOrg: flags['target-org'] },
+      flags.json
+    );
+    this.ms.goto(LOAD_AUDIT_CONFIG);
     const auditRun = startAuditRun(flags['source-dir']);
+    this.ms.goto(RESOLVE_POLICIES);
+    await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
+    this.ms.goto(EXECUTE_RULES);
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
+    this.ms.goto(FINALISE);
+    this.ms.stop('completed');
     this.printResults(result);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };
