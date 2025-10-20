@@ -1,3 +1,4 @@
+import EventEmitter from 'node:events';
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
 import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
@@ -8,7 +9,7 @@ export type ResolveEntityResult = {
   resolvedEntities: Record<string, unknown>;
   ignoredEntities: EntityResolveError[];
 };
-export default abstract class Policy implements IPolicy {
+export default abstract class Policy extends EventEmitter implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
   protected entities?: ResolveEntityResult;
 
@@ -17,6 +18,7 @@ export default abstract class Policy implements IPolicy {
     public auditConfig: AuditRunConfig,
     protected registry: RuleRegistry
   ) {
+    super();
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
   }
 
@@ -102,4 +104,10 @@ function evalResolvedEntities(
     }
   });
   return { compliantEntities, violatedEntities: Array.from(violatedEntities) };
+}
+
+export function getTotal(resolveResult: ResolveEntityResult): number {
+  const resolvedCount = resolveResult.resolvedEntities ? Object.keys(resolveResult.resolvedEntities).length : 0;
+  const ignoredCount = resolveResult.ignoredEntities ? resolveResult.ignoredEntities.length : 0;
+  return resolvedCount + ignoredCount;
 }

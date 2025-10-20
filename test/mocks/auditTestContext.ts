@@ -141,6 +141,6 @@ function buildProfilesQuery(profileName: string): string {
   return `SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`;
 }
 
-function buildResultsPath(fileName: string): string {
+export function buildResultsPath(fileName: string): string {
   return path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
 }

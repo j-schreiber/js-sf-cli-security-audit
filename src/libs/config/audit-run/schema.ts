@@ -34,7 +34,7 @@ const PermSetMap = z.record(z.string(), PermSetConfig);
 
 export const PolicyFileSchema = z.object({
   enabled: z.boolean().default(true),
-  rules: RuleMapSchema,
+  rules: RuleMapSchema.default({}),
 });
 
 export const ProfilesPolicyFileSchema = PolicyFileSchema.extend({

@@ -38,13 +38,14 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
-    const stageOutput = AuditRunMultiStageOutput.create(
-      { directoryRootPath: flags['source-dir'], targetOrg: flags['target-org'] },
-      flags.json
-    );
+    const stageOutput = AuditRunMultiStageOutput.create({
+      directoryRootPath: flags['source-dir'],
+      targetOrg: flags['target-org'].getUsername() ?? flags['target-org'].getOrgId(),
+      jsonEnabled: flags.json,
+    });
     stageOutput.start();
     const auditRun = startAuditRun(flags['source-dir']);
-    stageOutput.startPolicies(auditRun.configs.policies);
+    stageOutput.startPolicyResolve(auditRun);
     await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
     stageOutput.startRuleExecution();
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));

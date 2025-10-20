@@ -1,25 +1,50 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
-import { Org } from '@salesforce/core';
-import { AuditRunConfigPolicies, BasePolicyFileContent, ConfigFile } from '../libs/config/audit-run/schema.js';
+import { BasePolicyFileContent, ConfigFile } from '../libs/config/audit-run/schema.js';
+import AuditRun, { EntityResolveEvent } from '../libs/policies/auditRun.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
 export const EXECUTE_RULES = 'Executing rules';
 export const FINALISE = 'Formatting results';
 
-type AuditRunStageOptions = {
-  targetOrg: Org;
+export type AuditRunStageOptions = {
+  targetOrg: string;
   directoryRootPath: string;
+  jsonEnabled?: boolean;
+};
+
+/**
+ * This type mimics the original "StageBlockInfo" type from
+ * MultiStageOutput and allows us to make test asserts.
+ */
+type StageBlockInfo<T> = {
+  stage: string;
+  type: 'dynamic-key-value' | 'static-key-value' | 'message';
+  label?: string;
+  get(data: T): string;
 };
 
 export default class AuditRunMultiStageOutput {
   public mso: MultiStageOutput<AuditRunData>;
-  private stageSpecificBlocks;
+  public stageSpecificBlocks: Array<StageBlockInfo<AuditRunData>>;
+  private polStats: PolicyStatistics;
 
   public constructor(opts: MultiStageOutputOptions<AuditRunData>) {
-    this.stageSpecificBlocks = opts.stageSpecificBlock;
-    this.mso = new MultiStageOutput<AuditRunData>(opts);
+    this.stageSpecificBlocks = opts.stageSpecificBlock as Array<StageBlockInfo<AuditRunData>>;
+    this.mso = AuditRunMultiStageOutput.initUx(opts);
+    this.polStats = {};
   }
+
+  /**
+   * In unit tests, we stub the actual UX class to hide output in terminal.
+   *
+   * @param opts
+   * @returns
+   */
+  public static initUx(opts: MultiStageOutputOptions<AuditRunData>): MultiStageOutput<AuditRunData> {
+    return new MultiStageOutput<AuditRunData>(opts);
+  }
+
   /**
    * This pattern allows to stub multi-stage outputs in tests to mute output
    * to stdout during test execution.
@@ -33,16 +58,15 @@ export default class AuditRunMultiStageOutput {
    * @param jsonEnabled
    * @returns
    */
-  public static create(opts: AuditRunStageOptions, jsonEnabled?: boolean): AuditRunMultiStageOutput {
-    const targetOrg = opts.targetOrg.getUsername() ?? opts.targetOrg.getOrgId();
+  public static create(opts: AuditRunStageOptions): AuditRunMultiStageOutput {
     return new AuditRunMultiStageOutput({
-      jsonEnabled: jsonEnabled ?? false,
+      jsonEnabled: opts.jsonEnabled ?? false,
       stages: [LOAD_AUDIT_CONFIG, RESOLVE_POLICIES, EXECUTE_RULES, FINALISE],
       title: 'Auditing Org',
       preStagesBlock: [
         {
           type: 'message',
-          get: () => `Auditing ${targetOrg} with config from ${opts.directoryRootPath}`,
+          get: () => `Auditing ${opts.targetOrg} with config from ${opts.directoryRootPath}`,
         },
       ],
       postStagesBlock: [
@@ -60,24 +84,32 @@ export default class AuditRunMultiStageOutput {
     this.mso.goto(LOAD_AUDIT_CONFIG, { currentStatus: 'Initialising' });
   }
 
-  public startPolicies(policies: AuditRunConfigPolicies): void {
+  public startPolicyResolve(runInstance: AuditRun): void {
     this.mso.goto(RESOLVE_POLICIES, { currentStatus: 'Resolving' });
-    Object.entries(policies).forEach(([policyName, policy]) => {
+    Object.entries(runInstance.configs.policies).forEach(([policyName, policy]) => {
       const policyDef = policy as ConfigFile<BasePolicyFileContent>;
-      this.stageSpecificBlocks!.push({
+      this.addPolicyStatsListener(policyName, runInstance);
+      this.stageSpecificBlocks.push({
         stage: RESOLVE_POLICIES,
-        type: 'message',
-        get: () => `Resolve entities for ${policyName}`,
+        type: 'dynamic-key-value',
+        label: policyName,
+        get: (data: AuditRunData): string => {
+          if (data?.policies?.[policyName]) {
+            return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;
+          } else {
+            return '';
+          }
+        },
       });
       if (policyDef.content.rules && Object.keys(policyDef.content.rules).length > 0) {
-        this.stageSpecificBlocks!.push({
+        this.stageSpecificBlocks.push({
           stage: EXECUTE_RULES,
           type: 'message',
           get: () => `Execute ${Object.keys(policyDef.content.rules).length} rule(s) for ${policyName}`,
         });
       }
-      this.mso.updateData({});
     });
+    this.mso.updateData({});
   }
 
   public startRuleExecution(): void {
@@ -88,10 +120,34 @@ export default class AuditRunMultiStageOutput {
     this.mso.goto(FINALISE, { currentStatus: 'Completed' });
     this.mso.stop('completed');
   }
+
+  private addPolicyStatsListener = (policyName: string, runInstance: AuditRun): void => {
+    // multi stage output updates its entire internal state, but only "patches"
+    // data one level deep (e.g. policies property is replaced entierly)
+    // thats why we gather the statistics for each individual policy in a single variable
+    // and then update the multi stage data with aggregated data
+    runInstance.addListener(`entityresolve-${policyName}`, (data: EntityResolveEvent) => {
+      if (this.polStats[policyName]) {
+        if (data.resolved) {
+          this.polStats[policyName].resolved = data.resolved;
+        }
+        if (data.total) {
+          this.polStats[policyName].total = data.total;
+        }
+      } else {
+        this.polStats[policyName] = { resolved: data.resolved ?? 0, total: data.total ?? 0 };
+      }
+      this.mso.updateData({ policies: structuredClone(this.polStats) });
+    });
+  };
 }
 
 export type AuditRunData = {
-  policies: string[];
   enabledRulesInPolicy: string[];
   currentStatus: string;
+  policies: PolicyStatistics;
+};
+
+type PolicyStatistics = {
+  [policyName: string]: { total?: number; resolved?: number };
 };

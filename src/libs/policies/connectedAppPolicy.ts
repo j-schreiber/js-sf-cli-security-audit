@@ -5,7 +5,7 @@ import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schem
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
 import MdapiRetriever from '../mdapiRetriever.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import Policy, { ResolveEntityResult } from './policy.js';
+import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
 export type ResolvedConnectedApp = {
@@ -31,18 +31,21 @@ export default class ConnectedAppPolicy extends Policy {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const metadataApi = new MdapiRetriever(context.targetOrgConnection);
-    let overrideByApiSecurityAccess = false;
-    const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();
-    if (apiSecurityAccessSetting && apiSecurityAccessSetting.enableAdminApprovedAppsOnly) {
-      overrideByApiSecurityAccess = true;
-    }
+    this.emit('entityresolve', {
+      total: 0,
+      resolved: 0,
+    });
     const installedApps = await context.targetOrgConnection.query<ConnectedApp>(CONNECTED_APPS_QUERY);
+    this.emit('entityresolve', {
+      total: installedApps.totalSize,
+      resolved: 0,
+    });
     installedApps.records.forEach((installedApp) => {
       successfullyResolved[installedApp.Name] = {
         name: installedApp.Name,
         origin: 'Installed',
         onlyAdminApprovedUsersAllowed: installedApp.OptionsAllowAdminApprovedUsersOnly,
-        overrideByApiSecurityAccess,
+        overrideByApiSecurityAccess: false,
         useCount: 0,
         users: [],
       };
@@ -54,7 +57,7 @@ export default class ConnectedAppPolicy extends Policy {
           name: token.AppName,
           origin: 'OauthToken',
           onlyAdminApprovedUsersAllowed: false,
-          overrideByApiSecurityAccess,
+          overrideByApiSecurityAccess: false,
           useCount: token.UseCount,
           users: [token.User.Username],
         };
@@ -65,7 +68,25 @@ export default class ConnectedAppPolicy extends Policy {
         }
       }
     });
+    this.emit('entityresolve', {
+      total: Object.keys(successfullyResolved).length,
+      resolved: 0,
+    });
+    let overrideByApiSecurityAccess = false;
+    const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();
+    if (apiSecurityAccessSetting && apiSecurityAccessSetting.enableAdminApprovedAppsOnly) {
+      overrideByApiSecurityAccess = true;
+    }
+    Object.values(successfullyResolved).forEach((conApp) => {
+      // eslint-disable-next-line no-param-reassign
+      conApp.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
+    });
+    const result = { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };
+    this.emit('entityresolve', {
+      total: getTotal(result),
+      resolved: getTotal(result),
+    });
     // also query from tooling, to get additional information info
-    return { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };
+    return result;
   }
 }
