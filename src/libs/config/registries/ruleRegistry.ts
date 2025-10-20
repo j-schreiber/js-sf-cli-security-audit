@@ -16,7 +16,7 @@ type Constructor<T, Args extends any[] = any[]> = new (...args: Args) => T;
  * allow users to BYOR ("bring your own rules").
  */
 export default class RuleRegistry {
-  public constructor(public rules: Record<string, Constructor<RowLevelPolicyRule>>) {}
+  public constructor(public rules: Record<string, Constructor<RowLevelPolicyRule<unknown>>>) {}
 
   /**
    * Returns the display/config names of all registered rules
@@ -36,7 +36,7 @@ export default class RuleRegistry {
    * @returns
    */
   public resolveRules(ruleObjs: RuleMap, auditContext: AuditRunConfig): RegistryRuleResolveResult {
-    const enabledRules = new Array<RowLevelPolicyRule>();
+    const enabledRules = new Array<RowLevelPolicyRule<unknown>>();
     const skippedRules = new Array<PolicyRuleSkipResult>();
     const resolveErrors = new Array<EntityResolveError>();
     Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {

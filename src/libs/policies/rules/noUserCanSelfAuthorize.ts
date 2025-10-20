@@ -6,14 +6,14 @@ import PolicyRule, { RuleOptions } from './policyRule.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.connectedApps');
 
-export default class NoUserCanSelfAuthorize extends PolicyRule {
+export default class NoUserCanSelfAuthorize extends PolicyRule<ResolvedConnectedApp> {
   public constructor(opts: RuleOptions) {
     super(opts);
   }
 
-  public run(context: RuleAuditContext): Promise<PartialPolicyRuleResult> {
+  public run(context: RuleAuditContext<ResolvedConnectedApp>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
-    const resolvedConnectedApps = context.resolvedEntities as Record<string, ResolvedConnectedApp>;
+    const resolvedConnectedApps = context.resolvedEntities;
     Object.values(resolvedConnectedApps).forEach((app) => {
       if (!app.onlyAdminApprovedUsersAllowed) {
         if (app.overrideByApiSecurityAccess) {
