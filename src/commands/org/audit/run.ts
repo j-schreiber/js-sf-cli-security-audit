@@ -78,11 +78,13 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   private printExecutedRulesSummary(policyName: string, policyDetails: AuditPolicyResult): void {
     const rulesSummary = transposeExecutedPolicyRules(policyDetails);
-    this.table({
-      data: rulesSummary,
-      title: `--- Executed Rules for ${policyName} ---`,
-      titleOptions: { underline: true },
-    });
+    if (rulesSummary.length > 0) {
+      this.table({
+        data: rulesSummary,
+        title: `--- Executed Rules for ${policyName} ---`,
+        titleOptions: { underline: true },
+      });
+    }
   }
 
   private printRuleViolations(executedRules: Record<string, PolicyRuleExecutionResult>): void {
