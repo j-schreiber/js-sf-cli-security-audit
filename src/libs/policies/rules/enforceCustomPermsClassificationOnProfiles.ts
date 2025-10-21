@@ -6,14 +6,14 @@ import PolicyRule, { RuleOptions } from './policyRule.js';
 
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-export default class EnforceCustomPermsClassificationOnProfiles extends PolicyRule {
+export default class EnforceCustomPermsClassificationOnProfiles extends PolicyRule<ResolvedProfile> {
   public constructor(opts: RuleOptions) {
     super(opts);
   }
 
-  public run(context: RuleAuditContext): Promise<PartialPolicyRuleResult> {
+  public run(context: RuleAuditContext<ResolvedProfile>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
-    const resolvedProfiles = context.resolvedEntities as Record<string, ResolvedProfile>;
+    const resolvedProfiles = context.resolvedEntities;
     Object.values(resolvedProfiles).forEach((profile) => {
       const customPerms = profile.metadata.customPermissions ?? [];
       customPerms.forEach((perm) => {

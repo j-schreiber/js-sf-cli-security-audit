@@ -11,8 +11,11 @@ export type PartialPolicyRuleResult = Optional<
   'isCompliant' | 'compliantEntities' | 'violatedEntities'
 >;
 
-export type RowLevelPolicyRule = {
-  run(context: RuleAuditContext): Promise<PartialPolicyRuleResult>;
+/**
+ *
+ */
+export type RowLevelPolicyRule<ResolvedEntityType> = {
+  run(context: RuleAuditContext<ResolvedEntityType>): Promise<PartialPolicyRuleResult>;
 };
 
 export type IPolicy = {
@@ -26,10 +29,10 @@ export type AuditContext = {
   targetOrgConnection: Connection;
 };
 
-export type RuleAuditContext = AuditContext & {
+export type RuleAuditContext<T> = AuditContext & {
   /**
    * Resolved entities from the policy. Can be permission sets,
    * profiles, users, connected apps, etc.
    */
-  resolvedEntities: Record<string, unknown>;
+  resolvedEntities: Record<string, T>;
 };

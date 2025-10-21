@@ -1,3 +1,4 @@
+import EventEmitter from 'node:events';
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
 import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
@@ -8,19 +9,32 @@ export type ResolveEntityResult = {
   resolvedEntities: Record<string, unknown>;
   ignoredEntities: EntityResolveError[];
 };
-export default abstract class Policy implements IPolicy {
+export default abstract class Policy extends EventEmitter implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
+  protected entities?: ResolveEntityResult;
 
   public constructor(
     public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
     protected registry: RuleRegistry
   ) {
+    super();
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
   }
 
   /**
-   * Runs all rules of a policy
+   * Resolves all entities of the policy.
+   */
+  public async resolve(context: AuditContext): Promise<ResolveEntityResult> {
+    if (!this.entities) {
+      this.entities = await this.resolveEntities(context);
+    }
+    return this.entities;
+  }
+
+  /**
+   * Runs all rules of a policy. If the entities are not yet resolved, they are
+   * resolved on the fly before rules are executed.
    *
    * @param context
    * @returns
@@ -36,7 +50,7 @@ export default abstract class Policy implements IPolicy {
         ignoredEntities: [],
       };
     }
-    const resolveResult = await this.resolveEntities(context);
+    const resolveResult = await this.resolve(context);
     const ruleResultPromises = Array<Promise<PartialPolicyRuleResult>>();
     for (const rule of this.resolvedRules.enabledRules) {
       ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
@@ -90,4 +104,10 @@ function evalResolvedEntities(
     }
   });
   return { compliantEntities, violatedEntities: Array.from(violatedEntities) };
+}
+
+export function getTotal(resolveResult: ResolveEntityResult): number {
+  const resolvedCount = resolveResult.resolvedEntities ? Object.keys(resolveResult.resolvedEntities).length : 0;
+  const ignoredCount = resolveResult.ignoredEntities ? resolveResult.ignoredEntities.length : 0;
+  return resolvedCount + ignoredCount;
 }

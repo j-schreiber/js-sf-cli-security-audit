@@ -7,7 +7,7 @@ import { isNullish } from '../utils.js';
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import ProfilesRuleRegistry from '../config/registries/profiles.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import Policy, { ResolveEntityResult } from './policy.js';
+import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
 import { PermissionRiskLevelPresets } from './types.js';
 
@@ -21,15 +21,21 @@ export type ResolvedProfile = {
 };
 
 export default class ProfilePolicy extends Policy {
+  private totalEntities: number;
   public constructor(
     public config: ProfilesPolicyFileContent,
     public auditConfig: AuditRunConfig,
     registry: RuleRegistry = new ProfilesRuleRegistry()
   ) {
     super(config, auditConfig, registry);
+    this.totalEntities = this.config.profiles ? Object.keys(this.config.profiles).length : 0;
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: 0,
+    });
     const successfullyResolved: Record<string, ResolvedProfile> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     type resultType = Pick<Profile, 'Name' | 'Metadata'>;
@@ -73,6 +79,11 @@ export default class ProfilePolicy extends Policy {
         ignoredEntities[profileName] = { name: profileName, message: messages.getMessage('entity-not-found') };
       }
     });
-    return { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };
+    const result = { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: getTotal(result),
+    });
+    return result;
   }
 }

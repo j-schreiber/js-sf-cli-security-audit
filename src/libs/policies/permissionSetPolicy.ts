@@ -6,7 +6,7 @@ import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from 
 import RuleRegistry from '../config/registries/ruleRegistry.js';
 import { EntityResolveError } from '../audit/types.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
-import Policy, { ResolveEntityResult } from './policy.js';
+import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { PermissionRiskLevelPresets } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -18,15 +18,21 @@ export type ResolvedPermissionSet = {
   metadata: PermissionSet;
 };
 export default class PermissionSetPolicy extends Policy {
+  private totalEntities: number;
   public constructor(
     public config: PermSetsPolicyFileContent,
     public auditContext: AuditRunConfig,
     registry: RuleRegistry = new PermSetsRuleRegistry()
   ) {
     super(config, auditContext, registry);
+    this.totalEntities = this.config.permissionSets ? Object.keys(this.config.permissionSets).length : 0;
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: 0,
+    });
     const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
     const unresolved: Record<string, EntityResolveError> = {};
     const retriever = new MdapiRetriever(context.targetOrgConnection);
@@ -49,7 +55,12 @@ export default class PermissionSetPolicy extends Policy {
         }
       }
     });
-    return { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(unresolved) };
+    const result = { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(unresolved) };
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: getTotal(result),
+    });
+    return result;
   }
 }
 

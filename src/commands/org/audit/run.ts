@@ -5,6 +5,7 @@ import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/audit/types.js';
 import { startAuditRun } from '../../../libs/policies/auditRun.js';
+import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -37,9 +38,19 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   public async run(): Promise<OrgAuditRunResult> {
     const { flags } = await this.parse(OrgAuditRun);
+    const stageOutput = AuditRunMultiStageOutput.create({
+      directoryRootPath: flags['source-dir'],
+      targetOrg: flags['target-org'].getUsername() ?? flags['target-org'].getOrgId(),
+      jsonEnabled: flags.json,
+    });
+    stageOutput.start();
     const auditRun = startAuditRun(flags['source-dir']);
+    stageOutput.startPolicyResolve(auditRun);
+    await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
+    stageOutput.startRuleExecution();
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
+    stageOutput.finish();
     this.printResults(result);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };
@@ -55,7 +66,6 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   private printPoliciesSummary(result: AuditResult): void {
     const polSummaries = transposePoliciesToTable(result);
-    this.log(`Successfully executed ${polSummaries.length} policies.`);
     if (result.isCompliant) {
       this.logSuccess(messages.getMessage('success.all-policies-compliant'));
       this.log('');
@@ -68,11 +78,13 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   private printExecutedRulesSummary(policyName: string, policyDetails: AuditPolicyResult): void {
     const rulesSummary = transposeExecutedPolicyRules(policyDetails);
-    this.table({
-      data: rulesSummary,
-      title: `--- Executed Rules for ${policyName} ---`,
-      titleOptions: { underline: true },
-    });
+    if (rulesSummary.length > 0) {
+      this.table({
+        data: rulesSummary,
+        title: `--- Executed Rules for ${policyName} ---`,
+        titleOptions: { underline: true },
+      });
+    }
   }
 
   private printRuleViolations(executedRules: Record<string, PolicyRuleExecutionResult>): void {

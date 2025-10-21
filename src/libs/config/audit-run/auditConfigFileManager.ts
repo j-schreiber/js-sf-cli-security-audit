@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
+import { isEmpty } from '../../utils.js';
 import {
   AuditRunConfig,
   ConfigFile,
@@ -105,7 +106,7 @@ export default class AuditConfigFileManager {
     Object.entries(configFiles).forEach(([fileKey, confFile]) => {
       const uncapitalizedKey = `${fileKey[0].toLowerCase()}${fileKey.slice(1)}`;
       const fileDef = dirConf[uncapitalizedKey];
-      if (fileDef && confFile.content) {
+      if (fileDef && !isEmpty(confFile.content)) {
         // eslint-disable-next-line no-param-reassign
         confFile.filePath = path.join(targetDirPath, dirName, `${uncapitalizedKey}.yml`);
         fs.writeFileSync(confFile.filePath, yaml.dump(confFile.content));

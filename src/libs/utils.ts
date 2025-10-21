@@ -1,5 +1,11 @@
-export function isEmpty(anyRecord?: Record<string, unknown>): boolean {
-  return isNullish(anyRecord) || Object.entries(anyRecord!).length === 0;
+export function isEmpty(anything?: unknown): boolean {
+  if (isNullish(anything)) {
+    return true;
+  }
+  if (typeof anything === 'object') {
+    return Object.entries(anything!).length === 0;
+  }
+  return false;
 }
 
 export function isNullish(anything: unknown): boolean {

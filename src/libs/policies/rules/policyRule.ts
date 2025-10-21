@@ -15,7 +15,7 @@ export type RuleOptions = {
   ruleConfig?: unknown;
 };
 
-export default abstract class PolicyRule implements RowLevelPolicyRule {
+export default abstract class PolicyRule<EntityType> implements RowLevelPolicyRule<EntityType> {
   public auditContext: AuditRunConfig;
   public ruleDisplayName: string;
 
@@ -48,7 +48,7 @@ export default abstract class PolicyRule implements RowLevelPolicyRule {
     );
   }
 
-  public abstract run(context: RuleAuditContext): Promise<PartialPolicyRuleResult>;
+  public abstract run(context: RuleAuditContext<EntityType>): Promise<PartialPolicyRuleResult>;
 }
 
 function nameClassification(

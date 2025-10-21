@@ -16,6 +16,7 @@ const DEFAULT_WORKING_DIR = path.join('test', 'mocks', 'data', 'audit-configs', 
 
 const NON_COMPLIANT_RESULT = parseMockAuditConfig('full-non-compliant.json');
 const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
+const EMPTY_RESULT = parseMockAuditConfig('empty-policy-no-rules.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
   return readAuditResultFromFile(path.join(DEFAULT_DATA_PATH, filePath));
@@ -58,9 +59,7 @@ describe('org audit run', () => {
     expect(result).to.deep.contain(NON_COMPLIANT_RESULT);
 
     // all relevant audit result infos are formatted to stdout
-    const executedPolicies = Object.entries(NON_COMPLIANT_RESULT.policies).length;
     expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([
-      messages.getMessage('success.summary', [executedPolicies]),
       StandardColors.error(messages.getMessage('summary-non-compliant')),
       '',
     ]);
@@ -143,5 +142,23 @@ describe('org audit run', () => {
     expect(result.filePath).not.to.be.undefined;
     expect(fs.existsSync(result.filePath)).to.be.true;
     fs.rmSync(result.filePath);
+  });
+
+  it('does not report rule summary when policy had no executed rules', async () => {
+    // Arrange
+    mockResult(EMPTY_RESULT);
+
+    // Act
+    await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+    // Assert
+    // all relevant audit result infos are formatted to stdout
+    expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
+      messages.getMessage('success.all-policies-compliant'),
+    ]);
+    expect($$.sfCommandStubs.table.callCount).to.equal(1);
+    expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
+      data: [{ policy: 'Profiles', isCompliant: true, rulesExecuted: 0, auditedEntities: 3, ignoredEntities: 1 }],
+    });
   });
 });
