@@ -1,13 +1,13 @@
 import { Connection } from '@salesforce/core';
-import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../config/queries.js';
-import { PermissionSet } from '../salesforceStandardTypes.js';
+import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
+import { PermissionSet } from '../policies/salesforceStandardTypes.js';
 import {
   BasePolicyFileContent,
   PermSetsPolicyFileContent,
   ProfilesPolicyFileContent,
-} from '../../core/file-mgmt/schema.js';
-import { RuleRegistries } from '../../core/registries/types.js';
-import { ProfilesRiskPreset } from '../../core/policy-types.js';
+} from '../core/file-mgmt/schema.js';
+import { RuleRegistries } from '../core/registries/types.js';
+import { ProfilesRiskPreset } from '../core/policy-types.js';
 
 /**
  * Initialises a new profiles policy with the local org's

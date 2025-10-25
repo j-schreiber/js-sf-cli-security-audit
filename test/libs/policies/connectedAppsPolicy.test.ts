@@ -5,7 +5,7 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext, { buildResultsPath } from '../../mocks/auditTestContext.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import ConnectedAppPolicy from '../../../src/libs/policies/connectedAppPolicy.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/config/queries.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/core/constants.js';
 import { ResolvedConnectedApp } from '../../../src/libs/core/registries/connectedApps.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

@@ -1,10 +1,10 @@
 import { Connection } from '@salesforce/core';
 import { DescribeSObjectResult } from '@jsforce/jsforce-node';
-import { NamedPermissionsClassification, PermissionsConfig } from '../../core/file-mgmt/schema.js';
-import { DEFAULT_CLASSIFICATIONS } from '../../config/defaultPolicyClassification.js';
-import { CUSTOM_PERMS_QUERY } from '../../config/queries.js';
-import { CustomPermission } from '../salesforceStandardTypes.js';
-import { classificationSorter, PermissionRiskLevel } from '../../core/classification-types.js';
+import { NamedPermissionsClassification, PermissionsConfig } from '../core/file-mgmt/schema.js';
+import { CUSTOM_PERMS_QUERY } from '../core/constants.js';
+import { CustomPermission } from '../policies/salesforceStandardTypes.js';
+import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
+import { DEFAULT_CLASSIFICATIONS } from './defaultPolicyClassification.js';
 
 /**
  * Initialises a fresh set of user permissions from target org connection

@@ -1,6 +1,6 @@
 import { EntityResolveError } from '../core/result-types.js';
 import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../core/constants.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
 import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';

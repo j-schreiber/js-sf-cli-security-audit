@@ -17,7 +17,7 @@ import {
   OAUTH_TOKEN_QUERY,
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
-} from '../../src/libs/config/queries.js';
+} from '../../src/libs/core/constants.js';
 import {
   PolicyRuleViolation,
   PolicyRuleViolationMute,

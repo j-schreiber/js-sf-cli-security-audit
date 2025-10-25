@@ -1,6 +1,6 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import AuditConfig from '../../../libs/policies/initialisation/auditConfig.js';
+import AuditConfig from '../../../libs/conf-init/auditConfig.js';
 import {
   AuditRunConfig,
   AuditRunConfigClassifications,

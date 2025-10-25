@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig } from '../../core/file-mgmt/schema.js';
-import AuditConfigFileManager from '../../core/file-mgmt/auditConfigFileManager.js';
+import { AuditRunConfig } from '../core/file-mgmt/schema.js';
+import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
 import { initCustomPermissions, initUserPermissions } from './permissionsClassification.js';
 import { initConnectedApps, initPermissionSets, initProfiles } from './policyConfigs.js';
 
@@ -23,7 +23,6 @@ export default class AuditConfig {
    * @param con
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
-    const fileManager = new AuditConfigFileManager();
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
     conf.classifications.userPermissions = { content: await initUserPermissions(targetCon) };
     const customPerms = await initCustomPermissions(targetCon);
@@ -34,7 +33,7 @@ export default class AuditConfig {
     conf.policies.PermissionSets = { content: await initPermissionSets(targetCon) };
     conf.policies.ConnectedApps = { content: initConnectedApps() };
     if (opts?.targetDir) {
-      fileManager.save(opts.targetDir, conf);
+      DefaultFileManager.save(opts.targetDir, conf);
     }
     return conf;
   }
@@ -45,7 +44,6 @@ export default class AuditConfig {
    * @param sourceDir
    */
   public static load(sourceDir: string): AuditRunConfig {
-    const fileManager = new AuditConfigFileManager();
-    return fileManager.parse(sourceDir);
+    return DefaultFileManager.parse(sourceDir);
   }
 }
