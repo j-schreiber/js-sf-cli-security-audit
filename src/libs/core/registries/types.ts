@@ -1,6 +1,15 @@
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, PolicyRuleExecutionResult } from '../../core/types.js';
-import { Optional } from '../../utils.js';
+import { AuditPolicyResult, PolicyRuleExecutionResult } from '../result-types.js';
+import { Optional } from '../utils.js';
+import { ConnectedAppsRegistry } from './connectedApps.js';
+import { PermissionSetsRegistry } from './permissionSets.js';
+import { ProfilesRegistry } from './profiles.js';
+
+export const RuleRegistries = {
+  ConnectedApps: ConnectedAppsRegistry,
+  Profiles: ProfilesRegistry,
+  PermissionSets: PermissionSetsRegistry,
+};
 
 /**
  * A rule must only implement a subset of the rule result. All optional

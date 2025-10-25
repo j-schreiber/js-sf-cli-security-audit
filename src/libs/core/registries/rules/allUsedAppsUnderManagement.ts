@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
-import { ResolvedConnectedApp } from '../connectedAppPolicy.js';
-import { PartialPolicyRuleResult, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
+import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
+import { ResolvedConnectedApp } from '../connectedApps.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

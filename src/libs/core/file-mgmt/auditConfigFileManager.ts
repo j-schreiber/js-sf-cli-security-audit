@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
-import { isEmpty } from '../../utils.js';
+import { isEmpty } from '../utils.js';
 import {
   AuditRunConfig,
   ConfigFile,

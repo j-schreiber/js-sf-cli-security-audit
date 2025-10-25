@@ -1,7 +1,7 @@
 // import fs from 'node:fs';
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, AuditResult } from '../core/types.js';
+import { AuditPolicyResult, AuditResult } from '../core/result-types.js';
 import { AuditRunConfig } from '../core/file-mgmt/schema.js';
 import ProfilePolicy from './profilePolicy.js';
 import Policy, { ResolveEntityResult } from './policy.js';

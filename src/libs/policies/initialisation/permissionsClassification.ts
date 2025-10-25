@@ -2,9 +2,9 @@ import { Connection } from '@salesforce/core';
 import { DescribeSObjectResult } from '@jsforce/jsforce-node';
 import { NamedPermissionsClassification, PermissionsConfig } from '../../core/file-mgmt/schema.js';
 import { DEFAULT_CLASSIFICATIONS } from '../../config/defaultPolicyClassification.js';
-import { PolicyRiskLevel, resolveRiskLevelOrdinalValue } from '../types.js';
 import { CUSTOM_PERMS_QUERY } from '../../config/queries.js';
 import { CustomPermission } from '../salesforceStandardTypes.js';
+import { classificationSorter, PermissionRiskLevel } from '../../core/classification-types.js';
 
 /**
  * Initialises a fresh set of user permissions from target org connection
@@ -43,7 +43,7 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
   const perms = customPerms.records.map((cp) => ({
     name: cp.DeveloperName,
     label: cp.MasterLabel,
-    classification: PolicyRiskLevel.UNKNOWN,
+    classification: PermissionRiskLevel.UNKNOWN,
   }));
   perms.forEach(
     (perm) =>
@@ -71,7 +71,7 @@ function parsePermissionsFromPermSet(describe: DescribeSObjectResult): NamedPerm
       return {
         label: field.label,
         name: policyName,
-        classification: PolicyRiskLevel.UNKNOWN,
+        classification: PermissionRiskLevel.UNKNOWN,
       };
     }
   });
@@ -80,6 +80,3 @@ function parsePermissionsFromPermSet(describe: DescribeSObjectResult): NamedPerm
 function sanitiseLabel(rawLabel?: string): string | undefined {
   return rawLabel?.replace(/[ \t]+$|[\r\n]+/g, '');
 }
-
-export const classificationSorter = (a: NamedPermissionsClassification, b: NamedPermissionsClassification): number =>
-  resolveRiskLevelOrdinalValue(a.classification) - resolveRiskLevelOrdinalValue(b.classification);

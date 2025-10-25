@@ -10,6 +10,7 @@ import MdapiRetriever, {
   parseAsPermissionset,
 } from '../../src/libs/core/mdapi/mdapiRetriever.js';
 import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
+import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
@@ -17,8 +18,11 @@ import {
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
 } from '../../src/libs/config/queries.js';
-import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/core/types.js';
-import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+import {
+  PolicyRuleViolation,
+  PolicyRuleViolationMute,
+  RuleComponentMessage,
+} from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 

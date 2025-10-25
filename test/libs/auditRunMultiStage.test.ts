@@ -7,23 +7,24 @@ import AuditRunMultiStageOutput, {
   EXECUTE_RULES,
   RESOLVE_POLICIES,
 } from '../../src/ux/auditRunMultiStage.js';
-import { PermissionRiskLevelPresets } from '../../src/libs/policies/types.js';
 import AuditRun from '../../src/libs/policies/auditRun.js';
+import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 
 const PROFILES_CONFIG = {
   content: {
     enabled: true,
     rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
-    profiles: { 'Test Profile 1': { preset: PermissionRiskLevelPresets.DEVELOPER } },
+    profiles: { 'Test Profile 1': { preset: ProfilesRiskPreset.DEVELOPER } },
   },
 };
+
 const PERMSETS_CONFIG = {
   content: {
     enabled: true,
     rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
     permissionSets: {
-      Test_Perm_Set_1: { preset: PermissionRiskLevelPresets.DEVELOPER },
-      Test_Perm_Set_2: { preset: PermissionRiskLevelPresets.DEVELOPER },
+      Test_Perm_Set_1: { preset: ProfilesRiskPreset.DEVELOPER },
+      Test_Perm_Set_2: { preset: ProfilesRiskPreset.DEVELOPER },
     },
   },
 };

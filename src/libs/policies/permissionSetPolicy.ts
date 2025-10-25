@@ -1,21 +1,15 @@
 import { Messages } from '@salesforce/core';
-import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';
 import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { RuleRegistries } from '../core/registries/index.js';
-import { EntityResolveError } from '../core/types.js';
-import { AuditContext } from './interfaces/policyRuleInterfaces.js';
+import { AuditContext, RuleRegistries } from '../core/registries/types.js';
+import { ProfilesRiskPreset } from '../core/policy-types.js';
+import { EntityResolveError } from '../core/result-types.js';
+import { ResolvedPermissionSet } from '../core/registries/permissionSets.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
-import { PermissionRiskLevelPresets } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export type ResolvedPermissionSet = {
-  name: string;
-  preset: string;
-  metadata: PermissionSet;
-};
 export default class PermissionSetPolicy extends Policy {
   private totalEntities: number;
   public constructor(
@@ -47,7 +41,7 @@ export default class PermissionSetPolicy extends Policy {
     });
     Object.entries(this.config.permissionSets).forEach(([key, val]) => {
       if (successfullyResolved[key] === undefined) {
-        if (val.preset === PermissionRiskLevelPresets.UNKNOWN) {
+        if (val.preset === ProfilesRiskPreset.UNKNOWN) {
           unresolved[key] = { name: key, message: messages.getMessage('preset-unknown', ['Permission Set']) };
         } else {
           unresolved[key] = { name: key, message: messages.getMessage('entity-not-found') };
@@ -66,7 +60,7 @@ export default class PermissionSetPolicy extends Policy {
 function filterCategorizedPermsets(permSets: PermissionSetLikeMap): string[] {
   const filteredNames: string[] = [];
   Object.entries(permSets).forEach(([key, val]) => {
-    if (val.preset !== PermissionRiskLevelPresets.UNKNOWN) {
+    if (val.preset !== ProfilesRiskPreset.UNKNOWN) {
       filteredNames.push(key);
     }
   });

@@ -6,8 +6,8 @@ import {
   PermSetsPolicyFileContent,
   ProfilesPolicyFileContent,
 } from '../../core/file-mgmt/schema.js';
-import { PermissionRiskLevelPresets } from '../types.js';
-import { RuleRegistries } from '../../core/registries/index.js';
+import { RuleRegistries } from '../../core/registries/types.js';
+import { ProfilesRiskPreset } from '../../core/policy-types.js';
 
 /**
  * Initialises a new profiles policy with the local org's
@@ -21,7 +21,7 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesPo
   const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
   const content: ProfilesPolicyFileContent = { enabled: true, profiles: {}, rules: {} };
   profiles.records.forEach((permsetRecord) => {
-    content.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+    content.profiles[permsetRecord.Profile.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
   });
   RuleRegistries.Profiles.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
@@ -48,7 +48,7 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
   permSets.records
     .filter((permsetRecord) => permsetRecord.IsCustom)
     .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+      content.permissionSets[permsetRecord.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
     });
   RuleRegistries.PermissionSets.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {

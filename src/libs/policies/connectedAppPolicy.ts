@@ -1,20 +1,11 @@
-import { EntityResolveError } from '../core/types.js';
+import { EntityResolveError } from '../core/result-types.js';
 import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
+import { AuditContext, RuleRegistries } from '../core/registries/types.js';
+import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
 import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';
-import { RuleRegistries } from '../core/registries/index.js';
-import { AuditContext } from './interfaces/policyRuleInterfaces.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
-
-export type ResolvedConnectedApp = {
-  name: string;
-  origin: 'Installed' | 'OauthToken' | 'Owned';
-  onlyAdminApprovedUsersAllowed: boolean;
-  overrideByApiSecurityAccess: boolean;
-  useCount: number;
-  users: string[];
-};
 
 export default class ConnectedAppPolicy extends Policy {
   public constructor(

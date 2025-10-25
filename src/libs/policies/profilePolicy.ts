@@ -1,23 +1,16 @@
 import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
-import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { EntityResolveError } from '../core/types.js';
+import { EntityResolveError } from '../core/result-types.js';
 import { AuditRunConfig, ProfilesPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { isNullish } from '../utils.js';
-import { RuleRegistries } from '../core/registries/index.js';
-import { AuditContext } from './interfaces/policyRuleInterfaces.js';
+import { isNullish } from '../core/utils.js';
+import { AuditContext, RuleRegistries } from '../core/registries/types.js';
+import { ProfilesRiskPreset } from '../core/policy-types.js';
+import { ResolvedProfile } from '../core/registries/profiles.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
-import { PermissionRiskLevelPresets } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
-
-export type ResolvedProfile = {
-  name: string;
-  preset: string;
-  metadata: ProfileMetadata;
-};
 
 export default class ProfilePolicy extends Policy {
   private totalEntities: number;
@@ -41,7 +34,7 @@ export default class ProfilePolicy extends Policy {
     const profileQueryResults = Array<Promise<QueryResult<resultType>>>();
     const definitiveProfiles = this.config.profiles ?? {};
     Object.entries(definitiveProfiles).forEach(([profileName, profileDef]) => {
-      if (profileDef.preset !== PermissionRiskLevelPresets.UNKNOWN) {
+      if (profileDef.preset !== ProfilesRiskPreset.UNKNOWN) {
         const qr = Promise.resolve(
           context.targetOrgConnection.tooling.query<resultType>(
             `SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`

@@ -3,12 +3,12 @@ import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
 import { parseAsPermissionset } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
-import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnPermSets.js';
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
-import { PartialPolicyRuleResult } from '../../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
+import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/core/registries/rules/enforceUserPermsClassificationOnPermSets.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -19,10 +19,10 @@ const DEFAULT_PERMSET_CONFIG = {
   enabled: true,
   permissionSets: {
     Test_Admin_Permission_Set_1: {
-      preset: PermissionRiskLevelPresets.ADMIN,
+      preset: ProfilesRiskPreset.ADMIN,
     },
     Test_Power_User_Permission_Set_1: {
-      preset: PermissionRiskLevelPresets.POWER_USER,
+      preset: ProfilesRiskPreset.POWER_USER,
     },
   },
   rules: {
@@ -95,8 +95,8 @@ describe('permission sets policy', () => {
   it('ignores permission set from config that cannot be resolved from target org', async () => {
     // Arrange
     const PERMSET_CONFIG = structuredClone(DEFAULT_PERMSET_CONFIG);
-    PERMSET_CONFIG.permissionSets['Test_Admin_Permission_Set_2'] = { preset: PermissionRiskLevelPresets.UNKNOWN };
-    PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: PermissionRiskLevelPresets.STANDARD_USER };
+    PERMSET_CONFIG.permissionSets['Test_Admin_Permission_Set_2'] = { preset: ProfilesRiskPreset.UNKNOWN };
+    PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: ProfilesRiskPreset.STANDARD_USER };
 
     // Act
     const pol = new PermissionSetPolicy(PERMSET_CONFIG, $$.mockAuditConfig);
