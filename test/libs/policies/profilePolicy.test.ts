@@ -4,14 +4,15 @@ import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import ProfilePolicyRegistry from '../../../src/libs/config/registries/profiles.js';
+import ProfilePolicyRegistry from '../../../src/libs/core/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
-import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../../src/libs/policies/types.js';
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
-import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnProfiles.js';
-import RuleRegistry from '../../../src/libs/config/registries/ruleRegistry.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
-import { PartialPolicyRuleResult } from '../../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
+import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
+import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/core/registries/rules/enforceUserPermsClassificationOnProfiles.js';
+import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -22,13 +23,13 @@ const DEFAULT_PROFILE_CONFIG: ProfilesPolicyFileContent = {
   enabled: true,
   profiles: {
     'System Administrator': {
-      preset: PermissionRiskLevelPresets.ADMIN,
+      preset: ProfilesRiskPreset.ADMIN,
     },
     'Standard User': {
-      preset: PermissionRiskLevelPresets.STANDARD_USER,
+      preset: ProfilesRiskPreset.STANDARD_USER,
     },
     'Custom Profile': {
-      preset: PermissionRiskLevelPresets.POWER_USER,
+      preset: ProfilesRiskPreset.POWER_USER,
     },
   },
   rules: {
@@ -151,7 +152,7 @@ describe('profile policy', () => {
         customPermissions: {
           content: {
             permissions: {
-              CriticalCustomPermission: { classification: PolicyRiskLevel.CRITICAL },
+              CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
             },
           },
         },
@@ -184,7 +185,7 @@ describe('profile policy', () => {
       path.join(QUERY_RESULTS_DIR, 'empty.json')
     );
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.POWER_USER };
+    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
 
     // Act
     const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
@@ -201,7 +202,7 @@ describe('profile policy', () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.UNKNOWN };
 
     // Act
     const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
@@ -222,7 +223,7 @@ describe('profile policy', () => {
       path.join(QUERY_RESULTS_DIR, 'profile-with-null-metadata.json')
     );
     const config = structuredClone(DEFAULT_PROFILE_CONFIG);
-    config.profiles['Custom Profile'] = { preset: PermissionRiskLevelPresets.POWER_USER };
+    config.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
 
     // Act
     const pol = new ProfilePolicy(config, $$.mockAuditConfig);

@@ -5,17 +5,24 @@ import { SinonSandbox } from 'sinon';
 import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import MdapiRetriever, { parseAsConnectedAppSetting, parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
-import { AuditRunConfig } from '../../src/libs/config/audit-run/schema.js';
+import MdapiRetriever, {
+  parseAsConnectedAppSetting,
+  parseAsPermissionset,
+} from '../../src/libs/core/mdapi/mdapiRetriever.js';
+import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
+import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
-} from '../../src/libs/config/queries.js';
-import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/audit/types.js';
-import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+} from '../../src/libs/core/constants.js';
+import {
+  PolicyRuleViolation,
+  PolicyRuleViolationMute,
+  RuleComponentMessage,
+} from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 

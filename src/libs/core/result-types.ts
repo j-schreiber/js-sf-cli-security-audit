@@ -38,6 +38,9 @@ export type EntityResolveError = {
   message: string;
 };
 
+/**
+ * Generic message for a particular element of a rule
+ */
 export type RuleComponentMessage = {
   /**
    * Path to a component. This can be a developer name of a connected app,
@@ -50,6 +53,9 @@ export type RuleComponentMessage = {
   message: string;
 };
 
+/**
+ *
+ */
 export type PolicyRuleSkipResult = {
   /**
    * Identifier of the rule, as it is configured in the policy.yml.
@@ -61,6 +67,10 @@ export type PolicyRuleSkipResult = {
   skipReason: string;
 };
 
+/**
+ * Full execution summary of a single rule. Includes audited entities,
+ * violations, execution errors, etc.
+ */
 export type PolicyRuleExecutionResult = {
   /**
    * Identifier of the rule, as it is configured in the policy.yml.
@@ -107,6 +117,10 @@ export type PolicyRuleExecutionResult = {
   warnings: RuleComponentMessage[];
 };
 
+/**
+ * Full execution result of a policy. Contains full results of each executed
+ * rule and more information about skipped rules, audited entities, etc.
+ */
 export type AuditPolicyResult = {
   /**
    * Flag that indicates, if the policy was executed.
@@ -153,6 +167,9 @@ export type AuditPolicyResult = {
   ignoredEntities: EntityResolveError[];
 };
 
+/**
+ * The final audit result, contains all policy results.
+ */
 export type AuditResult = {
   /**
    * All executed policies were compliant.

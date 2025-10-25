@@ -6,7 +6,7 @@ import { Messages } from '@salesforce/core';
 import OrgAuditRun from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../../../mocks/auditTestContext.js';
 import AuditRun from '../../../../src/libs/policies/auditRun.js';
-import { AuditResult } from '../../../../src/libs/audit/types.js';
+import { AuditResult } from '../../../../src/libs/core/result-types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');

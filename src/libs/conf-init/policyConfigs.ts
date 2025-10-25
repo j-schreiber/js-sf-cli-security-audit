@@ -1,15 +1,13 @@
 import { Connection } from '@salesforce/core';
-import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../config/queries.js';
-import { PermissionSet } from '../salesforceStandardTypes.js';
+import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
+import { PermissionSet } from '../policies/salesforceStandardTypes.js';
 import {
   BasePolicyFileContent,
   PermSetsPolicyFileContent,
   ProfilesPolicyFileContent,
-} from '../../config/audit-run/schema.js';
-import { ProfilesRegistry } from '../../config/registries/profiles.js';
-import { PermissionRiskLevelPresets } from '../types.js';
-import { PermissionSetsRegistry } from '../../config/registries/permissionSets.js';
-import { ConnectedAppsRegistry } from '../../config/registries/connectedApps.js';
+} from '../core/file-mgmt/schema.js';
+import { RuleRegistries } from '../core/registries/types.js';
+import { ProfilesRiskPreset } from '../core/policy-types.js';
 
 /**
  * Initialises a new profiles policy with the local org's
@@ -23,9 +21,9 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesPo
   const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
   const content: ProfilesPolicyFileContent = { enabled: true, profiles: {}, rules: {} };
   profiles.records.forEach((permsetRecord) => {
-    content.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+    content.profiles[permsetRecord.Profile.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
   });
-  ProfilesRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.Profiles.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };
@@ -50,9 +48,9 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
   permSets.records
     .filter((permsetRecord) => permsetRecord.IsCustom)
     .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
+      content.permissionSets[permsetRecord.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
     });
-  PermissionSetsRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.PermissionSets.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };
@@ -67,7 +65,7 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
  */
 export function initConnectedApps(): BasePolicyFileContent {
   const content: BasePolicyFileContent = { enabled: true, rules: {} };
-  ConnectedAppsRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.ConnectedApps.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };

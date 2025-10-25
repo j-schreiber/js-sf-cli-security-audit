@@ -4,8 +4,8 @@ import { expect } from 'chai';
 import { Connection, Messages } from '@salesforce/core';
 import OrgAuditInit from '../../../../src/commands/org/audit/init.js';
 import AuditTestContext from '../../../mocks/auditTestContext.js';
-import AuditConfig from '../../../../src/libs/policies/initialisation/auditConfig.js';
-import { AuditRunConfig } from '../../../../src/libs/config/audit-run/schema.js';
+import AuditConfig from '../../../../src/libs/conf-init/auditConfig.js';
+import { AuditRunConfig } from '../../../../src/libs/core/file-mgmt/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

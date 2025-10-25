@@ -1,19 +1,19 @@
 // import fs from 'node:fs';
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, AuditResult } from '../audit/types.js';
-import { AuditRunConfig } from '../config/audit-run/schema.js';
+import { AuditPolicyResult, AuditResult } from '../core/result-types.js';
+import { AuditRunConfig } from '../core/file-mgmt/schema.js';
+import { loadAuditConfig } from '../core/file-mgmt/auditConfigFileManager.js';
 import ProfilePolicy from './profilePolicy.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 import PermissionSetPolicy from './permissionSetPolicy.js';
 import ConnectedAppPolicy from './connectedAppPolicy.js';
-import AuditConfig from './initialisation/auditConfig.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy>;
 
 export function startAuditRun(directoryPath: string): AuditRun {
-  const conf = AuditConfig.load(directoryPath);
+  const conf = loadAuditConfig(directoryPath);
   return new AuditRun(conf);
 }
 

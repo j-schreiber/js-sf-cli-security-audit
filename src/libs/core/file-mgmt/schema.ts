@@ -1,5 +1,6 @@
 import z from 'zod';
-import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../policies/types.js';
+import { PermissionRiskLevel } from '../classification-types.js';
+import { ProfilesRiskPreset } from '../policy-types.js';
 
 const PermissionsClassificationSchema = z.object({
   /** UI Label */
@@ -7,7 +8,7 @@ const PermissionsClassificationSchema = z.object({
   /** An optional description to explain the classification */
   reason: z.string().optional(),
   /** Risk assessment of the permissions */
-  classification: z.enum(PolicyRiskLevel),
+  classification: z.enum(PermissionRiskLevel),
 });
 
 const PermsClassificationsMapSchema = z.record(z.string(), PermissionsClassificationSchema);
@@ -25,7 +26,7 @@ const PolicyRuleConfigSchema = z.object({
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
 
 const PermSetConfig = z.object({
-  preset: z.enum(PermissionRiskLevelPresets),
+  preset: z.enum(ProfilesRiskPreset),
 });
 
 const PermSetMap = z.record(z.string(), PermSetConfig);

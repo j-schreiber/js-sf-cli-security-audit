@@ -1,8 +1,9 @@
 import { Messages } from '@salesforce/core';
+import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { isNullish } from '../../utils.js';
-import { PartialPolicyRuleResult, RuleAuditContext } from '../interfaces/policyRuleInterfaces.js';
-import { permissionAllowedInPreset, PolicyRiskLevel } from '../types.js';
-import { ResolvedProfile } from '../profilePolicy.js';
+import { ResolvedProfile } from '../profiles.js';
+import { PermissionRiskLevel } from '../../classification-types.js';
+import { permissionAllowedInPreset } from '../../policy-types.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
@@ -21,7 +22,7 @@ export default class EnforceUserPermsClassificationOnProfiles extends PolicyRule
           const identifier = [profile.name, userPerm.name];
           const classifiedUserPerm = this.resolveUserPermission(userPerm.name);
           if (classifiedUserPerm) {
-            if (classifiedUserPerm.classification === PolicyRiskLevel.BLOCKED) {
+            if (classifiedUserPerm.classification === PermissionRiskLevel.BLOCKED) {
               result.violations.push({
                 identifier,
                 message: messages.getMessage('violations.permission-is-blocked'),
@@ -34,7 +35,7 @@ export default class EnforceUserPermsClassificationOnProfiles extends PolicyRule
                   profile.preset,
                 ]),
               });
-            } else if (classifiedUserPerm.classification === PolicyRiskLevel.UNKNOWN) {
+            } else if (classifiedUserPerm.classification === PermissionRiskLevel.UNKNOWN) {
               result.warnings.push({
                 identifier,
                 message: messages.getMessage('warnings.permission-unknown'),

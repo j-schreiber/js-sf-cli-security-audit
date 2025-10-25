@@ -4,8 +4,8 @@ import { assert, expect } from 'chai';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../../src/commands/org/audit/run.js';
-import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
-import AuditConfigFileManager from '../../../src/libs/config/audit-run/auditConfigFileManager.js';
+import { DefaultFileManager } from '../../../src/libs/core/file-mgmt/auditConfigFileManager.js';
+import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 
 const scratchOrgAlias = 'TestTargetOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
@@ -22,10 +22,9 @@ describe('org audit NUTs', () => {
     return path.join(session.dir, 'test-sfdx-project', filePath);
   }
 
-  function activatePolicies(dirPath: string, preset: PermissionRiskLevelPresets) {
-    const fileManager = new AuditConfigFileManager();
+  function activatePolicies(dirPath: string, preset: ProfilesRiskPreset) {
     const configDirPath = resolveTestDirFilePath(dirPath);
-    const conf = fileManager.parse(configDirPath);
+    const conf = DefaultFileManager.parse(configDirPath);
     if (conf.policies.Profiles?.content.profiles) {
       Object.values(conf.policies.Profiles.content.profiles).forEach((profile) => {
         // eslint-disable-next-line no-param-reassign
@@ -38,7 +37,7 @@ describe('org audit NUTs', () => {
         permSet.preset = preset;
       });
     }
-    fileManager.save(configDirPath, conf);
+    DefaultFileManager.save(configDirPath, conf);
   }
 
   before(async () => {
@@ -100,7 +99,7 @@ describe('org audit NUTs', () => {
 
   it('successfully completes an audit with all policies active', async () => {
     // Arrange
-    activatePolicies('tmp', PermissionRiskLevelPresets.ADMIN);
+    activatePolicies('tmp', ProfilesRiskPreset.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
