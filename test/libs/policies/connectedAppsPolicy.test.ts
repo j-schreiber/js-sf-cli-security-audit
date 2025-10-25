@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { buildResultsPath } from '../../mocks/auditTestContext.js';
-import { BasePolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
+import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import ConnectedAppPolicy, { ResolvedConnectedApp } from '../../../src/libs/policies/connectedAppPolicy.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/config/queries.js';
 

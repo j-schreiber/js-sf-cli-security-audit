@@ -1,5 +1,5 @@
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, PolicyRuleExecutionResult } from '../../audit/types.js';
+import { AuditPolicyResult, PolicyRuleExecutionResult } from '../../core/types.js';
 import { Optional } from '../../utils.js';
 
 /**

@@ -4,13 +4,13 @@ import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import ProfilePolicyRegistry from '../../../src/libs/config/registries/profiles.js';
+import ProfilePolicyRegistry from '../../../src/libs/core/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/policies/profilePolicy.js';
 import { PermissionRiskLevelPresets, PolicyRiskLevel } from '../../../src/libs/policies/types.js';
 import { Profile } from '../../../src/libs/policies/salesforceStandardTypes.js';
 import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnProfiles.js';
-import RuleRegistry from '../../../src/libs/config/registries/ruleRegistry.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
+import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/policies/interfaces/policyRuleInterfaces.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

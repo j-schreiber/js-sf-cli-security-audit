@@ -5,11 +5,9 @@ import {
   BasePolicyFileContent,
   PermSetsPolicyFileContent,
   ProfilesPolicyFileContent,
-} from '../../config/audit-run/schema.js';
-import { ProfilesRegistry } from '../../config/registries/profiles.js';
+} from '../../core/file-mgmt/schema.js';
 import { PermissionRiskLevelPresets } from '../types.js';
-import { PermissionSetsRegistry } from '../../config/registries/permissionSets.js';
-import { ConnectedAppsRegistry } from '../../config/registries/connectedApps.js';
+import { RuleRegistries } from '../../core/registries/index.js';
 
 /**
  * Initialises a new profiles policy with the local org's
@@ -25,7 +23,7 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesPo
   profiles.records.forEach((permsetRecord) => {
     content.profiles[permsetRecord.Profile.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
   });
-  ProfilesRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.Profiles.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };
@@ -52,7 +50,7 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
     .forEach((permsetRecord) => {
       content.permissionSets[permsetRecord.Name] = { preset: PermissionRiskLevelPresets.UNKNOWN };
     });
-  PermissionSetsRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.PermissionSets.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };
@@ -67,7 +65,7 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
  */
 export function initConnectedApps(): BasePolicyFileContent {
   const content: BasePolicyFileContent = { enabled: true, rules: {} };
-  ConnectedAppsRegistry.registeredRules().forEach((ruleName) => {
+  RuleRegistries.ConnectedApps.registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };

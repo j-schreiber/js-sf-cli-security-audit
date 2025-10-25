@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
 import { DescribeSObjectResult } from '@jsforce/jsforce-node';
-import { NamedPermissionsClassification, PermissionsConfig } from '../../config/audit-run/schema.js';
+import { NamedPermissionsClassification, PermissionsConfig } from '../../core/file-mgmt/schema.js';
 import { DEFAULT_CLASSIFICATIONS } from '../../config/defaultPolicyClassification.js';
 import { PolicyRiskLevel, resolveRiskLevelOrdinalValue } from '../types.js';
 import { CUSTOM_PERMS_QUERY } from '../../config/queries.js';

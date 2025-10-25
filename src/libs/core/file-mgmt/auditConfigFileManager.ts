@@ -20,16 +20,30 @@ type DirConfig = {
   [fileName: string]: FileConfig;
 };
 
-export const loadAuditConfig = (dirPath: string): AuditRunConfig => {
-  const fileManager = new AuditConfigFileManager();
-  return fileManager.parse(dirPath);
-};
+/**
+ * Loads an audit run config with the default file manager
+ *
+ * @param dirPath
+ * @returns
+ */
+export const loadAuditConfig = (dirPath: string): AuditRunConfig => DefaultFileManager.parse(dirPath);
 
+/**
+ * Saves a new or modified audit run config with the default file manager
+ *
+ * @param dirPath
+ * @param conf
+ */
 export const saveAuditConfig = (dirPath: string, conf: AuditRunConfig): void => {
-  const fileManager = new AuditConfigFileManager();
-  fileManager.save(dirPath, conf);
+  DefaultFileManager.save(dirPath, conf);
 };
 
+/**
+ * The file manager streamlines initialisation of an audit config from
+ * a source directory and writing updated content back to disk. The directory
+ * structure is configurable, but most of the time using the default file manager
+ * will be enough.
+ */
 export default class AuditConfigFileManager {
   private directoryStructure: Record<string, DirConfig>;
 
@@ -120,3 +134,5 @@ function capitalizeKeys(object: Record<string, unknown>): Record<string, unknown
   Object.keys(object).forEach((key) => (newObj[`${key[0].toUpperCase()}${key.slice(1)}`] = object[key]));
   return newObj;
 }
+
+export const DefaultFileManager = new AuditConfigFileManager();

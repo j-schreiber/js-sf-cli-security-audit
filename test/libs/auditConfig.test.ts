@@ -7,8 +7,8 @@ import AuditTestContext, {
   QUERY_RESULTS_BASE,
 } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/policies/initialisation/auditConfig.js';
-import { loadAuditConfig, saveAuditConfig } from '../../src/libs/config/audit-run/auditConfigFileManager.js';
-import { AuditRunConfig, ConfigFile } from '../../src/libs/config/audit-run/schema.js';
+import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
+import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/config/queries.js';
 import { PermissionRiskLevelPresets } from '../../src/libs/policies/types.js';
 

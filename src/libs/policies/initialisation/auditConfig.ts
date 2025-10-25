@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig } from '../../config/audit-run/schema.js';
-import AuditConfigFileManager from '../../config/audit-run/auditConfigFileManager.js';
+import { AuditRunConfig } from '../../core/file-mgmt/schema.js';
+import AuditConfigFileManager from '../../core/file-mgmt/auditConfigFileManager.js';
 import { initCustomPermissions, initUserPermissions } from './permissionsClassification.js';
 import { initConnectedApps, initPermissionSets, initProfiles } from './policyConfigs.js';
 

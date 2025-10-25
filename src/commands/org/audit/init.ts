@@ -7,7 +7,7 @@ import {
   AuditRunConfigPolicies,
   isPermissionsConfig,
   isPolicyConfig,
-} from '../../../libs/config/audit-run/schema.js';
+} from '../../../libs/core/file-mgmt/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');

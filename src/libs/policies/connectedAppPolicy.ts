@@ -1,9 +1,8 @@
-import { EntityResolveError } from '../audit/types.js';
-import ConnectedAppsRuleRegistry from '../config/registries/connectedApps.js';
-import RuleRegistry from '../config/registries/ruleRegistry.js';
-import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
+import { EntityResolveError } from '../core/types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
-import MdapiRetriever from '../mdapiRetriever.js';
+import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';
+import { RuleRegistries } from '../core/registries/index.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
@@ -21,7 +20,7 @@ export default class ConnectedAppPolicy extends Policy {
   public constructor(
     public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry: RuleRegistry = new ConnectedAppsRuleRegistry()
+    registry = RuleRegistries.ConnectedApps
   ) {
     super(config, auditConfig, registry);
   }

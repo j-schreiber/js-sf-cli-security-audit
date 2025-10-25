@@ -5,9 +5,9 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import { PermissionRiskLevelPresets } from '../../../src/libs/policies/types.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
-import { parseAsPermissionset } from '../../../src/libs/mdapiRetriever.js';
+import { parseAsPermissionset } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
 import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/policies/rules/enforceUserPermsClassificationOnPermSets.js';
-import { PermSetsPolicyFileContent } from '../../../src/libs/config/audit-run/schema.js';
+import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/policies/interfaces/policyRuleInterfaces.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

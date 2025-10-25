@@ -1,11 +1,10 @@
 import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { EntityResolveError } from '../audit/types.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../config/audit-run/schema.js';
+import { EntityResolveError } from '../core/types.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../core/file-mgmt/schema.js';
 import { isNullish } from '../utils.js';
-import RuleRegistry from '../config/registries/ruleRegistry.js';
-import ProfilesRuleRegistry from '../config/registries/profiles.js';
+import { RuleRegistries } from '../core/registries/index.js';
 import { AuditContext } from './interfaces/policyRuleInterfaces.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { Profile } from './salesforceStandardTypes.js';
@@ -25,7 +24,7 @@ export default class ProfilePolicy extends Policy {
   public constructor(
     public config: ProfilesPolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry: RuleRegistry = new ProfilesRuleRegistry()
+    registry = RuleRegistries.Profiles
   ) {
     super(config, auditConfig, registry);
     this.totalEntities = this.config.profiles ? Object.keys(this.config.profiles).length : 0;

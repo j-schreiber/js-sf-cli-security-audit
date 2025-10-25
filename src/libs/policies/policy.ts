@@ -1,8 +1,7 @@
 import EventEmitter from 'node:events';
-import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../audit/types.js';
-import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
-import RuleRegistry from '../config/registries/ruleRegistry.js';
-import { RegistryRuleResolveResult } from '../config/registries/types.js';
+import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../core/types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
+import RuleRegistry, { RegistryRuleResolveResult } from '../core/registries/ruleRegistry.js';
 import { AuditContext, IPolicy, PartialPolicyRuleResult } from './interfaces/policyRuleInterfaces.js';
 
 export type ResolveEntityResult = {

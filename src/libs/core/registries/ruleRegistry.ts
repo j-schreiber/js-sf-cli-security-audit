@@ -1,14 +1,24 @@
 import { Messages } from '@salesforce/core';
-import { EntityResolveError, PolicyRuleSkipResult } from '../../audit/types.js';
-import { AuditRunConfig, RuleMap } from '../audit-run/schema.js';
+import { EntityResolveError, PolicyRuleSkipResult } from '../../core/types.js';
+import { AuditRunConfig, RuleMap } from '../../core/file-mgmt/schema.js';
 import { RowLevelPolicyRule } from '../../policies/interfaces/policyRuleInterfaces.js';
-import { RegistryRuleResolveResult } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Constructor<T, Args extends any[] = any[]> = new (...args: Args) => T;
+
+/**
+ * Result contains the actually available and enabled rules
+ * from the raw config file. Rules that are not present in the
+ * policie's registry are errors, disabled rules are skipped.
+ */
+export type RegistryRuleResolveResult = {
+  enabledRules: Array<RowLevelPolicyRule<unknown>>;
+  skippedRules: PolicyRuleSkipResult[];
+  resolveErrors: EntityResolveError[];
+};
 
 /**
  * The rule registry holds all available rules for a given policy at run time.
