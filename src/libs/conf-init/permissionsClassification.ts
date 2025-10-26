@@ -4,7 +4,7 @@ import { NamedPermissionsClassification, PermissionsConfig } from '../core/file-
 import { CUSTOM_PERMS_QUERY } from '../core/constants.js';
 import { CustomPermission } from '../policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
-import { DEFAULT_CLASSIFICATIONS } from './defaultPolicyClassification.js';
+import { AuditInitPresets, loadPreset } from './presets.js';
 
 /**
  * Initialises a fresh set of user permissions from target org connection
@@ -12,10 +12,10 @@ import { DEFAULT_CLASSIFICATIONS } from './defaultPolicyClassification.js';
  * @param con
  * @returns
  */
-export async function initUserPermissions(con: Connection): Promise<PermissionsConfig> {
+export async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionsConfig> {
   const permSet = await con.describe('PermissionSet');
   const result: PermissionsConfig = { permissions: {} };
-  const perms = parsePermissionsFromPermSet(permSet);
+  const perms = parsePermissionsFromPermSet(permSet, preset);
   perms.sort(classificationSorter);
   perms.forEach(
     (perm) =>
@@ -55,26 +55,17 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
   return result;
 }
 
-function parsePermissionsFromPermSet(describe: DescribeSObjectResult): NamedPermissionsClassification[] {
+function parsePermissionsFromPermSet(
+  describe: DescribeSObjectResult,
+  preset?: AuditInitPresets
+): NamedPermissionsClassification[] {
   const permFields = describe.fields.filter((field) => field.name.startsWith('Permissions'));
-  return permFields.map((field) => {
-    const policyName = field.name.replace('Permissions', '');
-    const defaultDef = DEFAULT_CLASSIFICATIONS[policyName];
-    if (defaultDef) {
-      return {
-        label: field.label,
-        name: policyName,
-        classification: defaultDef.classification,
-        reason: defaultDef.reason,
-      };
-    } else {
-      return {
-        label: field.label,
-        name: policyName,
-        classification: PermissionRiskLevel.UNKNOWN,
-      };
-    }
-  });
+  const rawClassifications = permFields.map((field) => ({
+    label: field.label,
+    name: field.name.replace('Permissions', ''),
+  }));
+  const presConfig = loadPreset(preset);
+  return presConfig.classifyUserPermissions(rawClassifications);
 }
 
 function sanitiseLabel(rawLabel?: string): string | undefined {

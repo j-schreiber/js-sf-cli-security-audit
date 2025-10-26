@@ -3,6 +3,7 @@ import { AuditRunConfig } from '../core/file-mgmt/schema.js';
 import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
 import { initCustomPermissions, initUserPermissions } from './permissionsClassification.js';
 import { initConnectedApps, initPermissionSets, initProfiles } from './policyConfigs.js';
+import { AuditInitPresets } from './presets.js';
 
 /**
  * Additional options how the config should be initialised.
@@ -15,7 +16,7 @@ export type AuditInitOptions = {
   /**
    * An optional preset to initialise classifications and policies.
    */
-  preset?: string;
+  preset?: AuditInitPresets;
 };
 
 /**
@@ -31,7 +32,7 @@ export default class AuditConfig {
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
-    conf.classifications.userPermissions = { content: await initUserPermissions(targetCon) };
+    conf.classifications.userPermissions = { content: await initUserPermissions(targetCon, opts?.preset) };
     const customPerms = await initCustomPermissions(targetCon);
     if (customPerms) {
       conf.classifications.customPermissions = { content: customPerms };

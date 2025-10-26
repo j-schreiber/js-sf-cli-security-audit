@@ -33,3 +33,15 @@ Set up and reset the connected MFA for a user.
 # CanApproveUninstalledApps
 
 Allows to authorize new connected apps and therefore new integrations.
+
+# UseAnyApiClient
+
+Bypass all security settings and use deprecated login types.
+
+# ViewClientSecret
+
+Access and export secrets from connected apps.
+
+# ExportReport
+
+Reports allow to export classified or sensitive data.

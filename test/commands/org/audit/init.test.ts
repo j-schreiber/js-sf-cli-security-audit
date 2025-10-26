@@ -42,7 +42,7 @@ describe('org audit init', () => {
     const conParam = initMock.args.flat()[0] as Connection;
     const optsParam = initMock.args.flat()[1];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
-    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org' });
+    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'strict' });
     // command result accurately represents the lib result
     expect(result).to.deep.equal(FULL_AUDIT_INIT_RESULT);
     // relevant summary is printed to terminal

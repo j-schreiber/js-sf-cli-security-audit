@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
 import AuditTestContext, {
   MOCK_DATA_BASE_PATH,
@@ -11,8 +12,11 @@ import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/
 import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
+import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
 describe('audit config', () => {
   const $$ = new AuditTestContext();
@@ -84,6 +88,19 @@ describe('audit config', () => {
 
       // Assert
       expect(auditConf.classifications.customPermissions).to.be.undefined;
+    });
+
+    it('applies the selected preset logic when initialising config', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.strict });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      // later will replace with list that checks all perms from the preset
+      const anyApiClientPerm = auditConf.classifications.userPermissions.content.permissions.UseAnyApiClient;
+      assert.isDefined(anyApiClientPerm);
+      expect(anyApiClientPerm.classification).to.equal('Blocked');
+      expect(anyApiClientPerm.reason).to.equal(messages.getMessage('UseAnyApiClient'));
     });
   });
 
