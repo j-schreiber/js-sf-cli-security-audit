@@ -17,19 +17,34 @@ export default class MDAPI {
 
   /**
    * Resolves one of the pre-configured metadata types and returns
-   * the entire XML content of source file body as javascript object.
+   * a map of resolved names and entire XML content of source file body.
    *
    * @param typeName
    * @param componentNames
    * @returns
    */
-  public async resolve<K extends keyof typeof Registry>(
-    typeName: keyof typeof Registry,
-    componentNames?: string[]
-  ): Promise<RegistryReturnTypes[K]> {
-    const retriever = Registry[typeName];
-    const results = await retriever.resolve(this.connection, componentNames ?? []);
-    return results as RegistryReturnTypes[K];
+  public async resolve<K extends keyof typeof NamedTypesRegistry>(
+    typeName: keyof typeof NamedTypesRegistry,
+    componentNames: string[]
+  ): Promise<NamedReturnTypes[K]> {
+    const retriever = NamedTypesRegistry[typeName];
+    const results = await retriever.resolve(this.connection, componentNames);
+    return results as NamedReturnTypes[K];
+  }
+
+  /**
+   * Resolves one of the pre-configured metadata types and returns
+   * the entire XML content of source file body.
+   *
+   * @param typeName
+   * @returns
+   */
+  public async resolveSingleton<K extends keyof typeof SingletonRegistry>(
+    typeName: keyof typeof SingletonRegistry
+  ): Promise<SingletonReturnTypes[K]> {
+    const retriever = SingletonRegistry[typeName];
+    const results = await retriever.resolve(this.connection);
+    return results as SingletonReturnTypes[K];
   }
 }
 
@@ -47,6 +62,10 @@ type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
    * Name of the root node in XML file content
    */
   rootNodeName: Key;
+  /**
+   * Post processor function that sanitises the XML parse result
+   */
+  parsePostProcessor?: (parseResult: Type[Key]) => Type[Key];
 };
 
 abstract class MetadataRegistryEntry<Type, Key extends keyof Type> {
@@ -54,23 +73,26 @@ abstract class MetadataRegistryEntry<Type, Key extends keyof Type> {
   public retrieveType: string;
   public rootNodeName: Key;
 
-  public constructor(opts: MetadataRegistryEntryOpts<Type, Key>) {
-    this.retrieveType = opts.retrieveType;
-    this.parser = opts.parser ?? new XMLParser();
-    this.rootNodeName = opts.rootNodeName;
+  public constructor(private opts: MetadataRegistryEntryOpts<Type, Key>) {
+    this.retrieveType = this.opts.retrieveType;
+    this.parser = this.opts.parser ?? new XMLParser();
+    this.rootNodeName = this.opts.rootNodeName;
   }
 
   public parse(fullFilePath: PathLike): Type[Key] {
     const fileContent = readFileSync(fullFilePath, 'utf-8');
     const parsedContent = this.parser.parse(fileContent) as Type;
+    if (this.opts.parsePostProcessor) {
+      return this.opts.parsePostProcessor(parsedContent[this.rootNodeName]);
+    }
     return parsedContent[this.rootNodeName];
   }
 }
 
 /**
  * The entry is a type that only has one single instance on the org, such as
- * a Setting. If this is true, the component is retrieved by its
- * root node name (e.g. ConnectedAppSettings, AccountSettings, etc).
+ * a Setting. The component is retrieved by its root node name
+ * (e.g. ConnectedAppSettings, AccountSettings, etc).
  */
 class SingletonMetadata<Type, Key extends keyof Type> extends MetadataRegistryEntry<Type, Key> {
   public retrieveName: string;
@@ -141,7 +163,7 @@ async function retrieve(compSet: ComponentSet, con: Connection): Promise<Retriev
   return retrieveResult;
 }
 
-export const Registry = {
+export const NamedTypesRegistry = {
   PermissionSet: new NamedMetadata<PermissionSetXml, 'PermissionSet'>({
     retrieveType: 'PermissionSet',
     rootNodeName: 'PermissionSet',
@@ -149,15 +171,28 @@ export const Registry = {
       isArray: (jpath): boolean =>
         ['userPermissions', 'fieldPermissions', 'customPermissions', 'classAccesses'].includes(jpath),
     }),
+    parsePostProcessor: (parseResult): PermissionSet => ({
+      ...parseResult,
+      userPermissions: parseResult.userPermissions ?? [],
+      customPermissions: parseResult.customPermissions ?? [],
+      classAccesses: parseResult.classAccesses ?? [],
+    }),
   }),
+};
+
+export const SingletonRegistry = {
   ConnectedAppSettings: new SingletonMetadata<ConnectedAppSettingsXml, 'ConnectedAppSettings'>({
     rootNodeName: 'ConnectedAppSettings',
     retrieveType: 'Settings',
   }),
 };
 
-type RegistryReturnTypes = {
-  [K in keyof typeof Registry]: Awaited<ReturnType<(typeof Registry)[K]['resolve']>>;
+type NamedReturnTypes = {
+  [K in keyof typeof NamedTypesRegistry]: Awaited<ReturnType<(typeof NamedTypesRegistry)[K]['resolve']>>;
+};
+
+type SingletonReturnTypes = {
+  [K in keyof typeof SingletonRegistry]: Awaited<ReturnType<(typeof SingletonRegistry)[K]['resolve']>>;
 };
 
 type PermissionSetXml = {
