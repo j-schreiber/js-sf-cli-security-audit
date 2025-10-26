@@ -68,4 +68,20 @@ describe('org audit init', () => {
       'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
     ]);
   });
+
+  it('passes the preset flag to audit run init', async () => {
+    // Arrange
+    const initMock = $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org', '--preset', 'loose']);
+
+    // Assert
+    // ensure contract - all relevant params are actually passed to lib
+    expect(initMock.callCount).to.equal(1);
+    const conParam = initMock.args.flat()[0] as Connection;
+    const optsParam = initMock.args.flat()[1];
+    expect(conParam.getUsername()).to.equal($$.targetOrg.username);
+    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'loose' });
+  });
 });

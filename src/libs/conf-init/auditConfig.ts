@@ -8,7 +8,14 @@ import { initConnectedApps, initPermissionSets, initProfiles } from './policyCon
  * Additional options how the config should be initialised.
  */
 export type AuditInitOptions = {
+  /**
+   * When set, config files are created at the target location.
+   */
   targetDir?: string;
+  /**
+   * An optional preset to initialise classifications and policies.
+   */
+  preset?: string;
 };
 
 /**

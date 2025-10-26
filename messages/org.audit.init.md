@@ -14,6 +14,14 @@ Target org to export permissions, profiles, users, etc.
 
 Directory where the audit config is initialised. If not set, the root directory will be used.
 
+# flags.preset.summary
+
+Select a preset to initialise classifications.
+
+# flags.preset.description
+
+Preset is processed last (after custom templates) and initialises defaults for user permission classifications and the enabled rules for each policy. Consult the documentation to learn more.
+
 # examples
 
 - Initialise audit policies at the root directory

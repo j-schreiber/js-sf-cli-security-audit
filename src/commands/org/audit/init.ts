@@ -8,11 +8,20 @@ import {
   isPermissionsConfig,
   isPolicyConfig,
 } from '../../../libs/core/file-mgmt/schema.js';
+import { AuditInitPresets } from '../../../libs/conf-init/presets.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
 
 export type OrgAuditInitResult = AuditRunConfig;
+
+const presetFlag = Flags.custom<AuditInitPresets>({
+  char: 'p',
+  summary: messages.getMessage('flags.preset.summary'),
+  description: messages.getMessage('flags.preset.description'),
+  options: Object.values(AuditInitPresets),
+  default: AuditInitPresets.strict,
+})();
 
 export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   public static readonly summary = messages.getMessage('summary');
@@ -31,6 +40,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
       summary: messages.getMessage('flags.output-dir.summary'),
       default: '',
     }),
+    preset: presetFlag,
     'api-version': Flags.orgApiVersion(),
   };
 
@@ -38,6 +48,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
     const auditConfig = await AuditConfig.init(flags['target-org'].getConnection(flags['api-version']), {
       targetDir: flags['output-dir'],
+      preset: flags.preset,
     });
     this.printResults(auditConfig);
     return auditConfig;
