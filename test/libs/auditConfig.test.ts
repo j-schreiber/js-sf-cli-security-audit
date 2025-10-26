@@ -6,11 +6,11 @@ import AuditTestContext, {
   parseFileAsJson,
   QUERY_RESULTS_BASE,
 } from '../mocks/auditTestContext.js';
-import AuditConfig from '../../src/libs/policies/initialisation/auditConfig.js';
-import { loadAuditConfig, saveAuditConfig } from '../../src/libs/config/audit-run/auditConfigFileManager.js';
-import { AuditRunConfig, ConfigFile } from '../../src/libs/config/audit-run/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/config/queries.js';
-import { PermissionRiskLevelPresets } from '../../src/libs/policies/types.js';
+import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
+import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
+import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
+import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
+import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 
@@ -150,14 +150,14 @@ describe('audit config', () => {
       // Act
       Object.values(mockAudit.policies.Profiles!.content.profiles).forEach((profile) => {
         // eslint-disable-next-line no-param-reassign
-        profile.preset = PermissionRiskLevelPresets.ADMIN;
+        profile.preset = ProfilesRiskPreset.ADMIN;
       });
       saveAuditConfig(testDir, mockAudit);
 
       // Assert
       const updatedConf = loadAuditConfig(testDir);
       Object.values(updatedConf.policies.Profiles!.content.profiles).forEach((profile) => {
-        expect(profile.preset).to.equal(PermissionRiskLevelPresets.ADMIN);
+        expect(profile.preset).to.equal(ProfilesRiskPreset.ADMIN);
       });
     });
   });

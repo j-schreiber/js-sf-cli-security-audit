@@ -1,27 +1,17 @@
-import { EntityResolveError } from '../audit/types.js';
-import ConnectedAppsRuleRegistry from '../config/registries/connectedApps.js';
-import RuleRegistry from '../config/registries/ruleRegistry.js';
-import { AuditRunConfig, BasePolicyFileContent } from '../config/audit-run/schema.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../config/queries.js';
-import MdapiRetriever from '../mdapiRetriever.js';
-import { AuditContext } from './interfaces/policyRuleInterfaces.js';
+import { EntityResolveError } from '../core/result-types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../core/constants.js';
+import { AuditContext, RuleRegistries } from '../core/registries/types.js';
+import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
+import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
-
-export type ResolvedConnectedApp = {
-  name: string;
-  origin: 'Installed' | 'OauthToken' | 'Owned';
-  onlyAdminApprovedUsersAllowed: boolean;
-  overrideByApiSecurityAccess: boolean;
-  useCount: number;
-  users: string[];
-};
 
 export default class ConnectedAppPolicy extends Policy {
   public constructor(
     public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry: RuleRegistry = new ConnectedAppsRuleRegistry()
+    registry = RuleRegistries.ConnectedApps
   ) {
     super(config, auditConfig, registry);
   }
@@ -30,7 +20,7 @@ export default class ConnectedAppPolicy extends Policy {
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
-    const metadataApi = new MdapiRetriever(context.targetOrgConnection);
+    const metadataApi = new MDAPI(context.targetOrgConnection);
     this.emit('entityresolve', {
       total: 0,
       resolved: 0,
@@ -73,7 +63,7 @@ export default class ConnectedAppPolicy extends Policy {
       resolved: 0,
     });
     let overrideByApiSecurityAccess = false;
-    const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();
+    const apiSecurityAccessSetting = await metadataApi.resolveSingleton('ConnectedAppSettings');
     if (apiSecurityAccessSetting && apiSecurityAccessSetting.enableAdminApprovedAppsOnly) {
       overrideByApiSecurityAccess = true;
     }

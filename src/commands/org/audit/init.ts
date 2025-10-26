@@ -1,13 +1,13 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import AuditConfig from '../../../libs/policies/initialisation/auditConfig.js';
+import AuditConfig from '../../../libs/conf-init/auditConfig.js';
 import {
   AuditRunConfig,
   AuditRunConfigClassifications,
   AuditRunConfigPolicies,
   isPermissionsConfig,
   isPolicyConfig,
-} from '../../../libs/config/audit-run/schema.js';
+} from '../../../libs/core/file-mgmt/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');

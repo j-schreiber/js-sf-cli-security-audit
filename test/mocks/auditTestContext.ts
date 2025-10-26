@@ -2,20 +2,23 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
-import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
+import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import MdapiRetriever, { parseAsConnectedAppSetting, parseAsPermissionset } from '../../src/libs/mdapiRetriever.js';
-import { AuditRunConfig } from '../../src/libs/config/audit-run/schema.js';
+import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
+import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
-} from '../../src/libs/config/queries.js';
-import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../src/libs/audit/types.js';
-import { PartialPolicyRuleResult } from '../../src/libs/policies/interfaces/policyRuleInterfaces.js';
+} from '../../src/libs/core/constants.js';
+import {
+  PolicyRuleViolation,
+  PolicyRuleViolationMute,
+  RuleComponentMessage,
+} from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
@@ -29,6 +32,7 @@ const DEFAULT_MOCKS = {
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
 export const QUERY_RESULTS_BASE = path.join(MOCK_DATA_BASE_PATH, 'queryResults');
 export const RETRIEVES_BASE = path.join(MOCK_DATA_BASE_PATH, 'retrieves');
+export const SRC_MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 
 export default class AuditTestContext {
   public context: TestContext;
@@ -39,9 +43,8 @@ export default class AuditTestContext {
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public mocks: SfConnectionMocks;
-  public mockAppSetting: string;
-  public mockPermSets: string;
   public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {} };
+  public retrieveStub?: sinon.SinonStub;
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -53,12 +56,6 @@ export default class AuditTestContext {
       this.outputDirectory = this.defaultPath;
     }
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
-    this.mockAppSetting = path.join(
-      RETRIEVES_BASE,
-      'connected-app-settings',
-      'api-security-controls-available-enabled.xml'
-    );
-    this.mockPermSets = path.join(RETRIEVES_BASE, 'full-permsets');
   }
 
   public async init() {
@@ -68,10 +65,7 @@ export default class AuditTestContext {
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
-    this.context.SANDBOX.stub(MdapiRetriever.prototype, 'retrievePermissionsets').callsFake(this.retrievePermsetsStub);
-    this.context.SANDBOX.stub(MdapiRetriever.prototype, 'retrieveConnectedAppSetting').callsFake(
-      this.retrieveConnectedAppSettingStub
-    );
+    this.stubMetadataRetrieve('full');
   }
 
   public reset() {
@@ -82,19 +76,33 @@ export default class AuditTestContext {
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
   }
 
-  private retrieveConnectedAppSettingStub = (): Promise<ConnectedAppSettings> =>
-    Promise.resolve(parseAsConnectedAppSetting(this.mockAppSetting));
+  public stubMetadataRetrieve(dirPath: string) {
+    const fullyResolvedPath = path.join(SRC_MOCKS_BASE_PATH, dirPath);
+    if (this.retrieveStub) {
+      this.retrieveStub.restore();
+    }
+    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
+      new MetadataApiRetrieveMock(fullyResolvedPath) as unknown as MetadataApiRetrieve
+    );
+    return this.retrieveStub;
+  }
+}
 
-  private retrievePermsetsStub = (cmpNames: string[]): Promise<Record<string, PermissionSet>> => {
-    const result: Record<string, PermissionSet> = {};
-    cmpNames.forEach((cname) => {
-      const permsetFullPath = path.join(this.mockPermSets, `${cname}.permissionset-meta.xml`);
-      if (fs.existsSync(permsetFullPath)) {
-        result[cname] = parseAsPermissionset(permsetFullPath);
-      }
-    });
-    return Promise.resolve(result);
-  };
+class MetadataApiRetrieveMock {
+  public constructor(private dirPath?: string) {}
+
+  public async pollStatus(): Promise<RetrieveResult> {
+    let cmpSet: ComponentSet;
+    if (this.dirPath && this.dirPath !== '') {
+      cmpSet = ComponentSet.fromSource(this.dirPath);
+    } else {
+      cmpSet = new ComponentSet();
+    }
+    return new RetrieveResult(
+      { done: true, status: RequestStatus.Succeeded, success: true, fileProperties: [], id: '1', zipFile: '' },
+      cmpSet
+    );
+  }
 }
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
