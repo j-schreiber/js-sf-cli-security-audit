@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
-import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever2.js';
+import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';

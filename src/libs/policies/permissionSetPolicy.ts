@@ -1,5 +1,5 @@
 import { Messages } from '@salesforce/core';
-import MDAPI from '../core/mdapi/mdapiRetriever2.js';
+import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../core/file-mgmt/schema.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ProfilesRiskPreset } from '../core/policy-types.js';

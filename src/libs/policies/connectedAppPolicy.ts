@@ -3,7 +3,7 @@ import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../core/constants.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
-import MDAPI from '../core/mdapi/mdapiRetriever2.js';
+import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
