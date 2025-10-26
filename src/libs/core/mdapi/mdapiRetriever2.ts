@@ -2,18 +2,14 @@ import { PathLike, readFileSync } from 'node:fs';
 import { Connection } from '@salesforce/core';
 import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { XMLParser } from 'fast-xml-parser';
-import { ConnectedAppSettings, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
-
-// class MetadataCache {
-//   private components: Record<string, Metadata> = {};
-
-//   public isCached(cmpName: string): boolean {
-//     return this.components[cmpName] !== undefined && this.components[cmpName] !== null;
-//   }
-// }
+import { ConnectedAppSettings, Metadata, PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 
 export default class MDAPI {
-  public constructor(private connection: Connection) {}
+  private cache: MetadataCache;
+
+  public constructor(private connection: Connection) {
+    this.cache = new MetadataCache();
+  }
 
   /**
    * Resolves one of the pre-configured metadata types and returns
@@ -28,8 +24,16 @@ export default class MDAPI {
     componentNames: string[]
   ): Promise<NamedReturnTypes[K]> {
     const retriever = NamedTypesRegistry[typeName];
-    const results = await retriever.resolve(this.connection, componentNames);
-    return results as NamedReturnTypes[K];
+    const { toRetrieve, cached } = this.fetchCached(componentNames);
+    if (toRetrieve.length > 0) {
+      const retrieveResults = await retriever.resolve(this.connection, toRetrieve);
+      this.cacheResults(retrieveResults);
+      return {
+        ...cached,
+        ...retrieveResults,
+      } as NamedReturnTypes[K];
+    }
+    return cached as NamedReturnTypes[K];
   }
 
   /**
@@ -43,8 +47,51 @@ export default class MDAPI {
     typeName: keyof typeof SingletonRegistry
   ): Promise<SingletonReturnTypes[K]> {
     const retriever = SingletonRegistry[typeName];
-    const results = await retriever.resolve(this.connection);
-    return results as SingletonReturnTypes[K];
+    const { toRetrieve, cached } = this.fetchCached([typeName]);
+    if (toRetrieve.length > 0) {
+      const retrieveResults = await retriever.resolve(this.connection);
+      this.cache.set(typeName, retrieveResults);
+      return retrieveResults as SingletonReturnTypes[K];
+    }
+    return cached[typeName] as SingletonReturnTypes[K];
+  }
+
+  private cacheResults(results: Record<string, Metadata>): void {
+    Object.entries(results).forEach(([cname, mdata]) => {
+      this.cache.set(cname, mdata);
+    });
+  }
+
+  private fetchCached(componentNames: string[]): { toRetrieve: string[]; cached: Record<string, Metadata> } {
+    const toRetrieve = [];
+    const cached: Record<string, Metadata> = {};
+    for (const cname of componentNames) {
+      if (this.cache.isCached(cname)) {
+        cached[cname] = this.cache.fetch(cname);
+      } else {
+        toRetrieve.push(cname);
+      }
+    }
+    return { toRetrieve, cached };
+  }
+}
+
+class MetadataCache {
+  private components: Record<string, Metadata> = {};
+
+  public isCached(cmpName: string): boolean {
+    return this.components[cmpName] !== undefined && this.components[cmpName] !== null;
+  }
+
+  public fetch(cmpName: string): Metadata {
+    if (!this.isCached(cmpName)) {
+      throw new Error('Component not cached. Check first before fetching: ' + cmpName);
+    }
+    return this.components[cmpName];
+  }
+
+  public set(cmpName: string, content: Metadata): void {
+    this.components[cmpName] = content;
   }
 }
 
