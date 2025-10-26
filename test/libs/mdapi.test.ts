@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { expect } from 'chai';
-import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import AuditTestContext, { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
 import MDAPI, { NamedTypesRegistry, SingletonRegistry } from '../../src/libs/core/mdapi/mdapiRetriever2.js';
 
@@ -55,9 +54,7 @@ describe('audit config', () => {
 
   it('returns strongly typed content of retrieved permission sets', async () => {
     // Arrange
-    const retrieveStub = $$.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
-      new PermissionSetsRetrieveMock() as MetadataApiRetrieve
-    );
+    const retrieveStub = $$.stubMetadataRetrieve('default-permsets');
 
     // Act
     const mdapi = new MDAPI($$.targetOrgConnection);
@@ -77,9 +74,7 @@ describe('audit config', () => {
 
   it('returns strongly typed content of retrieved connected app settings', async () => {
     // Arrange
-    const retrieveStub = $$.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
-      new ConnectedAppSettingsMock() as MetadataApiRetrieve
-    );
+    const retrieveStub = $$.stubMetadataRetrieve('security-settings');
 
     // Act
     const mdapi = new MDAPI($$.targetOrgConnection);
@@ -92,9 +87,7 @@ describe('audit config', () => {
 
   it('caches retrieved permission sets by their full name', async () => {
     // Arrange
-    const retrieveStub = $$.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
-      new PermissionSetsRetrieveMock() as MetadataApiRetrieve
-    );
+    const retrieveStub = $$.stubMetadataRetrieve('default-permsets');
 
     // Act
     const mdapi = new MDAPI($$.targetOrgConnection);
@@ -112,9 +105,7 @@ describe('audit config', () => {
 
   it('caches connected app settings by its metadata type', async () => {
     // Arrange
-    const retrieveStub = $$.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
-      new ConnectedAppSettingsMock() as MetadataApiRetrieve
-    );
+    const retrieveStub = $$.stubMetadataRetrieve('security-settings');
 
     // Act
     const mdapi = new MDAPI($$.targetOrgConnection);
@@ -127,25 +118,3 @@ describe('audit config', () => {
     expect(settings2.enableAdminApprovedAppsOnly).to.be.true;
   });
 });
-
-class PermissionSetsRetrieveMock {
-  // eslint-disable-next-line class-methods-use-this
-  public async pollStatus(): Promise<RetrieveResult> {
-    const cmpSet = ComponentSet.fromSource(path.join(MOCKS_BASE_PATH, 'default-permsets'));
-    return new RetrieveResult(
-      { done: true, status: RequestStatus.Succeeded, success: true, fileProperties: [], id: '1', zipFile: '' },
-      cmpSet
-    );
-  }
-}
-
-class ConnectedAppSettingsMock {
-  // eslint-disable-next-line class-methods-use-this
-  public async pollStatus(): Promise<RetrieveResult> {
-    const cmpSet = ComponentSet.fromSource(path.join(MOCKS_BASE_PATH, 'security-settings'));
-    return new RetrieveResult(
-      { done: true, status: RequestStatus.Succeeded, success: true, fileProperties: [], id: '2', zipFile: '' },
-      cmpSet
-    );
-  }
-}

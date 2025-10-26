@@ -1,5 +1,5 @@
 import { Messages } from '@salesforce/core';
-import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';
+import MDAPI from '../core/mdapi/mdapiRetriever2.js';
 import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../core/file-mgmt/schema.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ProfilesRiskPreset } from '../core/policy-types.js';
@@ -28,19 +28,20 @@ export default class PermissionSetPolicy extends Policy {
     });
     const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
     const unresolved: Record<string, EntityResolveError> = {};
-    const retriever = new MdapiRetriever(context.targetOrgConnection);
-    const resolvedPermsets = await retriever.retrievePermissionsets(
+    const retriever = new MDAPI(context.targetOrgConnection);
+    const resolvedPermsets = await retriever.resolve(
+      'PermissionSet',
       filterCategorizedPermsets(this.config.permissionSets)
     );
-    Object.entries(resolvedPermsets).forEach(([permsetName, resolvedPermset]) => {
-      successfullyResolved[permsetName] = {
-        metadata: resolvedPermset,
-        preset: this.config.permissionSets[permsetName].preset,
-        name: permsetName,
-      };
-    });
     Object.entries(this.config.permissionSets).forEach(([key, val]) => {
-      if (successfullyResolved[key] === undefined) {
+      const resolved = resolvedPermsets[key];
+      if (resolved) {
+        successfullyResolved[key] = {
+          metadata: resolved,
+          preset: this.config.permissionSets[key].preset,
+          name: key,
+        };
+      } else if (successfullyResolved[key] === undefined) {
         if (val.preset === ProfilesRiskPreset.UNKNOWN) {
           unresolved[key] = { name: key, message: messages.getMessage('preset-unknown', ['Permission Set']) };
         } else {

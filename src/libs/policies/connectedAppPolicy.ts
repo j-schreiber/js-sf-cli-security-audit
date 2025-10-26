@@ -3,7 +3,7 @@ import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../core/constants.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
-import MdapiRetriever from '../core/mdapi/mdapiRetriever.js';
+import MDAPI from '../core/mdapi/mdapiRetriever2.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
@@ -20,7 +20,7 @@ export default class ConnectedAppPolicy extends Policy {
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
-    const metadataApi = new MdapiRetriever(context.targetOrgConnection);
+    const metadataApi = new MDAPI(context.targetOrgConnection);
     this.emit('entityresolve', {
       total: 0,
       resolved: 0,
@@ -63,7 +63,7 @@ export default class ConnectedAppPolicy extends Policy {
       resolved: 0,
     });
     let overrideByApiSecurityAccess = false;
-    const apiSecurityAccessSetting = await metadataApi.retrieveConnectedAppSetting();
+    const apiSecurityAccessSetting = await metadataApi.resolveSingleton('ConnectedAppSettings');
     if (apiSecurityAccessSetting && apiSecurityAccessSetting.enableAdminApprovedAppsOnly) {
       overrideByApiSecurityAccess = true;
     }

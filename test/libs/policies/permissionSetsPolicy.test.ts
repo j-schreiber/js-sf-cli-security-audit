@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
-import { parseAsPermissionset } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
+import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever2.js';
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
@@ -67,10 +67,10 @@ describe('permission sets policy', () => {
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
-    const adminPermset = parseAsPermissionset(
+    const adminPermset = NamedTypesRegistry.PermissionSet.parse(
       path.join(RETRIEVE_DIR, 'Test_Admin_Permission_Set_1.permissionset-meta.xml')
     );
-    const poweruserPermset = parseAsPermissionset(
+    const poweruserPermset = NamedTypesRegistry.PermissionSet.parse(
       path.join(RETRIEVE_DIR, 'Test_Power_User_Permission_Set_1.permissionset-meta.xml')
     );
     const expectedResolvedEntities = {
@@ -95,7 +95,7 @@ describe('permission sets policy', () => {
   it('ignores permission set from config that cannot be resolved from target org', async () => {
     // Arrange
     const PERMSET_CONFIG = structuredClone(DEFAULT_PERMSET_CONFIG);
-    PERMSET_CONFIG.permissionSets['Test_Admin_Permission_Set_2'] = { preset: ProfilesRiskPreset.UNKNOWN };
+    PERMSET_CONFIG.permissionSets['Test_Admin_Permission_Set_N'] = { preset: ProfilesRiskPreset.UNKNOWN };
     PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: ProfilesRiskPreset.STANDARD_USER };
 
     // Act
@@ -108,7 +108,7 @@ describe('permission sets policy', () => {
       'Test_Power_User_Permission_Set_1',
     ]);
     expect(policyResult.ignoredEntities).to.deep.equal([
-      { name: 'Test_Admin_Permission_Set_2', message: messages.getMessage('preset-unknown', ['Permission Set']) },
+      { name: 'Test_Admin_Permission_Set_N', message: messages.getMessage('preset-unknown', ['Permission Set']) },
       { name: 'An_Unknown_Permission_Set', message: messages.getMessage('entity-not-found') },
     ]);
   });

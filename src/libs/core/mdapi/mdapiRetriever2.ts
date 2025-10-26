@@ -101,6 +101,10 @@ type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
    */
   retrieveType: string;
   /**
+   * Metadata API name entity.
+   */
+  retrieveName?: string;
+  /**
    * Optional XML parser instance. Typically used to fix errors for
    * properties that must be parsed as list.
    */
@@ -145,7 +149,7 @@ class SingletonMetadata<Type, Key extends keyof Type> extends MetadataRegistryEn
   public retrieveName: string;
   public constructor(opts: MetadataRegistryEntryOpts<Type, Key>) {
     super(opts);
-    this.retrieveName = String(this.rootNodeName);
+    this.retrieveName = opts.retrieveName ?? String(this.rootNodeName);
   }
 
   /**
@@ -163,7 +167,7 @@ class SingletonMetadata<Type, Key extends keyof Type> extends MetadataRegistryEn
   }
 
   private parseSourceFile(componentSet: ComponentSet): Type[Key] {
-    const cmps = componentSet.getSourceComponents().toArray();
+    const cmps = componentSet.getSourceComponents({ type: this.retrieveType, fullName: this.retrieveName }).toArray();
     if (cmps.length > 0 && cmps[0].xml) {
       return this.parse(cmps[0].xml);
     }
@@ -186,14 +190,14 @@ class NamedMetadata<Type, Key extends keyof Type> extends MetadataRegistryEntry<
   public async resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
     const cmpSet = new ComponentSet(componentNames.map((cname) => ({ type: this.retrieveType, fullName: cname })));
     const retrieveResult = await retrieve(cmpSet, con);
-    return this.parseSourceFiles(retrieveResult.components);
+    return this.parseSourceFiles(retrieveResult.components, componentNames);
   }
 
-  private parseSourceFiles(componentSet: ComponentSet): Record<string, Type[Key]> {
+  private parseSourceFiles(componentSet: ComponentSet, retrievedNames: string[]): Record<string, Type[Key]> {
     const cmps = componentSet.getSourceComponents().toArray();
     const result: Record<string, Type[Key]> = {};
     cmps.forEach((sourceComponent) => {
-      if (sourceComponent.xml) {
+      if (sourceComponent.xml && retrievedNames.includes(sourceComponent.name)) {
         result[sourceComponent.name] = this.parse(sourceComponent.xml);
       }
     });
@@ -230,6 +234,7 @@ export const NamedTypesRegistry = {
 export const SingletonRegistry = {
   ConnectedAppSettings: new SingletonMetadata<ConnectedAppSettingsXml, 'ConnectedAppSettings'>({
     rootNodeName: 'ConnectedAppSettings',
+    retrieveName: 'ConnectedApp',
     retrieveType: 'Settings',
   }),
 };

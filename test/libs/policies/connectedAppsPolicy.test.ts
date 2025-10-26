@@ -1,5 +1,4 @@
 /* eslint-disable camelcase */
-import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { buildResultsPath } from '../../mocks/auditTestContext.js';
@@ -9,7 +8,6 @@ import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/core/
 import { ResolvedConnectedApp } from '../../../src/libs/core/registries/connectedApps.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const RETRIEVE_DIR = path.join('test', 'mocks', 'data', 'retrieves', 'connected-app-settings');
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -88,7 +86,7 @@ describe('connected apps policy', () => {
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
     $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, buildResultsPath('connected-apps'));
-    $$.mockAppSetting = path.join(RETRIEVE_DIR, 'api-security-controls-not-available.xml');
+    $$.stubMetadataRetrieve('api-access-not-available');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;
 
