@@ -4,7 +4,7 @@ import { PermissionRiskLevel } from '../../core/classification-types.js';
 import { Optional } from '../../core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
+const descriptions = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
 export type Preset = {
   classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionsClassification[];
@@ -19,13 +19,6 @@ export default class NonePreset implements Preset {
 
   public constructor(userPerms?: Record<string, Partial<NamedPermissionsClassification>>) {
     this.userPermissions = {};
-    Object.entries(USER_PERM_DESCRIPTIONS).forEach(([name, description]) => {
-      if (this.userPermissions[name]) {
-        this.userPermissions[name].reason = description;
-      } else {
-        this.userPermissions[name] = { reason: description };
-      }
-    });
     if (userPerms) {
       Object.entries(userPerms).forEach(([name, def]) => {
         if (this.userPermissions[name]) {
@@ -44,43 +37,29 @@ export default class NonePreset implements Preset {
    * @param perms
    */
   public classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionsClassification[] {
-    return rawPerms.map((perm) => {
-      const defaultDef = this.userPermissions[perm.name];
-      if (defaultDef) {
-        return {
-          name: perm.name,
-          label: perm.label,
-          classification: perm.classification ?? defaultDef.classification ?? PermissionRiskLevel.UNKNOWN,
-          reason: perm.reason ?? defaultDef.reason,
-        };
-      } else {
-        return {
-          ...perm,
-          classification: PermissionRiskLevel.UNKNOWN,
-        };
-      }
-    });
+    return rawPerms.map((perm) => ({
+      ...this.initDefault(perm.name),
+      ...perm,
+    }));
+  }
+
+  /**
+   * Initialises a default classification for a given permission name.
+   * This merges pre-configured defaults with available descriptions.
+   *
+   * @param permName
+   * @returns
+   */
+  public initDefault(permName: string): NamedPermissionsClassification {
+    const def = this.userPermissions[permName];
+    const hasDescription = descriptions.messages.has(permName);
+    return {
+      ...def,
+      name: permName,
+      classification: def?.classification ?? PermissionRiskLevel.UNKNOWN,
+      reason: hasDescription ? descriptions.getMessage(permName) : undefined,
+    };
   }
 }
-
-const USER_PERM_DESCRIPTIONS = {
-  CustomizeApplication: messages.getMessage('CustomizeApplication'),
-  ModifyMetadata: messages.getMessage('CustomizeApplication'),
-  ViewSetup: messages.getMessage('ViewSetup'),
-  AuthorApex: messages.getMessage('AuthorApex'),
-  ManageAuthProviders: messages.getMessage('ManageAuthProviders'),
-  Packaging2: messages.getMessage('Packaging'),
-  Packaging2Delete: messages.getMessage('Packaging'),
-  Packaging2PromoteVersion: messages.getMessage('Packaging'),
-  InstallPackaging: messages.getMessage('Packaging'),
-  ApiEnabled: messages.getMessage('ApiEnabled'),
-  ViewAllData: messages.getMessage('ViewAllData'),
-  ModifyAllData: messages.getMessage('ViewAllData'),
-  ManageTwoFactor: messages.getMessage('ManageTwoFactor'),
-  CanApproveUninstalledApps: messages.getMessage('CanApproveUninstalledApps'),
-  UseAnyApiClient: messages.getMessage('UseAnyApiClient'),
-  ViewClientSecret: messages.getMessage('ViewClientSecret'),
-  ExportResport: messages.getMessage('ExportReport'),
-};
 
 type UnclassifiedPerm = Optional<NamedPermissionsClassification, 'classification'>;

@@ -13,6 +13,8 @@ import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
+import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
+import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -96,11 +98,33 @@ describe('audit config', () => {
 
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
-      // later will replace with list that checks all perms from the preset
-      const anyApiClientPerm = auditConf.classifications.userPermissions.content.permissions.UseAnyApiClient;
-      assert.isDefined(anyApiClientPerm);
-      expect(anyApiClientPerm.classification).to.equal('Blocked');
-      expect(anyApiClientPerm.reason).to.equal(messages.getMessage('UseAnyApiClient'));
+      const strictPreset = new StrictPreset();
+      const testedDefaultPerms = ['UseAnyApiClient', 'CustomizeApplication', 'AuthorApex', 'ModifyMetadata'];
+      testedDefaultPerms.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
+        const expectedRiskLevel = strictPreset.initDefault(permName);
+        assert.isDefined(expectedRiskLevel);
+        expect(perm.classification).to.equal(expectedRiskLevel.classification);
+        expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
+    });
+
+    it('initialises only reasons and no classifications with default preset', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      Object.values(auditConf.classifications.userPermissions.content.permissions).forEach((perm) => {
+        expect(perm.classification).to.equal(PermissionRiskLevel.UNKNOWN);
+      });
+      const selectedPermsWithReason = ['UseAnyApiClient', 'CustomizeApplication', 'AuthorApex', 'ModifyMetadata'];
+      selectedPermsWithReason.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
+        expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
     });
   });
 

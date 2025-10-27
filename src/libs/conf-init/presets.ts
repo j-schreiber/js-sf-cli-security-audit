@@ -5,6 +5,7 @@ import StrictPreset from './presets/strict.js';
 export enum AuditInitPresets {
   strict = 'strict',
   loose = 'loose',
+  none = 'none',
 }
 
 export function loadPreset(presetName?: AuditInitPresets): Preset {

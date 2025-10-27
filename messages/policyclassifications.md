@@ -2,6 +2,10 @@
 
 Allows to modify all parts of the app, including security settings.
 
+# ModifyMetadata
+
+Allows to modify all parts of the app, including security settings.
+
 # Packaging
 
 Allows to create, manage and install packages.
