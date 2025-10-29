@@ -6,9 +6,21 @@ Allows to modify all parts of the app, including security settings.
 
 Allows to modify all parts of the app, including security settings.
 
-# Packaging
+# Packaging2
 
-Allows to create, manage and install packages.
+General permissions for 2nd generation packages.
+
+# InstallPackaging
+
+Install unlocked and managed packages.
+
+# Packaging2PromoteVersion
+
+Promote 2nd generation packages for distribution and install on production orgs.
+
+# Packaging2Delete
+
+Delete versions of 2nd generation packages.
 
 # ViewSetup
 
@@ -17,6 +29,10 @@ Allows to browse setup and view sensitive configurations.
 # ViewAllData
 
 Bypass all sharing, making all sharing architecture obsolete.
+
+# ModifyAllData
+
+Bypass all sharing and layout permissions.
 
 # AuthorApex
 

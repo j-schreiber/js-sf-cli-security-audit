@@ -139,7 +139,14 @@ describe('audit config', () => {
 
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
-      const missingPermsFromMetadata = ['CanApproveUninstalledApps'];
+      // these are the permissions from our prod that are part of profiles, but not part of the permset describe
+      const missingPermsFromMetadata = [
+        'CanApproveUninstalledApps',
+        'ManagePackageLicenses',
+        'ViewConsumption',
+        'ViewFlowUsageAndFlowEventData',
+        'AllowObjectDetectionTraining',
+      ];
       missingPermsFromMetadata.forEach((permName) => {
         const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
         assert.isDefined(perm);
