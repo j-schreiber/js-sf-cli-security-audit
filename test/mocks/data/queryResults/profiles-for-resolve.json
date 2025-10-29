@@ -1,0 +1,32 @@
+[
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v64.0/sobjects/PermissionSet/0PS4P000002JPVYWA4"
+    },
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v64.0/sobjects/Profile/00e4P000001jNhrQAE"
+      },
+      "Name": "System Administrator",
+      "UserType": "Standard"
+    },
+    "IsCustom": false
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v64.0/sobjects/PermissionSet/0PS4P000002JPVZWA4"
+    },
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v64.0/sobjects/Profile/00e4P000001jNi0QAE"
+      },
+      "Name": "Standard User",
+      "UserType": "Standard"
+    },
+    "IsCustom": false
+  }
+]

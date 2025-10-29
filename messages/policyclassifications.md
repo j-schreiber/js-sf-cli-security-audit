@@ -49,3 +49,7 @@ Access and export secrets from connected apps.
 # ExportReport
 
 Reports allow to export classified or sensitive data.
+
+# ManageRemoteAccess
+
+Manage, create, edit, and delete connected applications.

@@ -1,22 +1,26 @@
 import { Connection } from '@salesforce/core';
-import { DescribeSObjectResult } from '@jsforce/jsforce-node';
-import { NamedPermissionsClassification, PermissionsConfig } from '../core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../core/constants.js';
-import { CustomPermission } from '../policies/salesforceStandardTypes.js';
+import { PermissionsConfig } from '../core/file-mgmt/schema.js';
+import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../core/constants.js';
+import MDAPI from '../core/mdapi/mdapiRetriever.js';
+import { CustomPermission, PermissionSet } from '../policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
+import { UnclassifiedPerm } from './presets/none.js';
 
 /**
- * Initialises a fresh set of user permissions from target org connection
+ * Initialises a fresh set of user permissions from target org connection.
  *
  * @param con
  * @returns
  */
 export async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionsConfig> {
-  const permSet = await con.describe('PermissionSet');
-  const result: PermissionsConfig = { permissions: {} };
-  const perms = parsePermissionsFromPermSet(permSet, preset);
+  const describePerms = await parsePermsFromDescribe(con);
+  const assignedPerms = await findAssignedPerms(con);
+  const allPerms = { ...describePerms, ...assignedPerms };
+  const presConfig = loadPreset(preset);
+  const perms = presConfig.classifyUserPermissions(Object.values(allPerms));
   perms.sort(classificationSorter);
+  const result: PermissionsConfig = { permissions: {} };
   perms.forEach(
     (perm) =>
       (result.permissions[perm.name] = {
@@ -55,17 +59,37 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
   return result;
 }
 
-function parsePermissionsFromPermSet(
-  describe: DescribeSObjectResult,
-  preset?: AuditInitPresets
-): NamedPermissionsClassification[] {
-  const permFields = describe.fields.filter((field) => field.name.startsWith('Permissions'));
-  const rawClassifications = permFields.map((field) => ({
-    label: field.label,
-    name: field.name.replace('Permissions', ''),
-  }));
-  const presConfig = loadPreset(preset);
-  return presConfig.classifyUserPermissions(rawClassifications);
+async function parsePermsFromDescribe(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
+  const permSet = await con.describe('PermissionSet');
+  const describeAvailablePerms: Record<string, UnclassifiedPerm> = {};
+  permSet.fields
+    .filter((field) => field.name.startsWith('Permissions'))
+    .forEach((field) => {
+      const permName = field.name.replace('Permissions', '');
+      describeAvailablePerms[permName] = {
+        label: field.label,
+        name: permName,
+      };
+    });
+  return describeAvailablePerms;
+}
+
+async function findAssignedPerms(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
+  const assignedPerms: Record<string, UnclassifiedPerm> = {};
+  const profiles = await con.query<PermissionSet>(PROFILES_QUERY);
+  if (profiles.records?.length > 0) {
+    const mdapi = new MDAPI(con);
+    const resolvedProfiles = await mdapi.resolve(
+      'Profile',
+      profiles.records.map((p) => p.Profile.Name)
+    );
+    Object.values(resolvedProfiles).forEach((profile) => {
+      profile.userPermissions.forEach((userPerm) => {
+        assignedPerms[userPerm.name] = { name: userPerm.name };
+      });
+    });
+  }
+  return assignedPerms;
 }
 
 function sanitiseLabel(rawLabel?: string): string | undefined {

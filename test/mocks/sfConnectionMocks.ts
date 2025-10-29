@@ -1,11 +1,14 @@
 import fs, { PathLike } from 'node:fs';
+import path from 'node:path';
 import { DescribeSObjectResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { AnyJson, isString } from '@salesforce/ts-types';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
-  queries?: Record<string, PathLike>;
+  queries?: Record<string, string>;
 };
+
+export const QUERY_RESULTS_BASE = path.join('test', 'mocks', 'data', 'queryResults');
 
 export default class SfConnectionMocks {
   public describes: Record<string, Partial<DescribeSObjectResult>>;
@@ -26,8 +29,16 @@ export default class SfConnectionMocks {
     }
   }
 
-  public setQueryMock(queryString: string, resultsPath: PathLike): void {
-    this.queries[queryString] = loadRecords(resultsPath);
+  /**
+   * Mock query results from a file. The file must be located in queryResults
+   * standard mock folder.
+   *
+   * @param queryString
+   * @param fileName file name without '.json' suffix
+   */
+  public setQueryMock(queryString: string, fileName: string): void {
+    const fullPath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
+    this.queries[queryString] = loadRecords(fullPath);
   }
 
   /**

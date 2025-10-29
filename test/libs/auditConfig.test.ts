@@ -2,15 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
-import AuditTestContext, {
-  MOCK_DATA_BASE_PATH,
-  parseFileAsJson,
-  QUERY_RESULTS_BASE,
-} from '../mocks/auditTestContext.js';
+import AuditTestContext, { MOCK_DATA_BASE_PATH, parseFileAsJson } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
+import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
@@ -24,6 +20,7 @@ describe('audit config', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
+    $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
     await $$.init();
   });
 
@@ -84,7 +81,8 @@ describe('audit config', () => {
 
     it('inits partial classifications if org does not return custom perms', async () => {
       // Arrange
-      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, path.join(QUERY_RESULTS_BASE, 'empty.json'));
+      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, 'empty');
+
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
@@ -124,6 +122,27 @@ describe('audit config', () => {
         const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
         assert.isDefined(perm);
         expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
+    });
+
+    it('initialises assigned permissions that are not present in describes', async () => {
+      // Arrange
+      // it appears that some permissions can be assigned (and are available in metadata / source)
+      // but they are NOT present in the permission set / profile describe. The most prominent example
+      // is the new CanApproveUninstalledApps permission (the corresponding field would have been
+      // PermissionsCanApproveUninstalledApps, which does not exist).
+      // To remedy that, we parse all profiles and all assigned perms and add any used permissions.
+      $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
+
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      const missingPermsFromMetadata = ['CanApproveUninstalledApps'];
+      missingPermsFromMetadata.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
       });
     });
   });

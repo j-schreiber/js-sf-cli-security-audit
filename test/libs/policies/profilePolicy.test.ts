@@ -180,10 +180,7 @@ describe('profile policy', () => {
   it('ignores profiles from config that cannot be resolved from target org', async () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
-    $$.mocks.setQueryMock(
-      "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
-      path.join(QUERY_RESULTS_DIR, 'empty.json')
-    );
+    $$.mocks.setQueryMock("SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'", 'empty');
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
 
@@ -220,7 +217,7 @@ describe('profile policy', () => {
     stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
     $$.mocks.setQueryMock(
       "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
-      path.join(QUERY_RESULTS_DIR, 'profile-with-null-metadata.json')
+      'profile-with-null-metadata'
     );
     const config = structuredClone(DEFAULT_PROFILE_CONFIG);
     config.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };

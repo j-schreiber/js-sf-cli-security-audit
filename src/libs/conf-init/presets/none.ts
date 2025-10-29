@@ -6,6 +6,8 @@ import { Optional } from '../../core/utils.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const descriptions = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
+export type UnclassifiedPerm = Optional<NamedPermissionsClassification, 'classification'>;
+
 export type Preset = {
   classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionsClassification[];
 };
@@ -61,5 +63,3 @@ export default class NonePreset implements Preset {
     };
   }
 }
-
-type UnclassifiedPerm = Optional<NamedPermissionsClassification, 'classification'>;

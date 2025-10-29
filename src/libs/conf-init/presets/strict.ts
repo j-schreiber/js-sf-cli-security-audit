@@ -52,6 +52,9 @@ export default class StrictPreset extends NonePreset {
       ManageTwoFactor: {
         classification: PermissionRiskLevel.HIGH,
       },
+      ManageRemoteAccess: {
+        classification: PermissionRiskLevel.HIGH,
+      },
       CanApproveUninstalledApps: {
         classification: PermissionRiskLevel.HIGH,
       },
