@@ -1,13 +1,11 @@
-import { QueryResult } from '@jsforce/jsforce-node';
 import { Messages } from '@salesforce/core';
 import { EntityResolveError } from '../core/result-types.js';
 import { AuditRunConfig, ProfilesPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { isNullish } from '../core/utils.js';
+import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import { AuditContext, RuleRegistries } from '../core/registries/types.js';
 import { ProfilesRiskPreset } from '../core/policy-types.js';
 import { ResolvedProfile } from '../core/registries/profiles.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
-import { Profile } from './salesforceStandardTypes.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -30,45 +28,33 @@ export default class ProfilePolicy extends Policy {
     });
     const successfullyResolved: Record<string, ResolvedProfile> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
-    type resultType = Pick<Profile, 'Name' | 'Metadata'>;
-    const profileQueryResults = Array<Promise<QueryResult<resultType>>>();
     const definitiveProfiles = this.config.profiles ?? {};
+    const classifiedProfiles: string[] = [];
     Object.entries(definitiveProfiles).forEach(([profileName, profileDef]) => {
-      if (profileDef.preset !== ProfilesRiskPreset.UNKNOWN) {
-        const qr = Promise.resolve(
-          context.targetOrgConnection.tooling.query<resultType>(
-            `SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`
-          )
-        );
-        profileQueryResults.push(qr);
-      } else {
+      if (profileDef.preset === ProfilesRiskPreset.UNKNOWN) {
         ignoredEntities[profileName] = {
           name: profileName,
           message: messages.getMessage('preset-unknown', ['Profile']),
         };
+      } else {
+        classifiedProfiles.push(profileName);
       }
     });
-    const queryResults = await Promise.all(profileQueryResults);
-    queryResults.forEach((qr) => {
-      if (qr.records && qr.records.length > 0) {
-        const record = qr.records[0];
-        if (isNullish(record.Metadata)) {
-          ignoredEntities[record.Name] = {
-            name: record.Name,
-            message: messages.getMessage('profile-invalid-no-metadata'),
-          };
-        } else {
-          successfullyResolved[record.Name] = {
-            name: record.Name,
-            preset: definitiveProfiles[record.Name].preset,
-            metadata: record.Metadata,
-          };
-        }
-      }
-    });
-    Object.keys(definitiveProfiles).forEach((profileName) => {
-      if (successfullyResolved[profileName] === undefined && ignoredEntities[profileName] === undefined) {
-        ignoredEntities[profileName] = { name: profileName, message: messages.getMessage('entity-not-found') };
+    const mdapi = new MDAPI(context.targetOrgConnection);
+    const resolvedProfiles = await mdapi.resolve('Profile', classifiedProfiles);
+    classifiedProfiles.forEach((profileName) => {
+      const resolvedProfile = resolvedProfiles[profileName];
+      if (!resolvedProfile) {
+        ignoredEntities[profileName] = {
+          name: profileName,
+          message: messages.getMessage('entity-not-found'),
+        };
+      } else {
+        successfullyResolved[profileName] = {
+          name: profileName,
+          preset: definitiveProfiles[profileName].preset,
+          metadata: resolvedProfile,
+        };
       }
     });
     const result = { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(ignoredEntities) };

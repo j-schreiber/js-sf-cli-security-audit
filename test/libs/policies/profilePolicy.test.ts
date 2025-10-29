@@ -227,8 +227,11 @@ describe('profile policy', () => {
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
+    // this used to be "no metadata" error message, but moving the logic to
+    // mdapi retriever removed visibility into WHY a profile does not resolve
+    // for future release, this could be added back as "resolve entity events"
     expect(policyResult.ignoredEntities).to.deep.equal([
-      { name: 'Custom Profile', message: messages.getMessage('profile-invalid-no-metadata') },
+      { name: 'Custom Profile', message: messages.getMessage('entity-not-found') },
     ]);
     expect(policyResult.auditedEntities).to.deep.equal(['System Administrator', 'Standard User']);
   });
