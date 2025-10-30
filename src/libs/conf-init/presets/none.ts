@@ -19,14 +19,14 @@ export type Preset = {
 export default class NonePreset implements Preset {
   protected userPermissions: Record<string, Partial<NamedPermissionsClassification>>;
 
-  public constructor(userPerms?: Record<string, Partial<NamedPermissionsClassification>>) {
+  public constructor(userPerms?: Record<string, PermissionRiskLevel>) {
     this.userPermissions = {};
     if (userPerms) {
-      Object.entries(userPerms).forEach(([name, def]) => {
+      Object.entries(userPerms).forEach(([name, classification]) => {
         if (this.userPermissions[name]) {
-          this.userPermissions[name].classification = def.classification;
+          this.userPermissions[name].classification = classification;
         } else {
-          this.userPermissions[name] = def;
+          this.userPermissions[name] = { classification };
         }
       });
     }

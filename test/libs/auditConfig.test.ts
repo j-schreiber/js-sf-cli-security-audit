@@ -11,6 +11,7 @@ import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
 import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
+import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -105,6 +106,21 @@ describe('audit config', () => {
         assert.isDefined(expectedRiskLevel);
         expect(perm.classification).to.equal(expectedRiskLevel.classification);
         expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
+    });
+
+    it('defaults all not explicitly classified perms in loose preset as low', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.loose });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      const preset = new LoosePreset();
+      const allPerms = auditConf.classifications.userPermissions.content.permissions;
+      Object.entries(allPerms).forEach(([permName, perm]) => {
+        const expectedRiskLevel = preset.initDefault(permName);
+        assert.isDefined(expectedRiskLevel);
+        expect(perm.classification).to.equal(expectedRiskLevel.classification);
       });
     });
 

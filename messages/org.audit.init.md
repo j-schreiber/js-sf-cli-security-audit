@@ -16,17 +16,21 @@ Directory where the audit config is initialised. If not set, the root directory 
 
 # flags.preset.summary
 
-Select a preset to initialise classifications.
+Select a preset to initialise permission classifications (risk levels).
 
 # flags.preset.description
 
-Preset is processed last (after custom templates) and initialises defaults for user permission classifications and the enabled rules for each policy. Consult the documentation to learn more.
+The selected preset is applied before any other default mechanisms (such as template configs). This means, values from a selected template override the preset. Consult the documentation to learn more about the rationale behind the default risk levels. The risk levels interact with the configured preset on profiles and permission sets and essentially control, if a permission is allowed in a certain profile / permission set.
 
 # examples
 
 - Initialise audit policies at the root directory
 
   <%= config.bin %> <%= command.id %> -o MyTargetOrg
+
+- Initialise audit config at custom directory with preset
+
+  <%= config.bin %> <%= command.id %> -o MyTargetOrg -d my_dir -p loose
 
 # success.perm-classification-summary
 

@@ -5,7 +5,7 @@ import MDAPI, { NamedTypesRegistry, SingletonRegistry } from '../../src/libs/cor
 
 export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 
-describe('audit config', () => {
+describe('mdapi retriever', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
