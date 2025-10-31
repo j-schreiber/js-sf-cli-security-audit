@@ -38,12 +38,15 @@ Initialises classifications and policies for a security audit.
 
 ```
 USAGE
-  $ sf org audit init -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>]
+  $ sf org audit init -o <value> [--json] [--flags-dir <value>] [-d <value>] [-p strict|loose|none] [--api-version
+    <value>]
 
 FLAGS
   -d, --output-dir=<value>   Directory where the audit config is initialised. If not set, the root directory will be
                              used.
   -o, --target-org=<value>   (required) Target org to export permissions, profiles, users, etc.
+  -p, --preset=<option>      [default: strict] Select a preset to initialise permission classifications (risk levels).
+                             <options: strict|loose|none>
       --api-version=<value>  Override the api version used for api requests made by this command
 
 GLOBAL FLAGS
@@ -60,9 +63,21 @@ EXAMPLES
   Initialise audit policies at the root directory
 
     $ sf org audit init -o MyTargetOrg
+
+  Initialise audit config at custom directory with preset
+
+    $ sf org audit init -o MyTargetOrg -d my_dir -p loose
+
+FLAG DESCRIPTIONS
+  -p, --preset=strict|loose|none  Select a preset to initialise permission classifications (risk levels).
+
+    The selected preset is applied before any other default mechanisms (such as template configs). This means, values
+    from a selected template override the preset. Consult the documentation to learn more about the rationale behind the
+    default risk levels. The risk levels interact with the configured preset on profiles and permission sets and
+    essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.1.0/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.4.1/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -70,10 +85,10 @@ Audit your org.
 
 ```
 USAGE
-  $ sf org audit run -o <value> -d <value> [--json] [--flags-dir <value>] [--api-version <value>]
+  $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>]
 
 FLAGS
-  -d, --source-dir=<value>   (required) Location of the audit config.
+  -d, --source-dir=<value>   Location of the audit config.
   -o, --target-org=<value>   (required) The org that is audited.
       --api-version=<value>  Override the api version used for api requests made by this command
 
@@ -93,7 +108,7 @@ EXAMPLES
     $ sf org audit run -o MyTargetOrg -d configs/prod
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.1.0/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.4.1/src/commands/org/audit/run.ts)_
 
 <!-- commandsstop -->
 
