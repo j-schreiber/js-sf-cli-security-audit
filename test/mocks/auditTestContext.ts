@@ -134,14 +134,14 @@ export function stubMultiStageUx(sandbox: SinonSandbox): AuditRunMultiStageOutpu
 
 function buildDefaultMocks() {
   const defaults = structuredClone(DEFAULT_MOCKS);
-  defaults.queries[CUSTOM_PERMS_QUERY] = buildResultsPath('custom-permissions');
-  defaults.queries[PROFILES_QUERY] = buildResultsPath('profiles');
-  defaults.queries[PERMISSION_SETS_QUERY] = buildResultsPath('empty');
-  defaults.queries[CONNECTED_APPS_QUERY] = buildResultsPath('empty');
-  defaults.queries[OAUTH_TOKEN_QUERY] = buildResultsPath('empty');
-  defaults.queries[buildProfilesQuery('System Administrator')] = buildResultsPath('admin-profile-with-metadata');
-  defaults.queries[buildProfilesQuery('Standard User')] = buildResultsPath('standard-profile-with-metadata');
-  defaults.queries[buildProfilesQuery('Custom Profile')] = buildResultsPath('empty');
+  defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
+  defaults.queries[PROFILES_QUERY] = 'profiles';
+  defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
+  defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
+  defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
+  defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
+  defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
+  defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
   return defaults;
 }
 

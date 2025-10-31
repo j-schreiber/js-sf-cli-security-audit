@@ -5,7 +5,7 @@ import MDAPI, { NamedTypesRegistry, SingletonRegistry } from '../../src/libs/cor
 
 export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 
-describe('audit config', () => {
+describe('mdapi retriever', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
@@ -116,5 +116,31 @@ describe('audit config', () => {
     expect(retrieveStub.callCount).to.equal(1);
     expect(settings.enableAdminApprovedAppsOnly).to.be.true;
     expect(settings2.enableAdminApprovedAppsOnly).to.be.true;
+  });
+
+  it('resolves valid profile entities from tooling API by name', async () => {
+    // Act
+    const mdapi = new MDAPI($$.targetOrgConnection);
+    const profiles = await mdapi.resolve('Profile', ['System Administrator', 'Standard User']);
+
+    // Assert
+    expect(Object.keys(profiles)).to.deep.equal(['System Administrator', 'Standard User']);
+    const adminProfile = profiles['System Administrator'];
+    expect(adminProfile.userPermissions.length).to.equal(217);
+  });
+
+  it('ignores entities that do not return valid metadata', async () => {
+    // Arrange
+    $$.mocks.setQueryMock(
+      "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
+      'profile-with-null-metadata'
+    );
+
+    // Act
+    const mdapi = new MDAPI($$.targetOrgConnection);
+    const profiles = await mdapi.resolve('Profile', ['Custom Profile']);
+
+    // Assert
+    expect(Object.keys(profiles)).to.deep.equal([]);
   });
 });

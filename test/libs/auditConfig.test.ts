@@ -1,23 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
-import AuditTestContext, {
-  MOCK_DATA_BASE_PATH,
-  parseFileAsJson,
-  QUERY_RESULTS_BASE,
-} from '../mocks/auditTestContext.js';
+import AuditTestContext, { MOCK_DATA_BASE_PATH, parseFileAsJson } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
+import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
+import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
+import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
+import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
+import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
 describe('audit config', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
+    $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
     await $$.init();
   });
 
@@ -78,12 +82,91 @@ describe('audit config', () => {
 
     it('inits partial classifications if org does not return custom perms', async () => {
       // Arrange
-      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, path.join(QUERY_RESULTS_BASE, 'empty.json'));
+      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, 'empty');
+
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
       expect(auditConf.classifications.customPermissions).to.be.undefined;
+    });
+
+    it('applies the selected preset logic when initialising config', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.strict });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      const strictPreset = new StrictPreset();
+      const testedDefaultPerms = ['UseAnyApiClient', 'CustomizeApplication', 'AuthorApex', 'ModifyMetadata'];
+      testedDefaultPerms.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
+        const expectedRiskLevel = strictPreset.initDefault(permName);
+        assert.isDefined(expectedRiskLevel);
+        expect(perm.classification).to.equal(expectedRiskLevel.classification);
+        expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
+    });
+
+    it('defaults all not explicitly classified perms in loose preset as low', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.loose });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      const preset = new LoosePreset();
+      const allPerms = auditConf.classifications.userPermissions.content.permissions;
+      Object.entries(allPerms).forEach(([permName, perm]) => {
+        const expectedRiskLevel = preset.initDefault(permName);
+        assert.isDefined(expectedRiskLevel);
+        expect(perm.classification).to.equal(expectedRiskLevel.classification);
+      });
+    });
+
+    it('initialises only reasons and no classifications with default preset', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      Object.values(auditConf.classifications.userPermissions.content.permissions).forEach((perm) => {
+        expect(perm.classification).to.equal(PermissionRiskLevel.UNKNOWN);
+      });
+      const selectedPermsWithReason = ['UseAnyApiClient', 'CustomizeApplication', 'AuthorApex', 'ModifyMetadata'];
+      selectedPermsWithReason.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
+        expect(perm.reason).to.equal(messages.getMessage(permName));
+      });
+    });
+
+    it('initialises assigned permissions that are not present in describes', async () => {
+      // Arrange
+      // it appears that some permissions can be assigned (and are available in metadata / source)
+      // but they are NOT present in the permission set / profile describe. The most prominent example
+      // is the new CanApproveUninstalledApps permission (the corresponding field would have been
+      // PermissionsCanApproveUninstalledApps, which does not exist).
+      // To remedy that, we parse all profiles and all assigned perms and add any used permissions.
+      $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
+
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+
+      // Assert
+      assert.isDefined(auditConf.classifications.userPermissions);
+      // these are the permissions from our prod that are part of profiles, but not part of the permset describe
+      const missingPermsFromMetadata = [
+        'CanApproveUninstalledApps',
+        'ManagePackageLicenses',
+        'ViewConsumption',
+        'ViewFlowUsageAndFlowEventData',
+        'AllowObjectDetectionTraining',
+      ];
+      missingPermsFromMetadata.forEach((permName) => {
+        const perm = auditConf.classifications.userPermissions!.content.permissions[permName];
+        assert.isDefined(perm);
+      });
     });
   });
 

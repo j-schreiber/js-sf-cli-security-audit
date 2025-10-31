@@ -42,7 +42,7 @@ describe('org audit init', () => {
     const conParam = initMock.args.flat()[0] as Connection;
     const optsParam = initMock.args.flat()[1];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
-    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org' });
+    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'strict' });
     // command result accurately represents the lib result
     expect(result).to.deep.equal(FULL_AUDIT_INIT_RESULT);
     // relevant summary is printed to terminal
@@ -67,5 +67,21 @@ describe('org audit init', () => {
       'Initialised 3 permissions at tmp/prod/classification/userPermissions.yml.',
       'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
     ]);
+  });
+
+  it('passes the preset flag to audit run init', async () => {
+    // Arrange
+    const initMock = $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org', '--preset', 'loose']);
+
+    // Assert
+    // ensure contract - all relevant params are actually passed to lib
+    expect(initMock.callCount).to.equal(1);
+    const conParam = initMock.args.flat()[0] as Connection;
+    const optsParam = initMock.args.flat()[1];
+    expect(conParam.getUsername()).to.equal($$.targetOrg.username);
+    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'loose' });
   });
 });

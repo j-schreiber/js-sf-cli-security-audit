@@ -14,7 +14,7 @@ export enum PermissionRiskLevel {
   MEDIUM = 'Medium',
   /** Regular user permissions, typically needed for day-to-day work */
   LOW = 'Low',
-  /** Not categorized or unknown permission */
+  /** Not categorized or unknown permission. Will be ignored but create a warning */
   UNKNOWN = 'Unknown',
 }
 
