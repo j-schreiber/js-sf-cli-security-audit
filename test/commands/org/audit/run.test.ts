@@ -163,7 +163,7 @@ describe('org audit run', () => {
       ]);
       expect.fail('Expected exception,but succeeded');
     } catch (error) {
-      assertError(error, 'NoClassificationFoundForProfiles');
+      assertError(error, 'UserPermClassificationRequiredForProfiles');
     }
   });
 
@@ -178,7 +178,7 @@ describe('org audit run', () => {
       ]);
       expect.fail('Expected exception,but succeeded');
     } catch (error) {
-      assertError(error, 'NoClassificationFoundForPermissionSets');
+      assertError(error, 'UserPermClassificationRequiredForPermSets');
     }
   });
 

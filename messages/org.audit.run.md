@@ -40,10 +40,10 @@ Full report was written to: %s.
 
 The target directory %s is empty or no valid audit config was found. A valid audit config must contain at least one policy.
 
-# NoClassificationFoundForProfiles
+# UserPermClassificationRequiredForProfiles
 
 The "Profiles" policy requires at least userPermissions to be initialised, but none were found at the target directory.
 
-# NoClassificationFoundForPermissionSets
+# UserPermClassificationRequiredForPermSets
 
 The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.

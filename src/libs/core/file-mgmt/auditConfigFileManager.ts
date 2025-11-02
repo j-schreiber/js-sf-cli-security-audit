@@ -63,13 +63,13 @@ export default class AuditConfigFileManager {
         profiles: {
           schema: ProfilesPolicyFileSchema,
           dependencies: [
-            { path: ['classifications', 'userPermissions'], errorName: 'NoClassificationFoundForProfiles' },
+            { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
           ],
         },
         permissionSets: {
           schema: PermSetsPolicyFileSchema,
           dependencies: [
-            { path: ['classifications', 'userPermissions'], errorName: 'NoClassificationFoundForPermissionSets' },
+            { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
           ],
         },
         connectedApps: {
@@ -152,18 +152,27 @@ export default class AuditConfigFileManager {
       const policyDef = this.directoryStructure.policies[uncapitalize(policyName)];
       if (policyDef?.dependencies) {
         policyDef.dependencies.forEach((dependency) => {
-          if (dependency.path.length > 0) {
-            let semiRecursiveIterator = conf[dependency.path[0]] as Record<string, unknown>;
-            for (const pathIdentifier of dependency.path.slice(1)) {
-              semiRecursiveIterator = semiRecursiveIterator[pathIdentifier] as Record<string, unknown>;
-              if (!semiRecursiveIterator) {
-                throw messages.createError(dependency.errorName);
-              }
-            }
+          if (!dependencyExists(dependency.path, conf)) {
+            throw messages.createError(dependency.errorName);
           }
         });
       }
     });
+  }
+}
+
+function dependencyExists(fullPath: string[], rootNode: Record<string, unknown>): boolean {
+  const dep = traverseDependencyPath(fullPath, rootNode);
+  return Boolean(dep);
+}
+
+function traverseDependencyPath(remainingPath: string[], rootNode: Record<string, unknown>): unknown {
+  if (remainingPath.length >= 2) {
+    return traverseDependencyPath(remainingPath.slice(1), rootNode[remainingPath[0]] as Record<string, unknown>);
+  } else if (remainingPath.length === 0) {
+    return undefined;
+  } else {
+    return rootNode[remainingPath[0]];
   }
 }
 
