@@ -1,0 +1,72 @@
+[
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000cRFbWAM"
+    },
+    "Name": "Test_Admin_Permission_Set_1",
+    "Label": "Test_Admin_Permission_Set_1",
+    "IsCustom": false,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000cumnWAA"
+    },
+    "Name": "Test_Admin_Permission_Set_2",
+    "Label": "Test_Admin_Permission_Set_2",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000cvR8WAI"
+    },
+    "Name": "Test_Developer_Permission_Set_1",
+    "Label": "Test_Developer_Permission_Set_1",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000cvdsWAA"
+    },
+    "Name": "Test_Power_User_Permission_Set_1",
+    "Label": "Test_Power_User_Permission_Set_1",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000d36JWAQ"
+    },
+    "Name": "Test_Power_User_Permission_Set_2",
+    "Label": "Test_Power_User_Permission_Set_2",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000dNphWAE"
+    },
+    "Name": "Test_Standard_User_Permission_Set_1",
+    "Label": "Test_Standard_User_Permission_Set_1",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  },
+  {
+    "attributes": {
+      "type": "PermissionSet",
+      "url": "/services/data/v63.0/sobjects/PermissionSet/0PS3X000000dNpiWAE"
+    },
+    "Name": "Test_Standard_User_Permission_Set_2",
+    "Label": "Test_Standard_User_Permission_Set_2",
+    "IsCustom": true,
+    "NamespacePrefix": null
+  }
+]
