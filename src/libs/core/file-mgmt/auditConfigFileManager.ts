@@ -18,6 +18,12 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'or
 
 type FileConfig = {
   schema: z.ZodObject;
+  dependencies?: ConfigFileDependency[];
+};
+
+type ConfigFileDependency = {
+  errorName: string;
+  path: string[];
 };
 
 type DirConfig = {
@@ -56,9 +62,15 @@ export default class AuditConfigFileManager {
       policies: {
         profiles: {
           schema: ProfilesPolicyFileSchema,
+          dependencies: [
+            { path: ['classifications', 'userPermissions'], errorName: 'NoClassificationFoundForProfiles' },
+          ],
         },
         permissionSets: {
           schema: PermSetsPolicyFileSchema,
+          dependencies: [
+            { path: ['classifications', 'userPermissions'], errorName: 'NoClassificationFoundForPermissionSets' },
+          ],
         },
         connectedApps: {
           schema: PolicyFileSchema,
@@ -87,7 +99,7 @@ export default class AuditConfigFileManager {
     const policies = capitalizeKeys(this.parseSubdir(dirPath, 'policies'));
     const conf = { classifications, policies };
     assertIsMinimalConfig(conf, dirPath);
-    return { classifications, policies };
+    this.validateDependencies(conf);
     return conf;
   }
 
@@ -125,7 +137,7 @@ export default class AuditConfigFileManager {
       return;
     }
     Object.entries(configFiles).forEach(([fileKey, confFile]) => {
-      const uncapitalizedKey = `${fileKey[0].toLowerCase()}${fileKey.slice(1)}`;
+      const uncapitalizedKey = uncapitalize(fileKey);
       const fileDef = dirConf[uncapitalizedKey];
       if (fileDef && !isEmpty(confFile.content)) {
         // eslint-disable-next-line no-param-reassign
@@ -134,7 +146,29 @@ export default class AuditConfigFileManager {
       }
     });
   }
+
+  private validateDependencies(conf: AuditRunConfig): void {
+    Object.keys(conf.policies).forEach((policyName) => {
+      const policyDef = this.directoryStructure.policies[uncapitalize(policyName)];
+      if (policyDef?.dependencies) {
+        policyDef.dependencies.forEach((dependency) => {
+          if (dependency.path.length > 0) {
+            let semiRecursiveIterator = conf[dependency.path[0]] as Record<string, unknown>;
+            for (const pathIdentifier of dependency.path.slice(1)) {
+              semiRecursiveIterator = semiRecursiveIterator[pathIdentifier] as Record<string, unknown>;
+              if (!semiRecursiveIterator) {
+                throw messages.createError(dependency.errorName);
+              }
+            }
+          }
+        });
+      }
+    });
+  }
 }
+
+function uncapitalize(capitalizedString: string): string {
+  return `${capitalizedString[0].toLowerCase()}${capitalizedString.slice(1)}`;
 }
 
 function capitalizeKeys(object: Record<string, ConfigFile<unknown>>): Record<string, ConfigFile<unknown>> {

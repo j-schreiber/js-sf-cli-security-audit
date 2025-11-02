@@ -137,7 +137,7 @@ describe('org audit run', () => {
       await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
       expect.fail('Expected exception,but succeeded');
     } catch (error) {
-      assertError(error, 'NoAuditConfigFoundError', 'The target directory <root-dir> is empty');
+      assertError(error, 'NoAuditConfigFound', 'The target directory <root-dir> is empty');
     }
   });
 
@@ -148,17 +148,38 @@ describe('org audit run', () => {
       await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', sourceDirPath]);
       expect.fail('Expected exception,but succeeded');
     } catch (error) {
-      assertError(error, 'NoAuditConfigFoundError', `The target directory ${sourceDirPath} is empty`);
+      assertError(error, 'NoAuditConfigFound', `The target directory ${sourceDirPath} is empty`);
     }
   });
 
-    const result = await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
+  it('aborts gracefully if no classification was found for profiles', async () => {
+    // Act
+    try {
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'no-classifications'),
+      ]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'NoClassificationFoundForProfiles');
+    }
+  });
 
-    // Assert
-    expect(result.isCompliant).to.be.true;
-    expect(result.filePath).not.to.be.undefined;
-    expect(fs.existsSync(result.filePath)).to.be.true;
-    fs.rmSync(result.filePath);
+  it('aborts gracefully if no classification was found for permission sets', async () => {
+    // Act
+    try {
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'no-classifications-2'),
+      ]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'NoClassificationFoundForPermissionSets');
+    }
   });
 
   it('does not report rule summary when policy had no executed rules', async () => {
@@ -180,10 +201,12 @@ describe('org audit run', () => {
   });
 });
 
-function assertError(err: unknown, expectedName: string, expectedMsg: string) {
+function assertError(err: unknown, expectedName: string, expectedMsg?: string) {
   if (err instanceof SfError) {
-    expect(err.name).to.equal(expectedName);
-    expect(err.message).to.contain(expectedMsg);
+    expect(err.name).to.equal(expectedName + 'Error');
+    if (expectedMsg) {
+      expect(err.message).to.contain(expectedMsg);
+    }
   } else {
     expect.fail('Expected SfError, but got: ' + JSON.stringify(err));
   }

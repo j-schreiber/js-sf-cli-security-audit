@@ -40,6 +40,10 @@ Full report was written to: %s.
 
 The target directory %s is empty or no valid audit config was found. A valid audit config must contain at least one policy.
 
-# NoClassificationFoundButRequiredError
+# NoClassificationFoundForProfiles
 
-The target directory contains one or more policies that require permission classifications, but none was found. The following policies require at least classifications for userPermissions: %s
+The "Profiles" policy requires at least userPermissions to be initialised, but none were found at the target directory.
+
+# NoClassificationFoundForPermissionSets
+
+The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.
