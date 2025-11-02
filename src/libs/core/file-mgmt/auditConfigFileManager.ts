@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
+import { Messages } from '@salesforce/core';
 import { isEmpty } from '../utils.js';
 import {
   AuditRunConfig,
@@ -11,6 +12,9 @@ import {
   PolicyFileSchema,
   ProfilesPolicyFileSchema,
 } from './schema.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 type FileConfig = {
   schema: z.ZodObject;
@@ -81,7 +85,10 @@ export default class AuditConfigFileManager {
   public parse(dirPath: string): AuditRunConfig {
     const classifications = this.parseSubdir(dirPath, 'classifications');
     const policies = capitalizeKeys(this.parseSubdir(dirPath, 'policies'));
+    const conf = { classifications, policies };
+    assertIsMinimalConfig(conf, dirPath);
     return { classifications, policies };
+    return conf;
   }
 
   /**
@@ -128,11 +135,19 @@ export default class AuditConfigFileManager {
     });
   }
 }
+}
 
-function capitalizeKeys(object: Record<string, unknown>): Record<string, unknown> {
-  const newObj: Record<string, unknown> = {};
+function capitalizeKeys(object: Record<string, ConfigFile<unknown>>): Record<string, ConfigFile<unknown>> {
+  const newObj: Record<string, ConfigFile<unknown>> = {};
   Object.keys(object).forEach((key) => (newObj[`${key[0].toUpperCase()}${key.slice(1)}`] = object[key]));
   return newObj;
+}
+
+function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: string): void {
+  if (Object.keys(conf.policies).length === 0) {
+    const formattedDirPath = !dirPath || dirPath.length === 0 ? '<root-dir>' : dirPath;
+    throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
+  }
 }
 
 export const DefaultFileManager = new AuditConfigFileManager();

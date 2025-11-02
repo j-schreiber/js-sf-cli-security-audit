@@ -35,3 +35,11 @@ At least one policy is not compliant. Review details below.
 # info.report-file-location
 
 Full report was written to: %s.
+
+# NoAuditConfigFound
+
+The target directory %s is empty or no valid audit config was found. A valid audit config must contain at least one policy.
+
+# NoClassificationFoundButRequiredError
+
+The target directory contains one or more policies that require permission classifications, but none was found. The following policies require at least classifications for userPermissions: %s

@@ -13,7 +13,8 @@ const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 describe('org audit NUTs', () => {
   let session: TestSession;
 
-  function checkFileExists(filePath: string): boolean {
+  function checkFileExists(filePath?: string): boolean {
+    assert.isDefined(filePath);
     const localFilePath = resolveTestDirFilePath(filePath);
     return fs.existsSync(localFilePath);
   }
@@ -66,7 +67,7 @@ describe('org audit NUTs', () => {
     // clean audit config files?
   });
 
-  it('initialises a full audit config with policies and classifications from org', () => {
+  it('initialises a full audit config from org at target directory', () => {
     // Act
     const result = execCmd<OrgAuditInitResult>(
       `org:audit:init --target-org ${scratchOrgAlias} --output-dir tmp --json`,
@@ -114,5 +115,28 @@ describe('org audit NUTs', () => {
       // every policy should have at least one audited entity
       expect(policy.auditedEntities, policyName).not.deep.equal([]);
     });
+  });
+
+  it('initialises a full audit config at root directory', () => {
+    // Act
+    const initResult = execCmd<OrgAuditInitResult>(`org:audit:init --target-org ${scratchOrgAlias} --json`, {
+      ensureExitCode: 0,
+    }).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(initResult);
+    assert.isDefined(initResult.classifications.userPermissions?.filePath);
+    expect(checkFileExists(initResult.classifications.userPermissions.filePath)).to.be.true;
+    expect(checkFileExists(initResult.policies.Profiles?.filePath)).to.be.true;
+  });
+
+  it('successfully executes an audit run from root directory', () => {
+    // Act
+    const runResult = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${scratchOrgAlias} --json`, {
+      ensureExitCode: 0,
+    }).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(runResult);
   });
 });
