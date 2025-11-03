@@ -12,7 +12,7 @@ One or more permissions to be scanned.
 
 # flags.name.description
 
-More information about a flag. Don't repeat the summary.
+You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication" or "ViewSetup". If you are unsure what permissions are available on your org, initialise a new audit config and check the created userPermissions.yml.
 
 # flags.target-org.summary
 

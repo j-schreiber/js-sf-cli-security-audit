@@ -8,7 +8,7 @@ import UserPermissionScanner, {
 import { capitalize } from '../../../libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.scan.user-perm');
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.scan.user-perms');
 
 export type OrgUserPermScanResult = QuickScanResult;
 
