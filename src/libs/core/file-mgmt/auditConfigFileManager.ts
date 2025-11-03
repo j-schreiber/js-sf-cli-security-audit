@@ -2,6 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
+import { Messages } from '@salesforce/core';
 import { isEmpty } from '../utils.js';
 import {
   AuditRunConfig,
@@ -12,8 +13,17 @@ import {
   ProfilesPolicyFileSchema,
 } from './schema.js';
 
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
+
 type FileConfig = {
   schema: z.ZodObject;
+  dependencies?: ConfigFileDependency[];
+};
+
+type ConfigFileDependency = {
+  errorName: string;
+  path: string[];
 };
 
 type DirConfig = {
@@ -52,9 +62,15 @@ export default class AuditConfigFileManager {
       policies: {
         profiles: {
           schema: ProfilesPolicyFileSchema,
+          dependencies: [
+            { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
+          ],
         },
         permissionSets: {
           schema: PermSetsPolicyFileSchema,
+          dependencies: [
+            { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
+          ],
         },
         connectedApps: {
           schema: PolicyFileSchema,
@@ -81,7 +97,10 @@ export default class AuditConfigFileManager {
   public parse(dirPath: string): AuditRunConfig {
     const classifications = this.parseSubdir(dirPath, 'classifications');
     const policies = capitalizeKeys(this.parseSubdir(dirPath, 'policies'));
-    return { classifications, policies };
+    const conf = { classifications, policies };
+    assertIsMinimalConfig(conf, dirPath);
+    this.validateDependencies(conf);
+    return conf;
   }
 
   /**
@@ -118,7 +137,7 @@ export default class AuditConfigFileManager {
       return;
     }
     Object.entries(configFiles).forEach(([fileKey, confFile]) => {
-      const uncapitalizedKey = `${fileKey[0].toLowerCase()}${fileKey.slice(1)}`;
+      const uncapitalizedKey = uncapitalize(fileKey);
       const fileDef = dirConf[uncapitalizedKey];
       if (fileDef && !isEmpty(confFile.content)) {
         // eslint-disable-next-line no-param-reassign
@@ -127,12 +146,51 @@ export default class AuditConfigFileManager {
       }
     });
   }
+
+  private validateDependencies(conf: AuditRunConfig): void {
+    Object.keys(conf.policies).forEach((policyName) => {
+      const policyDef = this.directoryStructure.policies[uncapitalize(policyName)];
+      if (policyDef?.dependencies) {
+        policyDef.dependencies.forEach((dependency) => {
+          if (!dependencyExists(dependency.path, conf)) {
+            throw messages.createError(dependency.errorName);
+          }
+        });
+      }
+    });
+  }
 }
 
-function capitalizeKeys(object: Record<string, unknown>): Record<string, unknown> {
-  const newObj: Record<string, unknown> = {};
+function dependencyExists(fullPath: string[], rootNode: Record<string, unknown>): boolean {
+  const dep = traverseDependencyPath(fullPath, rootNode);
+  return Boolean(dep);
+}
+
+function traverseDependencyPath(remainingPath: string[], rootNode: Record<string, unknown>): unknown {
+  if (remainingPath.length >= 2) {
+    return traverseDependencyPath(remainingPath.slice(1), rootNode[remainingPath[0]] as Record<string, unknown>);
+  } else if (remainingPath.length === 0) {
+    return undefined;
+  } else {
+    return rootNode[remainingPath[0]];
+  }
+}
+
+function uncapitalize(capitalizedString: string): string {
+  return `${capitalizedString[0].toLowerCase()}${capitalizedString.slice(1)}`;
+}
+
+function capitalizeKeys(object: Record<string, ConfigFile<unknown>>): Record<string, ConfigFile<unknown>> {
+  const newObj: Record<string, ConfigFile<unknown>> = {};
   Object.keys(object).forEach((key) => (newObj[`${key[0].toUpperCase()}${key.slice(1)}`] = object[key]));
   return newObj;
+}
+
+function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: string): void {
+  if (Object.keys(conf.policies).length === 0) {
+    const formattedDirPath = !dirPath || dirPath.length === 0 ? '<root-dir>' : dirPath;
+    throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
+  }
 }
 
 export const DefaultFileManager = new AuditConfigFileManager();

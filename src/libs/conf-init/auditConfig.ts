@@ -40,7 +40,8 @@ export default class AuditConfig {
     conf.policies.Profiles = { content: await initProfiles(targetCon) };
     conf.policies.PermissionSets = { content: await initPermissionSets(targetCon) };
     conf.policies.ConnectedApps = { content: initConnectedApps() };
-    if (opts?.targetDir) {
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    if (opts?.targetDir || opts?.targetDir === '') {
       DefaultFileManager.save(opts.targetDir, conf);
     }
     return conf;

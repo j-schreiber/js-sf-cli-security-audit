@@ -35,3 +35,15 @@ At least one policy is not compliant. Review details below.
 # info.report-file-location
 
 Full report was written to: %s.
+
+# NoAuditConfigFound
+
+The target directory %s is empty or no valid audit config was found. A valid audit config must contain at least one policy.
+
+# UserPermClassificationRequiredForProfiles
+
+The "Profiles" policy requires at least userPermissions to be initialised, but none were found at the target directory.
+
+# UserPermClassificationRequiredForPermSets
+
+The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.
