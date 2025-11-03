@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
 import { Messages } from '@salesforce/core';
-import { isEmpty } from '../utils.js';
+import { capitalize, isEmpty, uncapitalize } from '../utils.js';
 import {
   AuditRunConfig,
   ConfigFile,
@@ -161,6 +161,12 @@ export default class AuditConfigFileManager {
   }
 }
 
+function capitalizeKeys(object: Record<string, unknown>): Record<string, unknown> {
+  const newObj: Record<string, unknown> = {};
+  Object.keys(object).forEach((key) => (newObj[capitalize(key)] = object[key]));
+  return newObj;
+}
+
 function dependencyExists(fullPath: string[], rootNode: Record<string, unknown>): boolean {
   const dep = traverseDependencyPath(fullPath, rootNode);
   return Boolean(dep);
@@ -174,16 +180,6 @@ function traverseDependencyPath(remainingPath: string[], rootNode: Record<string
   } else {
     return rootNode[remainingPath[0]];
   }
-}
-
-function uncapitalize(capitalizedString: string): string {
-  return `${capitalizedString[0].toLowerCase()}${capitalizedString.slice(1)}`;
-}
-
-function capitalizeKeys(object: Record<string, ConfigFile<unknown>>): Record<string, ConfigFile<unknown>> {
-  const newObj: Record<string, ConfigFile<unknown>> = {};
-  Object.keys(object).forEach((key) => (newObj[`${key[0].toUpperCase()}${key.slice(1)}`] = object[key]));
-  return newObj;
 }
 
 function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: string): void {

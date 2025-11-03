@@ -1,7 +1,9 @@
-import { PathLike, readFileSync } from 'node:fs';
+import { PathLike, readFileSync, rmSync } from 'node:fs';
+import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
-import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
+import { ComponentSet, FileResponse, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { Connection } from '@salesforce/core';
+import { RETRIEVE_CACHE } from '../constants.js';
 
 export type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
   /**
@@ -55,8 +57,22 @@ export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type
 export async function retrieve(compSet: ComponentSet, con: Connection): Promise<RetrieveResult> {
   const retrieveRequest = await compSet.retrieve({
     usernameOrConnection: con,
-    output: '.jsc/retrieves',
+    output: RETRIEVE_CACHE,
   });
   const retrieveResult = await retrieveRequest.pollStatus();
   return retrieveResult;
+}
+
+export function cleanRetrieveDir(files: FileResponse[]): void {
+  const dirNames = new Set<string>();
+  files.forEach((file) => {
+    if (file.filePath) {
+      const dirName = path.dirname(path.normalize(file.filePath));
+      const parts = dirName.split(path.sep).filter((dirPart) => dirPart.startsWith('metadataPackage_'));
+      parts.forEach((mdPart) => dirNames.add(mdPart));
+    }
+  });
+  dirNames.forEach((dir) => {
+    rmSync(path.join(RETRIEVE_CACHE, dir), { recursive: true });
+  });
 }
