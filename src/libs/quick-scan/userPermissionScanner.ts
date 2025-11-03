@@ -39,11 +39,15 @@ export default class UserPermissionScanner extends EventEmitter {
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
     const scannedEntities = await this.resolveEntities(opts.targetOrg);
-    const scanResult: QuickScanResult = {};
+    const scanResult: QuickScanResult = {
+      permissions: {},
+      scannedProfiles: Object.keys(scannedEntities.profiles),
+      scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
+    };
     opts.permissions.forEach((permName) => {
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
-      scanResult[permName] = { permissionSets, profiles };
+      scanResult.permissions[permName] = { permissionSets, profiles };
     });
     this.emitProgress({ status: 'Completed' });
     return scanResult;

@@ -66,14 +66,14 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
 
   private print(result: QuickScanResult): void {
     this.printSummary(result);
-    Object.entries(result).forEach(([permName, permResult]) => {
+    Object.entries(result.permissions).forEach(([permName, permResult]) => {
       this.printPermissionResults(permName, permResult);
     });
   }
 
   private printSummary(result: QuickScanResult): void {
     const data: Array<{ permissionName: string; profiles: number; permissionSets: number }> = [];
-    Object.entries(result).forEach(([permissionName, permResult]) => {
+    Object.entries(result.permissions).forEach(([permissionName, permResult]) => {
       data.push({
         permissionName,
         profiles: permResult.profiles.length,

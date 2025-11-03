@@ -26,11 +26,11 @@ describe('quick scanners', () => {
       });
 
       // Assert
-      expect(Object.keys(result)).to.deep.equal(['AuthorApex', 'EmailMass', 'ExportReport']);
-      expect(result.AuthorApex.profiles).to.deep.equal(['System Administrator']);
-      expect(result.AuthorApex.permissionSets).to.deep.equal(['Test_Admin_Permission_Set_2']);
-      expect(result.EmailMass.profiles).to.deep.equal(['System Administrator', 'Standard User']);
-      expect(result.ExportReport.profiles).to.deep.equal(['System Administrator', 'Standard User']);
+      expect(Object.keys(result.permissions)).to.deep.equal(['AuthorApex', 'EmailMass', 'ExportReport']);
+      expect(result.permissions.AuthorApex.profiles).to.deep.equal(['System Administrator']);
+      expect(result.permissions.AuthorApex.permissionSets).to.deep.equal(['Test_Admin_Permission_Set_2']);
+      expect(result.permissions.EmailMass.profiles).to.deep.equal(['System Administrator', 'Standard User']);
+      expect(result.permissions.ExportReport.profiles).to.deep.equal(['System Administrator', 'Standard User']);
     });
 
     it('emits events to report scan progress', async () => {

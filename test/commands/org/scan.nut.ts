@@ -38,10 +38,10 @@ describe('org quick-scan NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    assert.isDefined(result.AuthorApex);
-    assert.isDefined(result.CanApproveUninstalledApps);
-    expect(result.AuthorApex.profiles).to.deep.include(['System Administrator']);
-    expect(result.CanApproveUninstalledApps.profiles).to.deep.include(['System Administrator']);
+    assert.isDefined(result.permissions.AuthorApex);
+    assert.isDefined(result.permissions.CanApproveUninstalledApps);
+    expect(result.permissions.AuthorApex.profiles).to.deep.include(['System Administrator']);
+    expect(result.permissions.CanApproveUninstalledApps.profiles).to.deep.include(['System Administrator']);
   });
 
   it('gracefully ignores an unknown permission in the result', () => {
@@ -51,6 +51,6 @@ describe('org quick-scan NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    expect(result.DoesNotExist).to.be.undefined;
+    expect(result.permissions.DoesNotExist).to.be.undefined;
   });
 });

@@ -17,10 +17,14 @@ describe('org scan user-perm', () => {
   it('reports results from quick scan result in command JSON', async () => {
     // Arrange
     const mockResult = {
-      CustomizeApplication: {
-        profiles: ['System Administrator', 'Custom Administrator'],
-        permissionSets: ['My_Test_Perm_Set'],
+      permissions: {
+        CustomizeApplication: {
+          profiles: ['System Administrator', 'Custom Administrator'],
+          permissionSets: ['My_Test_Perm_Set'],
+        },
       },
+      scannedProfiles: [],
+      scannedPermissionSets: [],
     };
     const scannerMock = $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
 
@@ -45,18 +49,22 @@ describe('org scan user-perm', () => {
   it('formats results from quick scan result as tables in stdout', async () => {
     // Arrange
     const mockResult = {
-      CustomizeApplication: {
-        profiles: ['System Administrator', 'Custom Administrator'],
-        permissionSets: ['My_Test_Perm_Set'],
+      permissions: {
+        CustomizeApplication: {
+          profiles: ['System Administrator', 'Custom Administrator'],
+          permissionSets: ['My_Test_Perm_Set'],
+        },
+        AuthorApex: {
+          profiles: ['Custom Administrator'],
+          permissionSets: [],
+        },
+        UseAnyApiClient: {
+          profiles: [],
+          permissionSets: [],
+        },
       },
-      AuthorApex: {
-        profiles: ['Custom Administrator'],
-        permissionSets: [],
-      },
-      UseAnyApiClient: {
-        profiles: [],
-        permissionSets: [],
-      },
+      scannedProfiles: [],
+      scannedPermissionSets: [],
     };
     $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
 
