@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
 import z from 'zod';
-import { isEmpty } from '../utils.js';
+import { capitalize, isEmpty } from '../utils.js';
 import {
   AuditRunConfig,
   ConfigFile,
@@ -131,7 +131,7 @@ export default class AuditConfigFileManager {
 
 function capitalizeKeys(object: Record<string, unknown>): Record<string, unknown> {
   const newObj: Record<string, unknown> = {};
-  Object.keys(object).forEach((key) => (newObj[`${key[0].toUpperCase()}${key.slice(1)}`] = object[key]));
+  Object.keys(object).forEach((key) => (newObj[capitalize(key)] = object[key]));
   return newObj;
 }
 

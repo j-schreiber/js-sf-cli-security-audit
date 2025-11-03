@@ -19,7 +19,8 @@ describe('quick scanners', () => {
   describe('user permissions', () => {
     it('finds existing permission by name in all profiles and permission sets', async () => {
       // Act
-      const result = await UserPermissionScanner.quickScan({
+      const scanner = new UserPermissionScanner();
+      const result = await scanner.quickScan({
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport'],
       });
@@ -30,6 +31,57 @@ describe('quick scanners', () => {
       expect(result.AuthorApex.permissionSets).to.deep.equal(['Test_Admin_Permission_Set_2']);
       expect(result.EmailMass.profiles).to.deep.equal(['System Administrator', 'Standard User']);
       expect(result.ExportReport.profiles).to.deep.equal(['System Administrator', 'Standard User']);
+    });
+
+    it('emits events to report scan progress', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const progressListener = $$.context.SANDBOX.stub();
+      scanner.addListener('progress', progressListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: ['AuthorApex'],
+      });
+
+      // Assert
+      expect(progressListener.callCount).to.equal(7);
+      // need to check if this is actually deterministic or if promise
+      // resolves are undeterministic even in tests
+      expect(progressListener.args.flat()[0]).to.deep.equal({
+        profiles: {},
+        permissionSets: {},
+        users: {},
+        status: 'Pending',
+      });
+      expect(progressListener.args.flat()[1]).to.deep.equal({
+        profiles: {},
+        permissionSets: {},
+        users: {},
+        status: 'In Progress',
+      });
+      expect(progressListener.args.flat()[2]).to.deep.equal({
+        profiles: {
+          total: 2,
+          resolved: 0,
+        },
+        permissionSets: {},
+        users: {},
+        status: 'In Progress',
+      });
+      expect(progressListener.args.flat()[3]).to.deep.equal({
+        profiles: {
+          total: 2,
+          resolved: 0,
+        },
+        permissionSets: {
+          total: 7,
+          resolved: 0,
+        },
+        users: {},
+        status: 'In Progress',
+      });
     });
   });
 });

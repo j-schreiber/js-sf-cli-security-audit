@@ -22,7 +22,7 @@ describe('org scan user-perm', () => {
         permissionSets: ['My_Test_Perm_Set'],
       },
     };
-    const scannerMock = $$.context.SANDBOX.stub(UserPermissionScanner, 'quickScan').resolves(mockResult);
+    const scannerMock = $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
 
     // Act
     const result = await OrgUserPermScan.run([
@@ -58,7 +58,7 @@ describe('org scan user-perm', () => {
         permissionSets: [],
       },
     };
-    $$.context.SANDBOX.stub(UserPermissionScanner, 'quickScan').resolves(mockResult);
+    $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
 
     // Act
     await OrgUserPermScan.run([

@@ -21,3 +21,11 @@ The target org to scan.
 # examples
 
 - <%= config.bin %> <%= command.id %>
+
+# success.profiles-count
+
+Scanned %s profiles.
+
+# success.permissionsets-count
+
+Scanned %s permission sets.

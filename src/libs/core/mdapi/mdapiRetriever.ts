@@ -11,10 +11,18 @@ import SingletonMetadata from './singletonMetadataType.js';
 import NamedMetadataQueryable from './namedMetadataToolingQueryable.js';
 
 export default class MDAPI {
+  private static retrievers = new Map<string, MDAPI>();
   private cache: MetadataCache;
 
   public constructor(private connection: Connection) {
     this.cache = new MetadataCache();
+  }
+
+  public static create(connection: Connection): MDAPI {
+    if (!this.retrievers.has(connection.instanceUrl)) {
+      this.retrievers.set(connection.instanceUrl, new MDAPI(connection));
+    }
+    return this.retrievers.get(connection.instanceUrl)!;
   }
 
   /**
