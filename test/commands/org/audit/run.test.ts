@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { Messages } from '@salesforce/core';
+import { Messages, SfError } from '@salesforce/core';
 import OrgAuditRun from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../../../mocks/auditTestContext.js';
 import AuditRun from '../../../../src/libs/policies/auditRun.js';
@@ -12,10 +12,11 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-lib-results', 'run');
-const DEFAULT_WORKING_DIR = path.join('test', 'mocks', 'data', 'audit-configs', 'full-valid');
+const AUDIT_CONFIGS_DIR = path.join('test', 'mocks', 'data', 'audit-configs');
+const DEFAULT_WORKING_DIR = path.join(AUDIT_CONFIGS_DIR, 'full-valid');
 
 const NON_COMPLIANT_RESULT = parseMockAuditConfig('full-non-compliant.json');
-const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
+// const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
 const EMPTY_RESULT = parseMockAuditConfig('empty-policy-no-rules.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
@@ -130,18 +131,55 @@ describe('org audit run', () => {
     expect(fileContent).to.deep.contain(NON_COMPLIANT_RESULT);
   });
 
-  it('loads config from root directory if --source-dir flag is empty', async () => {
-    // Arrange
-    mockResult(COMPLIANT_RESULT);
-
+  it('aborts gracefully if root dir is empty', async () => {
     // Act
-    const result = await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
+    try {
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'NoAuditConfigFound', 'The target directory <root-dir> is empty');
+    }
+  });
 
-    // Assert
-    expect(result.isCompliant).to.be.true;
-    expect(result.filePath).not.to.be.undefined;
-    expect(fs.existsSync(result.filePath)).to.be.true;
-    fs.rmSync(result.filePath);
+  it('aborts gracefully if supplied source dir is empty', async () => {
+    // Act
+    const sourceDirPath = path.join(AUDIT_CONFIGS_DIR, 'empty');
+    try {
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', sourceDirPath]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'NoAuditConfigFound', `The target directory ${sourceDirPath} is empty`);
+    }
+  });
+
+  it('aborts gracefully if no classification was found for profiles', async () => {
+    // Act
+    try {
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'no-classifications'),
+      ]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'UserPermClassificationRequiredForProfiles');
+    }
+  });
+
+  it('aborts gracefully if no classification was found for permission sets', async () => {
+    // Act
+    try {
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'no-classifications-2'),
+      ]);
+      expect.fail('Expected exception,but succeeded');
+    } catch (error) {
+      assertError(error, 'UserPermClassificationRequiredForPermSets');
+    }
   });
 
   it('does not report rule summary when policy had no executed rules', async () => {
@@ -162,3 +200,14 @@ describe('org audit run', () => {
     });
   });
 });
+
+function assertError(err: unknown, expectedName: string, expectedMsg?: string) {
+  if (err instanceof SfError) {
+    expect(err.name).to.equal(expectedName + 'Error');
+    if (expectedMsg) {
+      expect(err.message).to.contain(expectedMsg);
+    }
+  } else {
+    expect.fail('Expected SfError, but got: ' + JSON.stringify(err));
+  }
+}

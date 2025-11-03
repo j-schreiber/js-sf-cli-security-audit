@@ -16,4 +16,8 @@ export function capitalize(anyString: string): string {
   return `${anyString[0].toUpperCase()}${anyString.slice(1)}`;
 }
 
+export function uncapitalize(anyString: string): string {
+  return `${anyString[0].toLowerCase()}${anyString.slice(1)}`;
+}
+
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
