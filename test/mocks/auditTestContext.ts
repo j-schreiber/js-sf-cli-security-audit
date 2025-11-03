@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
+import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
@@ -13,6 +14,7 @@ import {
   OAUTH_TOKEN_QUERY,
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
+  RETRIEVE_CACHE,
 } from '../../src/libs/core/constants.js';
 import {
   PolicyRuleViolation,
@@ -73,6 +75,7 @@ export default class AuditTestContext {
     process.removeAllListeners();
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
+    fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
   }
 
@@ -81,9 +84,14 @@ export default class AuditTestContext {
     if (this.retrieveStub) {
       this.retrieveStub.restore();
     }
-    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').resolves(
-      new MetadataApiRetrieveMock(fullyResolvedPath) as unknown as MetadataApiRetrieve
-    );
+    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').callsFake((opts) => {
+      // this behavior mimicks the original behavior of metadata retrieve as closely as possible
+      // each retrieve creates a temporary dictionary that contains all files
+      const retrievePath = path.join(opts.output, `metadataPackage_${Date.now()}`);
+      fs.mkdirSync(retrievePath, { recursive: true });
+      copyDir(fullyResolvedPath, retrievePath);
+      return Promise.resolve(new MetadataApiRetrieveMock(retrievePath) as unknown as MetadataApiRetrieve);
+    });
     return this.retrieveStub;
   }
 }

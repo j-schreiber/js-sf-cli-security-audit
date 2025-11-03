@@ -1,7 +1,9 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { expect } from 'chai';
 import AuditTestContext, { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
 import MDAPI, { NamedTypesRegistry, SingletonRegistry } from '../../src/libs/core/mdapi/mdapiRetriever.js';
+import { RETRIEVE_CACHE } from '../../src/libs/core/constants.js';
 
 export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 
@@ -142,5 +144,16 @@ describe('mdapi retriever', () => {
 
     // Assert
     expect(Object.keys(profiles)).to.deep.equal([]);
+  });
+
+  it('cleans up temporary retrieve files after doing the deed', async () => {
+    // Act
+    const mdapi = new MDAPI($$.targetOrgConnection);
+    await mdapi.resolveSingleton('ConnectedAppSettings');
+
+    // Assert
+    expect(fs.existsSync(RETRIEVE_CACHE)).to.be.true;
+    const dirEntries = fs.readdirSync(RETRIEVE_CACHE);
+    expect(dirEntries.length).to.equal(0);
   });
 });

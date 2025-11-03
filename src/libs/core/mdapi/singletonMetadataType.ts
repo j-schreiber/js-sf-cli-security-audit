@@ -1,6 +1,10 @@
 import { Connection } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
-import MetadataRegistryEntry, { MetadataRegistryEntryOpts, retrieve } from './metadataRegistryEntry.js';
+import MetadataRegistryEntry, {
+  cleanRetrieveDir,
+  MetadataRegistryEntryOpts,
+  retrieve,
+} from './metadataRegistryEntry.js';
 
 /**
  * The entry is a type that only has one single instance on the org, such as
@@ -25,7 +29,9 @@ export default class SingletonMetadata<Type, Key extends keyof Type> extends Met
   public async resolve(con: Connection): Promise<Type[Key]> {
     const cmpSet = new ComponentSet([{ type: this.retrieveType, fullName: this.retrieveName }]);
     const retrieveResult = await retrieve(cmpSet, con);
-    return this.parseSourceFile(retrieveResult.components);
+    const resolvedCmp = this.parseSourceFile(retrieveResult.components);
+    cleanRetrieveDir(retrieveResult.getFileResponses());
+    return resolvedCmp;
   }
 
   private parseSourceFile(componentSet: ComponentSet): Type[Key] {
