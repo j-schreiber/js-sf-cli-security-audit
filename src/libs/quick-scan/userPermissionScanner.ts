@@ -5,21 +5,33 @@ import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
 import { PermissionSet } from '../policies/salesforceStandardTypes.js';
 import { QuickScanOptions, QuickScanResult } from './types.js';
 
+type ScannedEntities = {
+  profiles: Record<string, Profile>;
+  permissionSets: Record<string, PermissionSetMetadata>;
+};
+
 export default class UserPermissionScanner {
   public static async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
-    // query all profiles and permission sets
-    // resolve metadata for each entity
-    // search for perm
-    const resolvedProfiles = await resolveProfiles(opts.targetOrg);
-    const resolvedPermSets = await resolvePermissionSets(opts.targetOrg);
+    const scannedEntities = await resolveEntities(opts.targetOrg);
     const scanResult: QuickScanResult = {};
     opts.permissions.forEach((permName) => {
-      const profiles = findGrantingEntities(permName, resolvedProfiles);
-      const permissionSets = findGrantingEntities(permName, resolvedPermSets);
+      const profiles = findGrantingEntities(permName, scannedEntities.profiles);
+      const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
       scanResult[permName] = { permissionSets, profiles };
     });
     return scanResult;
   }
+}
+
+async function resolveEntities(targetOrg: Connection): Promise<ScannedEntities> {
+  const promises: Array<Promise<unknown>> = [];
+  promises.push(resolveProfiles(targetOrg));
+  promises.push(resolvePermissionSets(targetOrg));
+  const resolvedEntities = await Promise.all(promises);
+  return {
+    profiles: resolvedEntities[0] as Record<string, Profile>,
+    permissionSets: resolvedEntities[1] as Record<string, PermissionSetMetadata>,
+  };
 }
 
 async function resolveProfiles(targetOrg: Connection): Promise<Record<string, Profile>> {

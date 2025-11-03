@@ -35,11 +35,15 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
       targetOrg: flags['target-org'].getConnection(flags['api-version']),
       permissions: flags.name,
     });
+    this.print(result);
+    return result;
+  }
+
+  private print(result: QuickScanResult): void {
     this.printSummary(result);
     Object.entries(result).forEach(([permName, permResult]) => {
       this.printPermissionResults(permName, permResult);
     });
-    return result;
   }
 
   private printSummary(result: QuickScanResult): void {
