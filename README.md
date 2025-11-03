@@ -31,6 +31,7 @@ Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.co
 
 - [`sf org audit init`](#sf-org-audit-init)
 - [`sf org audit run`](#sf-org-audit-run)
+- [`sf org scan user-perms`](#sf-org-scan-user-perms)
 
 ## `sf org audit init`
 
@@ -77,7 +78,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.4.1/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -108,7 +109,43 @@ EXAMPLES
     $ sf org audit run -o MyTargetOrg -d configs/prod
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.4.1/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/audit/run.ts)_
+
+## `sf org scan user-perms`
+
+Performs a quick scan to check permission sets and profiles for user permissions.
+
+```
+USAGE
+  $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>]
+
+FLAGS
+  -n, --name=<value>...      (required) One or more permissions to be scanned.
+  -o, --target-org=<value>   (required) The target org to scan.
+      --api-version=<value>  Override the api version used for api requests made by this command
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Performs a quick scan to check permission sets and profiles for user permissions.
+
+  The quick scan does not need an audit config and does not create reports. The target org is scanned "in memory" and
+  simply outputs information, where the searched user permissions
+
+EXAMPLES
+  $ sf org scan user-perms
+
+FLAG DESCRIPTIONS
+  -n, --name=<value>...  One or more permissions to be scanned.
+
+    You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication" or "ViewSetup".
+    If you are unsure what permissions are available on your org, initialise a new audit config and check the created
+    userPermissions.yml.
+```
+
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
