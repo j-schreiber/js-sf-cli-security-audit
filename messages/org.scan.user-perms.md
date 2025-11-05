@@ -22,10 +22,6 @@ The target org to scan.
 
 - <%= config.bin %> <%= command.id %>
 
-# success.profiles-count
+# success.scanned-entities-count
 
-Scanned %s profiles.
-
-# success.permissionsets-count
-
-Scanned %s permission sets.
+Scanned %s profiles and %s permission sets.

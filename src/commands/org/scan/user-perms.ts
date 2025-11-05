@@ -58,8 +58,9 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     this.spinner.status = counters.join(' | ');
     if (event.status === 'Completed') {
       this.spinner.stop();
-      this.logSuccess(messages.getMessage('success.profiles-count', [event.profiles.total]));
-      this.logSuccess(messages.getMessage('success.permissionsets-count', [event.permissionSets.total]));
+      this.logSuccess(
+        messages.getMessage('success.scanned-entities-count', [event.profiles.total, event.permissionSets.total])
+      );
       this.log();
     }
   };
