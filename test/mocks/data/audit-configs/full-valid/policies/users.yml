@@ -1,0 +1,9 @@
+enabled: true
+options:
+  defaultRoleForMissingUsers: Standard User
+rules: {}
+users:
+  test-user-1@example.com:
+    role: Standard User
+  guest-user@example.com:
+    role: Standard User

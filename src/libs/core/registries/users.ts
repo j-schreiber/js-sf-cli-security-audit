@@ -2,9 +2,17 @@ import { ProfilesRiskPreset } from '../policy-types.js';
 import RuleRegistry from './ruleRegistry.js';
 
 export type ResolvedUser = {
+  userId: string;
   username: string;
-  assignedRole: ProfilesRiskPreset;
+  role: ProfilesRiskPreset;
+  assignedPermissionSets: UserPermissionSetAssignment[];
+  assignedProfile: string;
 };
+
+type UserPermissionSetAssignment = {
+  permissionSetIdentifier: string;
+};
+
 export default class UsersRuleRegistry extends RuleRegistry {
   public constructor() {
     super({});

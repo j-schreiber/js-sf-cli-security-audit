@@ -218,7 +218,7 @@ describe('audit config', () => {
       expect(Object.keys(userPolicy.users)).to.deep.equal([
         'guest-user@example.com',
         'insightsintegration@sf.com',
-        'testing@lietzau-consulting.de',
+        'test-user-1@example.com',
       ]);
       expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(ProfilesRiskPreset.STANDARD_USER);
     });
@@ -236,11 +236,13 @@ describe('audit config', () => {
       assert.isDefined(auditConf.policies.Profiles);
       assert.isDefined(auditConf.policies.PermissionSets);
       assert.isDefined(auditConf.policies.ConnectedApps);
+      assert.isDefined(auditConf.policies.Users);
       expect(auditConf.classifications.userPermissions.filePath).not.to.be.undefined;
       expect(auditConf.classifications.customPermissions.filePath).not.to.be.undefined;
       expect(auditConf.policies.Profiles.filePath).not.to.be.undefined;
       expect(auditConf.policies.PermissionSets.filePath).not.to.be.undefined;
       expect(auditConf.policies.ConnectedApps.filePath).not.to.be.undefined;
+      expect(auditConf.policies.Users.filePath).not.to.be.undefined;
     });
 
     it('loads partial classifications and policies files', async () => {

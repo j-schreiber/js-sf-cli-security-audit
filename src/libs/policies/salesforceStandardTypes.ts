@@ -44,3 +44,8 @@ export type PermissionSet = Record & {
   Profile: ProfileBasic;
   NamespacePrefix?: string;
 };
+
+export type PermissionSetAssignment = Record & {
+  AssigneeId: string;
+  PermissionSet: Pick<PermissionSet, 'Name'>;
+};

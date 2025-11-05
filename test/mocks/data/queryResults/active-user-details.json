@@ -1,0 +1,47 @@
+[
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/0054P00000AYPYXQA5"
+    },
+    "Id": "0054P00000AYPYXQA5",
+    "Username": "guest-user@example.de",
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v65.0/sobjects/Profile/00e4P000000GGz7QAG"
+      },
+      "Name": "Guest User Profile"
+    }
+  },
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/005Pl000001p3HqIAI"
+    },
+    "Id": "005Pl000001p3HqIAI",
+    "Username": "test-user-1@example.de",
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v65.0/sobjects/Profile/00ePl000002dNziIAE"
+      },
+      "Name": "Standard User Profile"
+    }
+  },
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/0054P00000AaGueQAF"
+    },
+    "Id": "0054P00000AaGueQAF",
+    "Username": "test-user-2@example.de",
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v65.0/sobjects/Profile/00e4P000001jNhqQAE"
+      },
+      "Name": "System Administrator"
+    }
+  }
+]

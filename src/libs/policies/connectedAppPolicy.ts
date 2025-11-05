@@ -7,7 +7,7 @@ import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
-export default class ConnectedAppPolicy extends Policy {
+export default class ConnectedAppPolicy extends Policy<ResolvedConnectedApp> {
   public constructor(
     public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
@@ -17,7 +17,7 @@ export default class ConnectedAppPolicy extends Policy {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedConnectedApp>> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const metadataApi = new MDAPI(context.targetOrgConnection);

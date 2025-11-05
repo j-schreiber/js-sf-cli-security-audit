@@ -10,7 +10,7 @@ import PermissionSetPolicy from './permissionSetPolicy.js';
 import ConnectedAppPolicy from './connectedAppPolicy.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
-type PolicyMap = Record<string, Policy>;
+type PolicyMap = Record<string, Policy<unknown>>;
 
 export function startAuditRun(directoryPath: string): AuditRun {
   const conf = loadAuditConfig(directoryPath);
@@ -43,7 +43,7 @@ export default class AuditRun extends EventEmitter {
       return this.executablePolicies;
     }
     this.executablePolicies = this.loadPolicies(this.configs);
-    const resolveResultPromises: Array<Promise<ResolveEntityResult>> = [];
+    const resolveResultPromises: Array<Promise<ResolveEntityResult<unknown>>> = [];
     Object.values(this.executablePolicies).forEach((executable) => {
       resolveResultPromises.push(executable.resolve({ targetOrgConnection }));
     });

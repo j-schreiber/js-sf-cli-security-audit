@@ -9,7 +9,9 @@ import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
+  ACTIVE_USERS_DETAILS_QUERY,
   ACTIVE_USERS_QUERY,
+  buildPermsetAssignmentsQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
@@ -152,6 +154,9 @@ function buildDefaultMocks() {
   defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
+  defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
+  const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+  defaults.queries[buildPermsetAssignmentsQuery(testUserIds)] = 'test-user-assignments';
   return defaults;
 }
 

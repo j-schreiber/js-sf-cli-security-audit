@@ -10,7 +10,7 @@ import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export default class ProfilePolicy extends Policy {
+export default class ProfilePolicy extends Policy<ResolvedProfile> {
   private totalEntities: number;
   public constructor(
     public config: ProfilesPolicyFileContent,
@@ -21,7 +21,7 @@ export default class ProfilePolicy extends Policy {
     this.totalEntities = this.config.profiles ? Object.keys(this.config.profiles).length : 0;
   }
 
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedProfile>> {
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,
