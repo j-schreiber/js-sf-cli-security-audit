@@ -4,11 +4,13 @@ import { Optional } from '../utils.js';
 import { ConnectedAppsRegistry } from './connectedApps.js';
 import { PermissionSetsRegistry } from './permissionSets.js';
 import { ProfilesRegistry } from './profiles.js';
+import { UsersRegistry } from './users.js';
 
 export const RuleRegistries = {
   ConnectedApps: ConnectedAppsRegistry,
   Profiles: ProfilesRegistry,
   PermissionSets: PermissionSetsRegistry,
+  Users: UsersRegistry,
 };
 
 /**

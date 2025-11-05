@@ -8,6 +8,8 @@ export const PERMISSION_SETS_QUERY =
   'SELECT Name,Label,IsCustom,NamespacePrefix FROM PermissionSet WHERE IsOwnedByProfile = FALSE AND NamespacePrefix = NULL';
 export const CONNECTED_APPS_QUERY = 'SELECT Name,OptionsAllowAdminApprovedUsersOnly FROM ConnectedApplication';
 export const OAUTH_TOKEN_QUERY = 'SELECT User.Username,UseCount,AppName FROM OauthToken';
+export const ACTIVE_USERS_QUERY =
+  "SELECT Id,Username,UserType FROM User WHERE IsActive = TRUE AND UserType IN ('Guest','Standard') LIMIT 2000";
 
 // PATHS
 export const RETRIEVE_CACHE = path.join('.jsc', 'retrieves');

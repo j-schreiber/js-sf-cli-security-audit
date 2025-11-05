@@ -31,6 +31,14 @@ const PermSetConfig = z.object({
 
 const PermSetMap = z.record(z.string(), PermSetConfig);
 
+const UserConfig = z.object({ role: z.enum(ProfilesRiskPreset) });
+
+const UsersMap = z.record(z.string(), UserConfig);
+
+export const UsersPolicyConfig = z.object({
+  defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
+});
+
 // FILE CONTENT SCHEMATA
 
 export const PolicyFileSchema = z.object({
@@ -50,6 +58,11 @@ export const PermissionsConfigFileSchema = z.object({
   permissions: z.record(z.string(), PermissionsClassificationSchema),
 });
 
+export const UsersPolicyFileSchema = PolicyFileSchema.extend({
+  users: UsersMap,
+  options: UsersPolicyConfig,
+});
+
 // EXPORTED TYPES
 
 export type PermissionsClassification = z.infer<typeof PermissionsClassificationSchema>;
@@ -60,6 +73,7 @@ export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
 export type BasePolicyFileContent = z.infer<typeof PolicyFileSchema>;
 export type ProfilesPolicyFileContent = z.infer<typeof ProfilesPolicyFileSchema>;
 export type PermSetsPolicyFileContent = z.infer<typeof PermSetsPolicyFileSchema>;
+export type UsersPolicyFileContent = z.infer<typeof UsersPolicyFileSchema>;
 export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
 export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;
 export type RuleMap = z.infer<typeof RuleMapSchema>;
@@ -82,6 +96,7 @@ export type AuditRunConfigPolicies = {
   Profiles?: ConfigFile<ProfilesPolicyFileContent>;
   PermissionSets?: ConfigFile<PermSetsPolicyFileContent>;
   ConnectedApps?: ConfigFile<BasePolicyFileContent>;
+  Users?: ConfigFile<UsersPolicyFileContent>;
 };
 
 export type AuditRunConfig = {

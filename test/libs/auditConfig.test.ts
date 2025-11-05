@@ -33,7 +33,7 @@ describe('audit config', () => {
   });
 
   function assertFile(expectedPath: string, confFile?: ConfigFile<unknown>) {
-    assert.isDefined(confFile?.filePath);
+    assert.isDefined(confFile?.filePath, `for path: ${expectedPath}`);
     expect(confFile.filePath).to.equal(expectedPath);
     expect(fs.existsSync(confFile.filePath)).to.be.true;
   }
@@ -44,6 +44,7 @@ describe('audit config', () => {
     assert.isDefined(auditConf.policies.Profiles);
     assert.isDefined(auditConf.policies.PermissionSets);
     assert.isDefined(auditConf.policies.ConnectedApps);
+    assert.isDefined(auditConf.policies.Users);
     assertFile(
       path.join(expectedDir, 'classifications', 'userPermissions.yml'),
       auditConf.classifications.userPermissions
@@ -55,6 +56,7 @@ describe('audit config', () => {
     assertFile(path.join(expectedDir, 'policies', 'profiles.yml'), auditConf.policies.Profiles);
     assertFile(path.join(expectedDir, 'policies', 'permissionSets.yml'), auditConf.policies.PermissionSets);
     assertFile(path.join(expectedDir, 'policies', 'connectedApps.yml'), auditConf.policies.ConnectedApps);
+    assertFile(path.join(expectedDir, 'policies', 'users.yml'), auditConf.policies.Users);
   }
 
   function cleanConfigFiles(auditConf: AuditRunConfig) {
@@ -87,11 +89,13 @@ describe('audit config', () => {
       assert.isDefined(auditConf.policies.Profiles);
       assert.isDefined(auditConf.policies.PermissionSets);
       assert.isDefined(auditConf.policies.ConnectedApps);
+      assert.isDefined(auditConf.policies.Users);
       expect(auditConf.classifications.userPermissions.filePath).to.be.undefined;
       expect(auditConf.classifications.customPermissions.filePath).to.be.undefined;
       expect(auditConf.policies.Profiles.filePath).to.be.undefined;
       expect(auditConf.policies.PermissionSets.filePath).to.be.undefined;
       expect(auditConf.policies.ConnectedApps.filePath).to.be.undefined;
+      expect(auditConf.policies.Users.filePath).to.be.undefined;
     });
 
     it('inits full config and saves files to target dir', async () => {
@@ -202,6 +206,21 @@ describe('audit config', () => {
         const perm = getTypedUserPerms(auditConf).content.permissions[permName];
         assert.isDefined(perm);
       });
+    });
+
+    it('initialises user policy with active users from org', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+
+      // Assert
+      assert.isDefined(auditConf.policies.Users);
+      const userPolicy = auditConf.policies.Users.content;
+      expect(Object.keys(userPolicy.users)).to.deep.equal([
+        'guest-user@example.com',
+        'insightsintegration@sf.com',
+        'testing@lietzau-consulting.de',
+      ]);
+      expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(ProfilesRiskPreset.STANDARD_USER);
     });
   });
 

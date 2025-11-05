@@ -11,6 +11,7 @@ import {
   PermSetsPolicyFileSchema,
   PolicyFileSchema,
   ProfilesPolicyFileSchema,
+  UsersPolicyFileSchema,
 } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -71,6 +72,9 @@ export default class AuditConfigFileManager {
           dependencies: [
             { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
           ],
+        },
+        users: {
+          schema: UsersPolicyFileSchema,
         },
         connectedApps: {
           schema: PolicyFileSchema,
