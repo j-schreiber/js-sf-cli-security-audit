@@ -1,10 +1,10 @@
 import { Messages } from '@salesforce/core';
-import { EntityResolveError } from '../core/result-types.js';
-import { AuditRunConfig, UsersPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { AuditContext, RuleRegistries } from '../core/registries/types.js';
-import { ACTIVE_USERS_DETAILS_QUERY } from '../core/constants.js';
-import { ResolvedUser } from '../core/registries/users.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
+import { EntityResolveError } from '../result-types.js';
+import { AuditRunConfig, UsersPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditContext } from '../registries/types.js';
+import { ACTIVE_USERS_DETAILS_QUERY } from '../constants.js';
+import { ResolvedUser, UsersRegistry } from '../registries/users.js';
+import { ProfilesRiskPreset } from '../policy-types.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { User } from './salesforceStandardTypes.js';
 
@@ -16,7 +16,7 @@ export default class UserPolicy extends Policy<ResolvedUser> {
   public constructor(
     public config: UsersPolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry = RuleRegistries.Users
+    registry = UsersRegistry
   ) {
     super(config, auditConfig, registry);
     this.totalEntities = this.config.users ? Object.keys(this.config.users).length : 0;

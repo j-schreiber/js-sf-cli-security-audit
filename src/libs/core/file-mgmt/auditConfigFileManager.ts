@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
 import { isEmpty } from '../utils.js';
-import { classificationDefs, policyDefs } from '../../policies/policyRegistry.js';
+import { classificationDefs, policyDefs } from '../policyRegistry.js';
 import { AuditRunConfig, ConfigFile } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

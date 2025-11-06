@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../mocks/auditTestContext.js';
-import { startAuditRun } from '../../src/libs/policies/auditRun.js';
+import { startAuditRun } from '../../src/libs/core/auditRun.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
 // const QUERIES_BASE_PATH = path.join('test', 'mocks', 'data', 'queryResults');

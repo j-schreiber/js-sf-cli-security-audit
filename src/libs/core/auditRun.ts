@@ -1,11 +1,11 @@
 // import fs from 'node:fs';
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, AuditResult } from '../core/result-types.js';
-import { AuditRunConfig, ConfigFile } from '../core/file-mgmt/schema.js';
-import { loadAuditConfig } from '../core/file-mgmt/auditConfigFileManager.js';
-import Policy, { ResolveEntityResult } from './policy.js';
+import { AuditPolicyResult, AuditResult } from './result-types.js';
+import { AuditRunConfig, ConfigFile } from './file-mgmt/schema.js';
+import { loadAuditConfig } from './file-mgmt/auditConfigFileManager.js';
 import { policyDefs } from './policyRegistry.js';
+import Policy, { ResolveEntityResult } from './policies/policy.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy<unknown>>;

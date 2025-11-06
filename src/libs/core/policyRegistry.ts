@@ -5,13 +5,13 @@ import {
   PolicyFileSchema,
   ProfilesPolicyFileSchema,
   UsersPolicyFileSchema,
-} from '../core/file-mgmt/schema.js';
-import { Constructor } from '../core/registries/types.js';
-import ConnectedAppPolicy from './connectedAppPolicy.js';
-import PermissionSetPolicy from './permissionSetPolicy.js';
-import Policy from './policy.js';
-import ProfilePolicy from './profilePolicy.js';
-import UserPolicy from './userPolicy.js';
+} from './file-mgmt/schema.js';
+import { Constructor } from './registries/types.js';
+import ConnectedAppPolicy from './policies/connectedAppPolicy.js';
+import PermissionSetPolicy from './policies/permissionSetPolicy.js';
+import Policy from './policies/policy.js';
+import ProfilePolicy from './policies/profilePolicy.js';
+import UserPolicy from './policies/userPolicy.js';
 
 export const classificationDefs: ClassificationRegistry = {
   userPermissions: {

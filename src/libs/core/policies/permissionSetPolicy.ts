@@ -1,10 +1,10 @@
 import { Messages } from '@salesforce/core';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { AuditContext, RuleRegistries } from '../core/registries/types.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
-import { EntityResolveError } from '../core/result-types.js';
-import { ResolvedPermissionSet } from '../core/registries/permissionSets.js';
+import MDAPI from '../mdapi/mdapiRetriever.js';
+import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditContext } from '../registries/types.js';
+import { ProfilesRiskPreset } from '../policy-types.js';
+import { EntityResolveError } from '../result-types.js';
+import { PermissionSetsRegistry, ResolvedPermissionSet } from '../registries/permissionSets.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -15,7 +15,7 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
   public constructor(
     public config: PermSetsPolicyFileContent,
     public auditContext: AuditRunConfig,
-    registry = RuleRegistries.PermissionSets
+    registry = PermissionSetsRegistry
   ) {
     super(config, auditContext, registry);
     this.totalEntities = this.config.permissionSets ? Object.keys(this.config.permissionSets).length : 0;

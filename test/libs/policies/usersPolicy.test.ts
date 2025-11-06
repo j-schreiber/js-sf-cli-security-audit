@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
-import UserPolicy from '../../../src/libs/policies/userPolicy.js';
+import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
 import { buildPermsetAssignmentsQuery } from '../../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 

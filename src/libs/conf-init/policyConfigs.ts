@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
 import { ACTIVE_USERS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
-import { PermissionSet, User } from '../policies/salesforceStandardTypes.js';
+import { PermissionSet, User } from '../core/policies/salesforceStandardTypes.js';
 import {
   BasePolicyFileContent,
   PermSetsPolicyFileContent,

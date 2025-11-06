@@ -1,6 +1,6 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
 import { BasePolicyFileContent, ConfigFile } from '../libs/core/file-mgmt/schema.js';
-import AuditRun, { EntityResolveEvent } from '../libs/policies/auditRun.js';
+import AuditRun, { EntityResolveEvent } from '../libs/core/auditRun.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';

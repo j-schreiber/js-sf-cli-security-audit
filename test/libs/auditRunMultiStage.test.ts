@@ -7,7 +7,7 @@ import AuditRunMultiStageOutput, {
   EXECUTE_RULES,
   RESOLVE_POLICIES,
 } from '../../src/ux/auditRunMultiStage.js';
-import AuditRun from '../../src/libs/policies/auditRun.js';
+import AuditRun from '../../src/libs/core/auditRun.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 
 const PROFILES_CONFIG = {

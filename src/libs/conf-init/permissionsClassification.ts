@@ -2,7 +2,7 @@ import { Connection } from '@salesforce/core';
 import { PermissionsConfig } from '../core/file-mgmt/schema.js';
 import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../core/constants.js';
 import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { CustomPermission, PermissionSet } from '../policies/salesforceStandardTypes.js';
+import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
