@@ -1,0 +1,20 @@
+[
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Application",
+    "Application": "Browser",
+    "UserId": "005Pl000001p3HqIAI",
+    "LoginCount": 264
+  },
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Application",
+    "Application": "Browser",
+    "UserId": "0054P00000AaGueQAF",
+    "LoginCount": 123
+  }
+]

@@ -2,11 +2,11 @@ import { Messages } from '@salesforce/core';
 import { EntityResolveError } from '../result-types.js';
 import { AuditRunConfig, UsersPolicyFileContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
-import { ACTIVE_USERS_DETAILS_QUERY } from '../constants.js';
+import { ACTIVE_USERS_DETAILS_QUERY, USERS_LOGIN_HISTORY_QUERY } from '../constants.js';
 import { ResolvedUser, UsersRegistry } from '../registries/users.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
-import { User } from './salesforceStandardTypes.js';
+import { User, UserLoginsAggregate } from './salesforceStandardTypes.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -43,19 +43,26 @@ export default class UserPolicy extends Policy<ResolvedUser> {
       }
     });
     // fetch all users from org and merge with configured users
-    const users = await context.targetOrgConnection.query<User>(ACTIVE_USERS_DETAILS_QUERY);
-    users.records.forEach((user) => {
+    const allUsersOnOrg = await context.targetOrgConnection.query<User>(ACTIVE_USERS_DETAILS_QUERY);
+    allUsersOnOrg.records.forEach((user) => {
       if (ignoredEntities[user.Username] === undefined) {
         usersById[user.Id!] = {
           userId: user.Id!,
           username: user.Username,
           assignedProfile: user.Profile.Name,
           assignedPermissionSets: [],
+          logins: [],
           role: configuredUsers[user.Username]?.role ?? this.config.options.defaultRoleForMissingUsers,
         };
         userIds.push(user.Id!);
       }
     });
+    this.totalEntities = allUsersOnOrg.totalSize;
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: 0,
+    });
+    await resolveLogins(usersById, context);
     // resolve perm set assignments per user
     // const assignments = await context.targetOrgConnection.query<PermissionSetAssignment>(
     //   buildPermsetAssignmentsQuery(userIds)
@@ -70,6 +77,19 @@ export default class UserPolicy extends Policy<ResolvedUser> {
     });
     return result;
   }
+}
+
+async function resolveLogins(usersById: Record<string, ResolvedUser>, context: AuditContext): Promise<void> {
+  const loginHistory = await context.targetOrgConnection.query<UserLoginsAggregate>(USERS_LOGIN_HISTORY_QUERY);
+  loginHistory.records.forEach((loginHistoryRow) => {
+    if (usersById[loginHistoryRow.UserId]) {
+      usersById[loginHistoryRow.UserId].logins.push({
+        loginType: loginHistoryRow.LoginType,
+        loginCount: loginHistoryRow.LoginCount,
+        application: loginHistoryRow.Application,
+      });
+    }
+  });
 }
 
 function organizeByUsername(partial: Record<string, ResolvedUser>): Record<string, ResolvedUser> {

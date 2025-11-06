@@ -12,7 +12,8 @@ export const ACTIVE_USERS_QUERY =
   "SELECT Id,Username,UserType FROM User WHERE IsActive = TRUE AND UserType IN ('Guest','Standard') LIMIT 2000";
 export const ACTIVE_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name FROM User WHERE IsActive = TRUE AND UserType IN ('Guest','Standard') LIMIT 2000";
-export const USERS_LOGIN_HISTORY_QUERY = '';
+export const USERS_LOGIN_HISTORY_QUERY =
+  'SELECT LoginType,Application,UserId,COUNT(Id)LoginCount FROM LoginHistory GROUP BY LoginType,Application,UserId ORDER BY LoginType,Application,UserId';
 export const USERS_PERMSET_ASSIGNMENTS_QUERY =
   'SELECT AssigneeId,PermissionSet.Name FROM PermissionSetAssignment WHERE PermissionSet.IsOwnedByProfile = FALSE AND PermissionSet.NamespacePrefix = NULL';
 

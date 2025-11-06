@@ -49,3 +49,10 @@ export type PermissionSetAssignment = Record & {
   AssigneeId: string;
   PermissionSet: Pick<PermissionSet, 'Name'>;
 };
+
+export type UserLoginsAggregate = Record & {
+  LoginType: string;
+  Application: string;
+  UserId: string;
+  LoginCount: number;
+};
