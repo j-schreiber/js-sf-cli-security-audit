@@ -13,6 +13,9 @@ export const RuleRegistries = {
   Users: UsersRegistry,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Constructor<T, Args extends any[] = any[]> = new (...args: Args) => T;
+
 /**
  * A rule must only implement a subset of the rule result. All optional
  * properties are completed by the policy.

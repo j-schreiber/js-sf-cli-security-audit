@@ -2,12 +2,10 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../core/result-types.js';
-import { AuditRunConfig } from '../core/file-mgmt/schema.js';
+import { AuditRunConfig, ConfigFile } from '../core/file-mgmt/schema.js';
 import { loadAuditConfig } from '../core/file-mgmt/auditConfigFileManager.js';
-import ProfilePolicy from './profilePolicy.js';
 import Policy, { ResolveEntityResult } from './policy.js';
-import PermissionSetPolicy from './permissionSetPolicy.js';
-import ConnectedAppPolicy from './connectedAppPolicy.js';
+import { policyDefs } from './policyRegistry.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy<unknown>>;
@@ -70,19 +68,12 @@ export default class AuditRun extends EventEmitter {
 
   private loadPolicies(config: AuditRunConfig): PolicyMap {
     const pols: PolicyMap = {};
-    if (config.policies.Profiles) {
-      pols.Profiles = new ProfilePolicy(config.policies.Profiles.content, config);
-    }
-    if (config.policies.PermissionSets) {
-      pols.PermissionSets = new PermissionSetPolicy(config.policies.PermissionSets.content, config);
-    }
-    if (config.policies.ConnectedApps) {
-      pols.ConnectedApps = new ConnectedAppPolicy(config.policies.ConnectedApps.content, config);
-    }
-    Object.entries(pols).forEach(([policyName, policy]) => {
+    Object.entries(config.policies).forEach(([policyName, policyConfig]) => {
+      const policy = new policyDefs[policyName].handler((policyConfig as ConfigFile<unknown>).content, config);
       policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
         this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
       });
+      pols[policyName] = policy;
     });
     return pols;
   }

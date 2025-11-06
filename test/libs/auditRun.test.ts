@@ -41,6 +41,7 @@ describe('audit run execution', () => {
     assert.isDefined(auditResult.policies);
     assert.isDefined(auditResult.policies.Profiles);
     assert.isDefined(auditResult.policies.PermissionSets);
+    assert.isDefined(auditResult.policies.Users);
     expect(auditResult.policies.Profiles.isCompliant).to.be.true;
     expect(auditResult.policies.PermissionSets.isCompliant).to.be.true;
     expect(Object.keys(auditResult.policies.Profiles.executedRules)).to.deep.equal([
