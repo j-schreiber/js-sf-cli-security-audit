@@ -2,9 +2,9 @@ import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
-import { isEmpty, uncapitalize } from '../utils.js';
-import { classificationDefs, policyDefs } from '../policyRegistry.js';
-import { AuditRunConfig, ConfigFile } from './schema.js';
+import { isEmpty } from '../utils.js';
+import { classificationDefs, ClassificationNames, policyDefs, PolicyNames } from '../policyRegistry.js';
+import { AuditRunConfig, AuditRunConfigClassifications, AuditRunConfigPolicies, ConfigFile } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -68,16 +68,8 @@ export default class AuditConfigFileManager {
    * @returns
    */
   public save(targetDirPath: string, conf: AuditRunConfig): void {
-    Object.entries(conf).forEach(([dirName, configFiles]) => {
-      if (dirName in this.directoryStructure) {
-        fs.mkdirSync(path.join(targetDirPath, dirName), { recursive: true });
-        this.writeSubdir(
-          configFiles as Record<string, ConfigFile<unknown>>,
-          dirName as keyof typeof this.directoryStructure,
-          targetDirPath
-        );
-      }
-    });
+    this.writeClassifications(conf.classifications, targetDirPath);
+    this.writePolicies(conf.policies, targetDirPath);
   }
 
   private parseSubdir(
@@ -96,21 +88,29 @@ export default class AuditConfigFileManager {
     return parseResults;
   }
 
-  private writeSubdir(
-    configFiles: Record<string, ConfigFile<unknown>>,
-    dirName: keyof typeof this.directoryStructure,
-    targetDirPath: PathLike
-  ): void {
-    const dirConf = this.directoryStructure[dirName];
-    if (!dirConf) {
-      return;
-    }
-    Object.entries(configFiles).forEach(([fileKey, confFile]) => {
-      const fileDef = dirConf[uncapitalize(fileKey)];
+  private writeClassifications(content: AuditRunConfigClassifications, targetDirPath: PathLike): void {
+    const dirPath = path.join(targetDirPath.toString(), 'classifications');
+    fs.mkdirSync(dirPath, { recursive: true });
+    const dirConf = this.directoryStructure.classifications;
+    Object.entries(content).forEach(([fileKey, confFile]) => {
+      const fileDef = dirConf[fileKey as ClassificationNames];
       if (fileDef && !isEmpty(confFile.content)) {
-        const definitiveFileName = fileDef.fileName ?? fileKey;
         // eslint-disable-next-line no-param-reassign
-        confFile.filePath = path.join(targetDirPath.toString(), dirName, `${definitiveFileName}.yml`);
+        confFile.filePath = path.join(dirPath, `${fileKey}.yml`);
+        fs.writeFileSync(confFile.filePath, yaml.dump(confFile.content));
+      }
+    });
+  }
+
+  private writePolicies(content: AuditRunConfigPolicies, targetDirPath: PathLike): void {
+    const dirPath = path.join(targetDirPath.toString(), 'policies');
+    fs.mkdirSync(dirPath, { recursive: true });
+    const dirConf = this.directoryStructure.policies;
+    Object.entries(content).forEach(([fileKey, confFile]) => {
+      const fileDef = dirConf[fileKey as PolicyNames];
+      if (fileDef && !isEmpty(confFile.content)) {
+        // eslint-disable-next-line no-param-reassign
+        confFile.filePath = path.join(dirPath, `${fileKey}.yml`);
         fs.writeFileSync(confFile.filePath, yaml.dump(confFile.content));
       }
     });
@@ -118,7 +118,7 @@ export default class AuditConfigFileManager {
 
   private validateDependencies(conf: AuditRunConfig): void {
     Object.keys(conf.policies).forEach((policyName) => {
-      const policyDef = this.directoryStructure.policies[policyName];
+      const policyDef = this.directoryStructure.policies[policyName as PolicyNames];
       if (policyDef?.dependencies) {
         policyDef.dependencies.forEach((dependency) => {
           if (!dependencyExists(dependency.path, conf)) {

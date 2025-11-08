@@ -4,7 +4,7 @@ import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from './result-types.js';
 import { AuditRunConfig, ConfigFile } from './file-mgmt/schema.js';
 import { loadAuditConfig } from './file-mgmt/auditConfigFileManager.js';
-import { policyDefs } from './policyRegistry.js';
+import { policyDefs, PolicyNames } from './policyRegistry.js';
 import Policy, { ResolveEntityResult } from './policies/policy.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
@@ -69,7 +69,10 @@ export default class AuditRun extends EventEmitter {
   private loadPolicies(config: AuditRunConfig): PolicyMap {
     const pols: PolicyMap = {};
     Object.entries(config.policies).forEach(([policyName, policyConfig]) => {
-      const policy = new policyDefs[policyName].handler((policyConfig as ConfigFile<unknown>).content, config);
+      const policy = new policyDefs[policyName as PolicyNames].handler(
+        (policyConfig as ConfigFile<unknown>).content,
+        config
+      );
       policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
         this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
       });

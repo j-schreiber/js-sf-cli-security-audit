@@ -87,13 +87,11 @@ export type ConfigFile<T> = {
 };
 
 export type AuditRunConfigClassifications = {
-  [classificationName: string]: unknown;
   userPermissions?: ConfigFile<PermissionsConfig>;
   customPermissions?: ConfigFile<PermissionsConfig>;
 };
 
 export type AuditRunConfigPolicies = {
-  [policyName: string]: unknown;
   profiles?: ConfigFile<ProfilesPolicyFileContent>;
   permissionSets?: ConfigFile<PermSetsPolicyFileContent>;
   connectedApps?: ConfigFile<BasePolicyFileContent>;
@@ -101,7 +99,6 @@ export type AuditRunConfigPolicies = {
 };
 
 export type AuditRunConfig = {
-  [configType: string]: unknown;
   classifications: AuditRunConfigClassifications;
   policies: AuditRunConfigPolicies;
 };

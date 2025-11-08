@@ -1,5 +1,7 @@
 import z from 'zod';
 import {
+  AuditRunConfigClassifications,
+  AuditRunConfigPolicies,
   PermissionsConfigFileSchema,
   PermSetsPolicyFileSchema,
   PolicyFileSchema,
@@ -21,6 +23,11 @@ export const classificationDefs: ClassificationRegistry = {
     schema: PermissionsConfigFileSchema,
   },
 };
+
+export type PolicyNames = keyof AuditRunConfigPolicies;
+export type ClassificationNames = keyof AuditRunConfigClassifications;
+
+export type PolicyRegistry = Record<PolicyNames, PolicyRegistryEntry>;
 
 export const policyDefs: PolicyRegistry = {
   profiles: {
@@ -62,10 +69,4 @@ type ConfigFileDependency = {
   path: string[];
 };
 
-type PolicyRegistry = {
-  [policyName: string]: PolicyRegistryEntry;
-};
-
-type ClassificationRegistry = {
-  [classificationName: string]: ConfigFileDefinition;
-};
+type ClassificationRegistry = Record<keyof AuditRunConfigClassifications, ConfigFileDefinition>;
