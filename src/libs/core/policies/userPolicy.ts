@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { EntityResolveError } from '../result-types.js';
 import { AuditRunConfig, UsersPolicyFileContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
-import { ACTIVE_USERS_DETAILS_QUERY, USERS_LOGIN_HISTORY_QUERY } from '../constants.js';
+import { ACTIVE_USERS_DETAILS_QUERY, buildLoginHistoryQuery } from '../constants.js';
 import { ResolvedUser, UsersRegistry } from '../registries/users.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
@@ -62,7 +62,12 @@ export default class UserPolicy extends Policy<ResolvedUser> {
       total: this.totalEntities,
       resolved: 0,
     });
-    await resolveLogins(usersById, context);
+    const userLogins = await resolveLogins(context, this.config.options.analyseLastNDaysOfLoginHistory);
+    Object.entries(userLogins).forEach(([userId, user]) => {
+      if (usersById[userId] !== undefined) {
+        usersById[userId].logins = user.logins;
+      }
+    });
     // resolve perm set assignments per user
     // const assignments = await context.targetOrgConnection.query<PermissionSetAssignment>(
     //   buildPermsetAssignmentsQuery(userIds)
@@ -79,18 +84,25 @@ export default class UserPolicy extends Policy<ResolvedUser> {
   }
 }
 
-async function resolveLogins(usersById: Record<string, ResolvedUser>, context: AuditContext): Promise<void> {
-  const loginHistory = await context.targetOrgConnection.query<UserLoginsAggregate>(USERS_LOGIN_HISTORY_QUERY);
+async function resolveLogins(context: AuditContext, daysToAnalyse?: number): Promise<PartialUsersRecord> {
+  const loginHistory = await context.targetOrgConnection.query<UserLoginsAggregate>(
+    buildLoginHistoryQuery(daysToAnalyse)
+  );
+  const partialUsers: Awaited<ReturnType<typeof resolveLogins>> = {};
   loginHistory.records.forEach((loginHistoryRow) => {
-    if (usersById[loginHistoryRow.UserId]) {
-      usersById[loginHistoryRow.UserId].logins.push({
-        loginType: loginHistoryRow.LoginType,
-        loginCount: loginHistoryRow.LoginCount,
-        application: loginHistoryRow.Application,
-      });
+    if (!partialUsers[loginHistoryRow.UserId]) {
+      partialUsers[loginHistoryRow.UserId] = { logins: [] };
     }
+    partialUsers[loginHistoryRow.UserId].logins.push({
+      loginType: loginHistoryRow.LoginType,
+      loginCount: loginHistoryRow.LoginCount,
+      application: loginHistoryRow.Application,
+    });
   });
+  return partialUsers;
 }
+
+type PartialUsersRecord = Record<string, Pick<ResolvedUser, 'logins'>>;
 
 function organizeByUsername(partial: Record<string, ResolvedUser>): Record<string, ResolvedUser> {
   const full: Record<string, ResolvedUser> = {};

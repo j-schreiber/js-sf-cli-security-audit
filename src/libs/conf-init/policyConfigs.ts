@@ -88,6 +88,8 @@ export async function initUsers(targetOrgCon: Connection): Promise<UsersPolicyFi
     rules: {},
     users: {},
   };
+  // dont parse all configs with default of 30 - but initialise a new config likle this
+  content.options.analyseLastNDaysOfLoginHistory = 30;
   users.records.forEach((userRecord) => {
     content.users[userRecord.Username] = { role: ProfilesRiskPreset.STANDARD_USER };
   });

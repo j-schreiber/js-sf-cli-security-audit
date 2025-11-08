@@ -37,6 +37,7 @@ const UsersMap = z.record(z.string(), UserConfig);
 
 export const UsersPolicyConfig = z.object({
   defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
+  analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
 // FILE CONTENT SCHEMATA

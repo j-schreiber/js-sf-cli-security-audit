@@ -11,6 +11,7 @@ import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js
 import {
   ACTIVE_USERS_DETAILS_QUERY,
   ACTIVE_USERS_QUERY,
+  buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
@@ -18,7 +19,6 @@ import {
   PERMISSION_SETS_QUERY,
   PROFILES_QUERY,
   RETRIEVE_CACHE,
-  USERS_LOGIN_HISTORY_QUERY,
 } from '../../src/libs/core/constants.js';
 import {
   PolicyRuleViolation,
@@ -156,7 +156,7 @@ function buildDefaultMocks() {
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
   defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
-  defaults.queries[USERS_LOGIN_HISTORY_QUERY] = 'empty';
+  defaults.queries[buildLoginHistoryQuery()] = 'empty';
   const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
   defaults.queries[buildPermsetAssignmentsQuery(testUserIds)] = 'test-user-assignments';
   return defaults;

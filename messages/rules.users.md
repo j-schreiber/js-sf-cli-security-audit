@@ -1,3 +1,3 @@
 # violations.no-other-apex-api-logins
 
-User uses "Other Apex API", which is a deprecated und unsecure login type.
+Has %s logins with "Other Apex API", which is a deprecated and insecure login type.

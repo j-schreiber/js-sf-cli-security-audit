@@ -4,7 +4,7 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
-import { buildPermsetAssignmentsQuery, USERS_LOGIN_HISTORY_QUERY } from '../../../src/libs/core/constants.js';
+import { buildLoginHistoryQuery, buildPermsetAssignmentsQuery } from '../../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
 
@@ -103,6 +103,35 @@ describe('users policy', () => {
       expect(resolveListener.args.flat()[1]).to.deep.equal({ total: 3, resolved: 0 });
       expect(resolveListener.args.flat()[2]).to.deep.equal({ total: 3, resolved: 3 });
     });
+
+    it('queries full login history if option is not set', async () => {
+      // Arrange
+      $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
+
+      // Act
+      const pol = new UserPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
+      expect(testUser.logins).to.deep.equal([{ application: 'Browser', loginCount: 123, loginType: 'Application' }]);
+    });
+
+    it('queries only last N days of login history if option is set', async () => {
+      // Arrange
+      const expectedQuery = buildLoginHistoryQuery(30);
+      $$.mocks.setQueryMock(expectedQuery, 'logins-with-browser-only');
+      const config = structuredClone(DEFAULT_CONFIG);
+      config.options.analyseLastNDaysOfLoginHistory = 30;
+
+      // Act
+      const pol = new UserPolicy(config, $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
+      expect(testUser.logins).to.deep.equal([{ application: 'Browser', loginCount: 123, loginType: 'Application' }]);
+    });
   });
 
   describe('policy rules', () => {
@@ -116,7 +145,7 @@ describe('users policy', () => {
 
       it('reports violation if user has login with "Other Apex API"', async () => {
         // Arrange
-        $$.mocks.setQueryMock(USERS_LOGIN_HISTORY_QUERY, 'logins-with-other-apex-api');
+        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-other-apex-api');
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -128,14 +157,14 @@ describe('users policy', () => {
         expect(result.executedRules.NoOtherApexApiLogins.violations).to.deep.equal([
           {
             identifier: ['test-user-1@example.de'],
-            message: messages.getMessage('violations.no-other-apex-api-logins'),
+            message: messages.getMessage('violations.no-other-apex-api-logins', [10]),
           },
         ]);
       });
 
       it('reports no violation if user has no logins with "Other Apex API', async () => {
         // Arrange
-        $$.mocks.setQueryMock(USERS_LOGIN_HISTORY_QUERY, 'logins-with-browser-only');
+        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
