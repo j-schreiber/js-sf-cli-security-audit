@@ -76,6 +76,21 @@ describe('audit run multi stage output', () => {
     expect(uxStub?.updateData.callCount).to.equal(1);
   });
 
+  it('does not initialise disabled policies as substage', () => {
+    // Act
+    const profilesConfig = structuredClone(PROFILES_CONFIG);
+    profilesConfig.content.enabled = false;
+    const auditRun = new AuditRun({
+      policies: { profiles: profilesConfig },
+      classifications: {},
+    });
+    testInstance.startPolicyResolve(auditRun);
+
+    // Assert
+    // policy is disabled, no stage specific blocks for resolve & rules are created
+    expect(testInstance.stageSpecificBlocks).to.deep.equal([]);
+  });
+
   it('updates policy resolve sub block with entity statistics', () => {
     // Act
     const auditRun = new AuditRun({

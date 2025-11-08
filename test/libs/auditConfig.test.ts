@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
-import AuditTestContext, { MOCK_DATA_BASE_PATH, parseFileAsJson } from '../mocks/auditTestContext.js';
+import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsConfig } from '../../src/libs/core/file-mgmt/schema.js';
@@ -227,8 +227,7 @@ describe('audit config', () => {
   describe('load config from directory', () => {
     it('loads existing full config', async () => {
       // Act
-      const testDir = path.join(MOCK_DATA_BASE_PATH, 'audit-configs', 'full-valid');
-      const auditConf = loadAuditConfig(testDir);
+      const auditConf = loadAuditConfig(buildAuditConfigPath('full-valid'));
 
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
@@ -247,8 +246,7 @@ describe('audit config', () => {
 
     it('loads partial classifications and policies files', async () => {
       // Act
-      const testDir = path.join(MOCK_DATA_BASE_PATH, 'audit-configs', 'partial-valid');
-      const auditConf = loadAuditConfig(testDir);
+      const auditConf = loadAuditConfig(buildAuditConfigPath('minimal'));
 
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);

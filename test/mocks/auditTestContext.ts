@@ -144,6 +144,16 @@ export function stubMultiStageUx(sandbox: SinonSandbox): AuditRunMultiStageOutpu
   return multiStageStub;
 }
 
+/**
+ * Build path to test configs in test/mocks/data/audit-configs
+ *
+ * @param dirName
+ * @returns
+ */
+export function buildAuditConfigPath(dirName: string): string {
+  return path.join(MOCK_DATA_BASE_PATH, 'audit-configs', dirName);
+}
+
 function buildDefaultMocks() {
   const defaults = structuredClone(DEFAULT_MOCKS);
   defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
