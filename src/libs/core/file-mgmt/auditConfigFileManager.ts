@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
-import { isEmpty } from '../utils.js';
+import { isEmpty, uncapitalize } from '../utils.js';
 import { classificationDefs, policyDefs } from '../policyRegistry.js';
 import { AuditRunConfig, ConfigFile } from './schema.js';
 
@@ -99,18 +99,18 @@ export default class AuditConfigFileManager {
   private writeSubdir(
     configFiles: Record<string, ConfigFile<unknown>>,
     dirName: keyof typeof this.directoryStructure,
-    targetDirPath: string
+    targetDirPath: PathLike
   ): void {
     const dirConf = this.directoryStructure[dirName];
     if (!dirConf) {
       return;
     }
     Object.entries(configFiles).forEach(([fileKey, confFile]) => {
-      const fileDef = dirConf[fileKey];
+      const fileDef = dirConf[uncapitalize(fileKey)];
       if (fileDef && !isEmpty(confFile.content)) {
         const definitiveFileName = fileDef.fileName ?? fileKey;
         // eslint-disable-next-line no-param-reassign
-        confFile.filePath = path.join(targetDirPath, dirName, `${definitiveFileName}.yml`);
+        confFile.filePath = path.join(targetDirPath.toString(), dirName, `${definitiveFileName}.yml`);
         fs.writeFileSync(confFile.filePath, yaml.dump(confFile.content));
       }
     });

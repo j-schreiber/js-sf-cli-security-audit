@@ -26,14 +26,14 @@ describe('org audit NUTs', () => {
   function activatePolicies(dirPath: string, preset: ProfilesRiskPreset) {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = DefaultFileManager.parse(configDirPath);
-    if (conf.policies.Profiles?.content.profiles) {
-      Object.values(conf.policies.Profiles.content.profiles).forEach((profile) => {
+    if (conf.policies.profiles?.content.profiles) {
+      Object.values(conf.policies.profiles.content.profiles).forEach((profile) => {
         // eslint-disable-next-line no-param-reassign
         profile.preset = preset;
       });
     }
-    if (conf.policies.PermissionSets?.content.permissionSets) {
-      Object.values(conf.policies.PermissionSets.content.permissionSets).forEach((permSet) => {
+    if (conf.policies.permissionSets?.content.permissionSets) {
+      Object.values(conf.policies.permissionSets.content.permissionSets).forEach((permSet) => {
         // eslint-disable-next-line no-param-reassign
         permSet.preset = preset;
       });
@@ -79,9 +79,9 @@ describe('org audit NUTs', () => {
     assert.isDefined(result.classifications.userPermissions);
     assert.isDefined(result.classifications.userPermissions.filePath);
     expect(checkFileExists(result.classifications.userPermissions.filePath)).to.be.true;
-    assert.isDefined(result.policies.Profiles);
-    assert.isDefined(result.policies.Profiles.filePath);
-    expect(checkFileExists(result.policies.Profiles.filePath)).to.be.true;
+    assert.isDefined(result.policies.profiles);
+    assert.isDefined(result.policies.profiles.filePath);
+    expect(checkFileExists(result.policies.profiles.filePath)).to.be.true;
   });
 
   it('successfully completes an audit without technical errors from default config', () => {
@@ -127,7 +127,7 @@ describe('org audit NUTs', () => {
     assert.isDefined(initResult);
     assert.isDefined(initResult.classifications.userPermissions?.filePath);
     expect(checkFileExists(initResult.classifications.userPermissions.filePath)).to.be.true;
-    expect(checkFileExists(initResult.policies.Profiles?.filePath)).to.be.true;
+    expect(checkFileExists(initResult.policies.profiles?.filePath)).to.be.true;
   });
 
   it('successfully executes an audit run from root directory', () => {

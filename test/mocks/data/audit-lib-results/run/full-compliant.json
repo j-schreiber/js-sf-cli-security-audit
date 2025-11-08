@@ -1,7 +1,7 @@
 {
   "isCompliant": true,
   "policies": {
-    "Profiles": {
+    "profiles": {
       "isCompliant": true,
       "enabled": true,
       "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
@@ -27,7 +27,7 @@
       },
       "skippedRules": []
     },
-    "PermissionSets": {
+    "permissionSets": {
       "isCompliant": true,
       "enabled": true,
       "auditedEntities": [

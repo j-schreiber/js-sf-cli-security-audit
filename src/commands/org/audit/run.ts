@@ -6,6 +6,7 @@ import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/core/result-types.js';
 import { startAuditRun } from '../../../libs/core/auditRun.js';
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
+import { capitalize } from '../../../libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -123,7 +124,7 @@ function transposePoliciesToTable(result: AuditResult): PolicyResultsSummary[] {
   return Object.entries(result.policies).map(([policyName, policyDetails]) => {
     const rulesExecuted = policyDetails?.executedRules ? Object.keys(policyDetails.executedRules).length : 0;
     return {
-      policy: policyName,
+      policy: capitalize(policyName),
       isCompliant: policyDetails.isCompliant,
       rulesExecuted,
       auditedEntities: policyDetails.auditedEntities?.length ?? 0,

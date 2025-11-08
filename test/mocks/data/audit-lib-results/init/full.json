@@ -35,7 +35,7 @@
     }
   },
   "policies": {
-    "Profiles": {
+    "profiles": {
       "content": {
         "enabled": true,
         "profiles": {
@@ -60,7 +60,7 @@
       },
       "filePath": "tmp/prod/policies/profiles.yml"
     },
-    "PermissionSets": {
+    "permissionSets": {
       "content": {
         "enabled": true,
         "permissionSets": {

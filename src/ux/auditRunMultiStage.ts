@@ -1,6 +1,7 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
 import { BasePolicyFileContent, ConfigFile } from '../libs/core/file-mgmt/schema.js';
 import AuditRun, { EntityResolveEvent } from '../libs/core/auditRun.js';
+import { capitalize } from '../libs/core/utils.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
@@ -92,7 +93,7 @@ export default class AuditRunMultiStageOutput {
       this.stageSpecificBlocks.push({
         stage: RESOLVE_POLICIES,
         type: 'dynamic-key-value',
-        label: policyName,
+        label: capitalize(policyName),
         get: (data: AuditRunData): string => {
           if (data?.policies?.[policyName]) {
             return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;

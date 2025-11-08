@@ -37,10 +37,10 @@ export default class AuditConfig {
     if (customPerms) {
       conf.classifications.customPermissions = { content: customPerms };
     }
-    conf.policies.Profiles = { content: await initProfiles(targetCon) };
-    conf.policies.PermissionSets = { content: await initPermissionSets(targetCon) };
-    conf.policies.Users = { content: await initUsers(targetCon) };
-    conf.policies.ConnectedApps = { content: initConnectedApps() };
+    conf.policies.profiles = { content: await initProfiles(targetCon) };
+    conf.policies.permissionSets = { content: await initPermissionSets(targetCon) };
+    conf.policies.users = { content: await initUsers(targetCon) };
+    conf.policies.connectedApps = { content: initConnectedApps() };
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (opts?.targetDir || opts?.targetDir === '') {
       DefaultFileManager.save(opts.targetDir, conf);

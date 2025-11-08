@@ -94,10 +94,10 @@ export type AuditRunConfigClassifications = {
 
 export type AuditRunConfigPolicies = {
   [policyName: string]: unknown;
-  Profiles?: ConfigFile<ProfilesPolicyFileContent>;
-  PermissionSets?: ConfigFile<PermSetsPolicyFileContent>;
-  ConnectedApps?: ConfigFile<BasePolicyFileContent>;
-  Users?: ConfigFile<UsersPolicyFileContent>;
+  profiles?: ConfigFile<ProfilesPolicyFileContent>;
+  permissionSets?: ConfigFile<PermSetsPolicyFileContent>;
+  connectedApps?: ConfigFile<BasePolicyFileContent>;
+  users?: ConfigFile<UsersPolicyFileContent>;
 };
 
 export type AuditRunConfig = {

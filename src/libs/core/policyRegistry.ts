@@ -23,30 +23,26 @@ export const classificationDefs: ClassificationRegistry = {
 };
 
 export const policyDefs: PolicyRegistry = {
-  Profiles: {
+  profiles: {
     handler: ProfilePolicy,
-    fileName: 'profiles',
     schema: ProfilesPolicyFileSchema,
     dependencies: [
       { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
     ],
   },
-  PermissionSets: {
+  permissionSets: {
     handler: PermissionSetPolicy,
-    fileName: 'permissionSets',
     schema: PermSetsPolicyFileSchema,
     dependencies: [
       { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
     ],
   },
-  ConnectedApps: {
+  connectedApps: {
     handler: ConnectedAppPolicy,
-    fileName: 'connectedApps',
     schema: PolicyFileSchema,
   },
-  Users: {
+  users: {
     handler: UserPolicy,
-    fileName: 'users',
     schema: UsersPolicyFileSchema,
   },
 };

@@ -2,7 +2,7 @@
   "isCompliant": false,
   "auditDate": "2025-10-12T12:58:00.000Z",
   "policies": {
-    "Profiles": {
+    "profiles": {
       "isCompliant": false,
       "enabled": true,
       "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
@@ -50,7 +50,7 @@
       },
       "skippedRules": []
     },
-    "PermissionSets": {
+    "permissionSets": {
       "isCompliant": false,
       "enabled": true,
       "auditedEntities": [
