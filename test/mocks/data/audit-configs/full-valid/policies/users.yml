@@ -1,7 +1,10 @@
 enabled: true
 options:
   defaultRoleForMissingUsers: Standard User
-rules: {}
+  analyseLastNDaysOfLoginHistory: 14
+rules:
+  NoOtherApexApiLogins:
+    enabled: true
 users:
   test-user-1@example.com:
     role: Standard User

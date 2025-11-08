@@ -1,5 +1,5 @@
 import path from 'node:path';
-import fs from 'node:fs';
+import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
 import { isEmpty } from '../utils.js';
@@ -50,7 +50,7 @@ export default class AuditConfigFileManager {
    * @param dirPath
    * @returns
    */
-  public parse(dirPath: string): AuditRunConfig {
+  public parse(dirPath: PathLike): AuditRunConfig {
     const classifications = this.parseSubdir(dirPath, 'classifications');
     const policies = this.parseSubdir(dirPath, 'policies');
     const conf = { classifications, policies };
@@ -81,12 +81,12 @@ export default class AuditConfigFileManager {
   }
 
   private parseSubdir(
-    dirPath: string,
+    dirPath: PathLike,
     subdirName: keyof typeof this.directoryStructure
   ): Record<string, ConfigFile<unknown>> {
     const parseResults: Record<string, ConfigFile<unknown>> = {};
     Object.entries(this.directoryStructure[subdirName]).forEach(([fileName, fileConfig]) => {
-      const filePath = path.join(dirPath, subdirName, `${fileName}.yml`);
+      const filePath = path.join(dirPath.toString(), subdirName, `${fileName}.yml`);
       if (fs.existsSync(filePath)) {
         const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
         const content = fileConfig.schema.parse(fileContent);
@@ -145,9 +145,9 @@ function traverseDependencyPath(remainingPath: string[], rootNode: Record<string
   }
 }
 
-function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: string): void {
+function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: PathLike): void {
   if (Object.keys(conf.policies).length === 0) {
-    const formattedDirPath = !dirPath || dirPath.length === 0 ? '<root-dir>' : dirPath;
+    const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
     throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
   }
 }
