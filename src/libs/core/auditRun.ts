@@ -73,12 +73,10 @@ export default class AuditRun extends EventEmitter {
         (policyConfig as ConfigFile<unknown>).content,
         config
       );
-      if (policy.config.enabled) {
-        policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
-          this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
-        });
-        pols[policyName] = policy;
-      }
+      policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
+        this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
+      });
+      pols[policyName] = policy;
     });
     return pols;
   }

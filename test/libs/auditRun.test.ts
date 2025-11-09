@@ -4,7 +4,6 @@ import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { startAuditRun } from '../../src/libs/core/auditRun.js';
-import ProfilePolicy from '../../src/libs/core/policies/profilePolicy.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
 const DEFAULT_TEST_OUTPUT_DIR = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
@@ -71,7 +70,6 @@ describe('audit run execution', () => {
 
   it('runs and resolves only enabled policies', async () => {
     // Arrange
-    const profilesResolveStub = $$.context.SANDBOX.stub(ProfilePolicy.prototype, 'resolve');
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
     audit.configs.policies.profiles!.content.enabled = false;
@@ -82,7 +80,10 @@ describe('audit run execution', () => {
     // Assert
     expect(auditResult.isCompliant).to.be.true;
     assert.isDefined(auditResult.policies);
-    expect(profilesResolveStub.callCount).to.equal(0);
+    assert.isDefined(auditResult.policies.profiles);
+    expect(auditResult.policies.profiles.auditedEntities).to.deep.equal([]);
+    // ensure that "disabled" policies are not printed in data table
+    expect(auditResult.policies.profiles.enabled).to.be.false;
   });
 
   it('runs only enabled rules on policy', async () => {
@@ -117,6 +118,7 @@ describe('audit run execution', () => {
     // Assert
     expect(auditResult.isCompliant).to.be.true;
     assert.isDefined(auditResult.policies);
-    expect(auditResult.policies).to.deep.equal({});
+    assert.isDefined(auditResult.policies.profiles);
+    expect(auditResult.policies.profiles.enabled).to.be.false;
   });
 });

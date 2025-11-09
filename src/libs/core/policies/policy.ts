@@ -25,6 +25,11 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
    * Resolves all entities of the policy.
    */
   public async resolve(context: AuditContext): Promise<ResolveEntityResult<T>> {
+    // when a policy is disabled, we still want to appear it in audit results
+    // as disabled with 0 resolved entities and 0 executed rules
+    if (!this.config.enabled) {
+      return { resolvedEntities: {}, ignoredEntities: [] };
+    }
     if (!this.entities) {
       this.entities = await this.resolveEntities(context);
     }

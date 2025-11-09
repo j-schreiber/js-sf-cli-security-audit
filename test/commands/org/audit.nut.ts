@@ -110,7 +110,7 @@ describe('org audit NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    expect(Object.keys(result.policies)).to.deep.equal(['profiles', 'permissionSets', 'connectedApps']);
+    expect(Object.keys(result.policies)).to.deep.equal(['profiles', 'permissionSets', 'connectedApps', 'users']);
     Object.entries(result.policies).forEach(([policyName, policy]) => {
       // every policy should have at least one audited entity
       expect(policy.auditedEntities, policyName).not.deep.equal([]);

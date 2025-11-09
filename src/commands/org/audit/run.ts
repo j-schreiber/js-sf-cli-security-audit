@@ -78,11 +78,14 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
   }
 
   private printExecutedRulesSummary(policyName: string, policyDetails: AuditPolicyResult): void {
+    if (!policyDetails.enabled) {
+      return;
+    }
     const rulesSummary = transposeExecutedPolicyRules(policyDetails);
     if (rulesSummary.length > 0) {
       this.table({
         data: rulesSummary,
-        title: `--- Executed Rules for ${policyName} ---`,
+        title: `--- Executed Rules for ${capitalize(policyName)} ---`,
         titleOptions: { underline: true },
       });
     }
@@ -121,16 +124,18 @@ type ExecutedRulesResultsSummary = {
 };
 
 function transposePoliciesToTable(result: AuditResult): PolicyResultsSummary[] {
-  return Object.entries(result.policies).map(([policyName, policyDetails]) => {
-    const rulesExecuted = policyDetails?.executedRules ? Object.keys(policyDetails.executedRules).length : 0;
-    return {
-      policy: capitalize(policyName),
-      isCompliant: policyDetails.isCompliant,
-      rulesExecuted,
-      auditedEntities: policyDetails.auditedEntities?.length ?? 0,
-      ignoredEntities: policyDetails.ignoredEntities?.length ?? 0,
-    };
-  });
+  return Object.entries(result.policies)
+    .filter(([, policyDetails]) => policyDetails.enabled)
+    .map(([policyName, policyDetails]) => {
+      const rulesExecuted = policyDetails?.executedRules ? Object.keys(policyDetails.executedRules).length : 0;
+      return {
+        policy: capitalize(policyName),
+        isCompliant: policyDetails.isCompliant,
+        rulesExecuted,
+        auditedEntities: policyDetails.auditedEntities?.length ?? 0,
+        ignoredEntities: policyDetails.ignoredEntities?.length ?? 0,
+      };
+    });
 }
 
 function transposeExecutedPolicyRules(result: AuditPolicyResult): ExecutedRulesResultsSummary[] {
