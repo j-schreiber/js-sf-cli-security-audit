@@ -49,6 +49,8 @@ export default class UserPolicy extends Policy<ResolvedUser> {
         usersById[user.Id!] = {
           userId: user.Id!,
           username: user.Username,
+          lastLogin: user.LastLoginDate ? Date.parse(user.LastLoginDate) : undefined,
+          createdDate: Date.parse(user.CreatedDate),
           assignedProfile: user.Profile.Name,
           assignedPermissionSets: [],
           logins: [],

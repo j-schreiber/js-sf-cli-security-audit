@@ -22,6 +22,8 @@ export type OauthToken = Record & {
 
 export type User = Record & {
   Username: string;
+  LastLoginDate?: string;
+  CreatedDate: string;
   Profile: ProfileBasic;
 };
 

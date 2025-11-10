@@ -10,6 +10,8 @@ export type ResolvedUser = {
   assignedPermissionSets: UserPermissionSetAssignment[];
   logins: UserLogins[];
   assignedProfile: string;
+  createdDate: number;
+  lastLogin?: number;
 };
 
 type UserLogins = {

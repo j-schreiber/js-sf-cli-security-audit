@@ -4,9 +4,14 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
-import { buildLoginHistoryQuery, buildPermsetAssignmentsQuery } from '../../../src/libs/core/constants.js';
+import {
+  ACTIVE_USERS_DETAILS_QUERY,
+  buildLoginHistoryQuery,
+  buildPermsetAssignmentsQuery,
+} from '../../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
+import { differenceInDays } from '../../../src/libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -204,9 +209,9 @@ describe('users policy', () => {
         // Arrange
         const numberOfDaysSinceLastLogin = 31;
         const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
-        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only', (record) => ({
+        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
           ...record,
-          LastLogin: new Date(mockLastLogin).toISOString(),
+          LastLoginDate: new Date(mockLastLogin).toISOString(),
         }));
 
         // Act
@@ -222,6 +227,10 @@ describe('users policy', () => {
         ]);
         expect(result.executedRules.NoInactiveUsers.violations).to.deep.equal([
           {
+            identifier: ['guest-user@example.de'],
+            message: violationMsg,
+          },
+          {
             identifier: ['test-user-1@example.de'],
             message: violationMsg,
           },
@@ -232,11 +241,29 @@ describe('users policy', () => {
         ]);
       });
 
+      it('reports violation if user has never logged in', async () => {
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
+        assert.isDefined(result.executedRules.NoInactiveUsers);
+        expect(result.executedRules.NoInactiveUsers.isCompliant).to.be.false;
+        const daysSinceCreated = differenceInDays('2025-10-09T12:00:00.000Z', Date.now());
+        expect(result.executedRules.NoInactiveUsers.violations).to.deep.contain({
+          identifier: ['test-user-1@example.de'],
+          message: messages.getMessage('violations.has-never-logged-in', [
+            '2025-10-09T12:00:00.000Z',
+            daysSinceCreated,
+          ]),
+        });
+      });
+
       it('reports no violation if users last login is within threshold', async () => {
         // Arrange
-        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only', (record) => ({
+        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
           ...record,
-          LastLogin: new Date().toISOString(),
+          LastLoginDate: new Date().toISOString(),
         }));
 
         // Act

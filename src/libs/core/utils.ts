@@ -26,8 +26,10 @@ export function uncapitalize(anyString: string): string {
  * @param date1
  * @param date2
  */
-export function differenceInDays(date1: number, date2: number): number {
-  const diff = Math.abs(date2 - date1);
+export function differenceInDays(date1: number | string, date2: number | string): number {
+  const convertedDate1 = typeof date1 === 'number' ? date1 : Date.parse(date1);
+  const convertedDate2 = typeof date2 === 'number' ? date2 : Date.parse(date2);
+  const diff = Math.abs(convertedDate2 - convertedDate1);
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
