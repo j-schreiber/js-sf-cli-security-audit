@@ -198,6 +198,15 @@ describe('users policy', () => {
     describe('NoInactiveUsers', () => {
       let ruleEnabledConfig: UsersPolicyFileContent;
 
+      function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
+        const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
+        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
+          ...record,
+          LastLoginDate: new Date(mockLastLogin).toISOString(),
+        }));
+        return mockLastLogin;
+      }
+
       beforeEach(() => {
         ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
         ruleEnabledConfig.rules = {
@@ -207,12 +216,7 @@ describe('users policy', () => {
 
       it('reports violation if users last login is after threshold', async () => {
         // Arrange
-        const numberOfDaysSinceLastLogin = 31;
-        const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
-        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
-          ...record,
-          LastLoginDate: new Date(mockLastLogin).toISOString(),
-        }));
+        const mockLastLogin = mockUsersLastLoginDate(31);
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -222,7 +226,7 @@ describe('users policy', () => {
         assert.isDefined(result.executedRules.NoInactiveUsers);
         expect(result.executedRules.NoInactiveUsers.isCompliant).to.be.false;
         const violationMsg = messages.getMessage('violations.inactive-since-n-days', [
-          numberOfDaysSinceLastLogin,
+          31,
           new Date(mockLastLogin).toISOString(),
         ]);
         expect(result.executedRules.NoInactiveUsers.violations).to.deep.equal([
@@ -239,6 +243,22 @@ describe('users policy', () => {
             message: violationMsg,
           },
         ]);
+      });
+
+      it('parses config object to default options when none is supplied', async () => {
+        // Arrange
+        const configWithoutOptions = structuredClone(DEFAULT_CONFIG);
+        configWithoutOptions.rules = {
+          NoInactiveUsers: { enabled: true },
+        };
+        mockUsersLastLoginDate(31);
+
+        // Act
+        const result = await resolveAndRun(configWithoutOptions);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
+        assert.isDefined(result.executedRules.NoInactiveUsers);
       });
 
       it('reports violation if user has never logged in', async () => {
