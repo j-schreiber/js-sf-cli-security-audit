@@ -102,10 +102,11 @@ export default class AuditRunMultiStageOutput {
           },
         });
         if (policy.content.rules && Object.keys(policy.content.rules).length > 0) {
+          const enabledRules = Object.values(policy.content.rules).filter((ruleConfig) => ruleConfig.enabled).length;
           this.stageSpecificBlocks.push({
             stage: EXECUTE_RULES,
             type: 'message',
-            get: () => `Execute ${Object.keys(policy.content.rules).length} rule(s) for ${policyName}`,
+            get: () => `Execute ${enabledRules} rule(s) for ${policyName}`,
           });
         }
       }

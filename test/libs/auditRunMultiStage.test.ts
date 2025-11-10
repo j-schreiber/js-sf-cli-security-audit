@@ -13,7 +13,11 @@ import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 const PROFILES_CONFIG = {
   content: {
     enabled: true,
-    rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
+    rules: {
+      Rule1: { enabled: true },
+      Rule2: { enabled: true },
+      Rule3: { enabled: false },
+    },
     profiles: { 'Test Profile 1': { preset: ProfilesRiskPreset.DEVELOPER } },
   },
 };
@@ -135,5 +139,24 @@ describe('audit run multi stage output', () => {
         profiles: { total: 12, resolved: 0 },
       },
     });
+  });
+
+  it('does not count disabled rules in executed rules summary', () => {
+    // Act
+    const auditRun = new AuditRun({
+      policies: { profiles: PROFILES_CONFIG },
+      classifications: {},
+    });
+    testInstance.startPolicyResolve(auditRun);
+
+    // Assert
+    expect(testInstance.stageSpecificBlocks.length).to.equal(2);
+    expect(testInstance.stageSpecificBlocks[1]).to.deep.contain({
+      type: 'message',
+      stage: EXECUTE_RULES,
+    });
+    const ruleBlockText = testInstance.stageSpecificBlocks[1].get({} as AuditRunData);
+    expect(ruleBlockText).to.equal('Execute 2 rule(s) for profiles');
+    expect(uxStub?.updateData.callCount).to.equal(1);
   });
 });
