@@ -20,7 +20,7 @@ const NamedPermissionsClassificationSchema = PermissionsClassificationSchema.ext
 
 const PolicyRuleConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  config: z.unknown().optional(),
+  options: z.unknown().optional(),
 });
 
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
@@ -38,6 +38,10 @@ const UsersMap = z.record(z.string(), UserConfig);
 export const UsersPolicyConfig = z.object({
   defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
   analyseLastNDaysOfLoginHistory: z.number().optional(),
+});
+
+export const NoInactiveUsersOptionsSchema = z.object({
+  daysAfterUserIsInactive: z.number().default(90),
 });
 
 // FILE CONTENT SCHEMATA
@@ -66,15 +70,21 @@ export const UsersPolicyFileSchema = PolicyFileSchema.extend({
 
 // EXPORTED TYPES
 
+// low-level elements
 export type PermissionsClassification = z.infer<typeof PermissionsClassificationSchema>;
 export type NamedPermissionsClassification = z.infer<typeof NamedPermissionsClassificationSchema>;
 export type PermsClassificationsMap = z.infer<typeof PermsClassificationsMapSchema>;
 export type PermissionsConfig = z.infer<typeof PermissionsConfigFileSchema>;
+export type NoInactiveUsersOptions = z.infer<typeof NoInactiveUsersOptionsSchema>;
+
+// Policies
 export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
 export type BasePolicyFileContent = z.infer<typeof PolicyFileSchema>;
 export type ProfilesPolicyFileContent = z.infer<typeof ProfilesPolicyFileSchema>;
 export type PermSetsPolicyFileContent = z.infer<typeof PermSetsPolicyFileSchema>;
 export type UsersPolicyFileContent = z.infer<typeof UsersPolicyFileSchema>;
+
+// Utility types
 export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
 export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;
 export type RuleMap = z.infer<typeof RuleMapSchema>;

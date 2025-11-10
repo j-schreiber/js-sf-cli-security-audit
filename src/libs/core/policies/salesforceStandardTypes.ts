@@ -55,4 +55,5 @@ export type UserLoginsAggregate = Record & {
   Application: string;
   UserId: string;
   LoginCount: number;
+  LastLogin: string;
 };

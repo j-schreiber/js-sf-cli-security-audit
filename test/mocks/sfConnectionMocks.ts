@@ -36,9 +36,14 @@ export default class SfConnectionMocks {
    * @param queryString
    * @param fileName file name without '.json' suffix
    */
-  public setQueryMock(queryString: string, fileName: string): void {
+  public setQueryMock(queryString: string, fileName: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
     const fullPath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
-    this.queries[queryString] = loadRecords(fullPath);
+    const records = loadRecords(fullPath);
+    if (transformer) {
+      this.queries[queryString] = records.map(transformer);
+    } else {
+      this.queries[queryString] = records;
+    }
   }
 
   /**

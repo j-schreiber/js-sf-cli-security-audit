@@ -114,7 +114,14 @@ describe('users policy', () => {
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
-      expect(testUser.logins).to.deep.equal([{ application: 'Browser', loginCount: 123, loginType: 'Application' }]);
+      expect(testUser.logins).to.deep.equal([
+        {
+          application: 'Browser',
+          loginCount: 123,
+          loginType: 'Application',
+          lastLogin: Date.parse('2025-11-11T12:00:00.000+0000'),
+        },
+      ]);
     });
 
     it('queries only last N days of login history if option is set', async () => {
@@ -130,7 +137,14 @@ describe('users policy', () => {
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
-      expect(testUser.logins).to.deep.equal([{ application: 'Browser', loginCount: 123, loginType: 'Application' }]);
+      expect(testUser.logins).to.deep.equal([
+        {
+          application: 'Browser',
+          loginCount: 123,
+          loginType: 'Application',
+          lastLogin: Date.parse('2025-11-11T12:00:00.000+0000'),
+        },
+      ]);
     });
   });
 
@@ -173,6 +187,65 @@ describe('users policy', () => {
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
         assert.isDefined(result.executedRules.NoOtherApexApiLogins);
         expect(result.executedRules.NoOtherApexApiLogins.isCompliant).to.be.true;
+      });
+    });
+
+    describe('NoInactiveUsers', () => {
+      let ruleEnabledConfig: UsersPolicyFileContent;
+
+      beforeEach(() => {
+        ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
+        ruleEnabledConfig.rules = {
+          NoInactiveUsers: { enabled: true, options: { daysAfterUserIsInactive: 30 } },
+        };
+      });
+
+      it('reports violation if users last login is after threshold', async () => {
+        // Arrange
+        const numberOfDaysSinceLastLogin = 31;
+        const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
+        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only', (record) => ({
+          ...record,
+          LastLogin: new Date(mockLastLogin).toISOString(),
+        }));
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
+        assert.isDefined(result.executedRules.NoInactiveUsers);
+        expect(result.executedRules.NoInactiveUsers.isCompliant).to.be.false;
+        const violationMsg = messages.getMessage('violations.inactive-since-n-days', [
+          numberOfDaysSinceLastLogin,
+          new Date(mockLastLogin).toISOString(),
+        ]);
+        expect(result.executedRules.NoInactiveUsers.violations).to.deep.equal([
+          {
+            identifier: ['test-user-1@example.de'],
+            message: violationMsg,
+          },
+          {
+            identifier: ['test-user-2@example.de'],
+            message: violationMsg,
+          },
+        ]);
+      });
+
+      it('reports no violation if users last login is within threshold', async () => {
+        // Arrange
+        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only', (record) => ({
+          ...record,
+          LastLogin: new Date().toISOString(),
+        }));
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
+        assert.isDefined(result.executedRules.NoInactiveUsers);
+        expect(result.executedRules.NoInactiveUsers.isCompliant).to.be.true;
       });
     });
   });

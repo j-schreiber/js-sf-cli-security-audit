@@ -6,7 +6,8 @@
     "LoginType": "Application",
     "Application": "Browser",
     "UserId": "005Pl000001p3HqIAI",
-    "LoginCount": 264
+    "LoginCount": 264,
+    "LastLogin": "2025-08-07T10:01:17.000+0000"
   },
   {
     "attributes": {
@@ -15,6 +16,7 @@
     "LoginType": "Other Apex API",
     "Application": "N/A",
     "UserId": "005Pl000001p3HqIAI",
-    "LoginCount": 10
+    "LoginCount": 10,
+    "LastLogin": "2025-08-07T10:01:17.000+0000"
   }
 ]

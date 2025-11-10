@@ -97,6 +97,7 @@ async function resolveLogins(context: AuditContext, daysToAnalyse?: number): Pro
       loginType: loginHistoryRow.LoginType,
       loginCount: loginHistoryRow.LoginCount,
       application: loginHistoryRow.Application,
+      lastLogin: Date.parse(loginHistoryRow.LastLogin),
     });
   });
   return partialUsers;

@@ -49,7 +49,7 @@ export default class RuleRegistry {
     Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {
       if (this.rules[ruleName] && ruleConfig.enabled) {
         enabledRules.push(
-          new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.config })
+          new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.options })
         );
       } else if (!ruleConfig.enabled) {
         skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });

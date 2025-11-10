@@ -20,4 +20,15 @@ export function uncapitalize(anyString: string): string {
   return `${anyString[0].toLowerCase()}${anyString.slice(1)}`;
 }
 
+/**
+ * Both dates have to be UNIX timestamps
+ *
+ * @param date1
+ * @param date2
+ */
+export function differenceInDays(date1: number, date2: number): number {
+  const diff = Math.abs(date2 - date1);
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;

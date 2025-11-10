@@ -28,4 +28,5 @@ export const buildLoginHistoryQuery = (daysToAnalayse?: number): string =>
 export const RETRIEVE_CACHE = path.join('.jsc', 'retrieves');
 
 // BASE QUERIES
-const USERS_LOGIN_HISTORY_QUERY = 'SELECT LoginType,Application,UserId,COUNT(Id)LoginCount FROM LoginHistory';
+const USERS_LOGIN_HISTORY_QUERY =
+  'SELECT LoginType,Application,UserId,COUNT(Id)LoginCount,MAX(LoginTime)LastLogin FROM LoginHistory';
