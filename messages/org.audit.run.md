@@ -47,3 +47,11 @@ The "Profiles" policy requires at least userPermissions to be initialised, but n
 # UserPermClassificationRequiredForPermSets
 
 The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.
+
+# error.InvalidConfigFileSchema
+
+Failed to parse %s: %s.
+
+# error.InvalidConfigFileSchema.actions
+
+Verify that your config matches the expected schema.

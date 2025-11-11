@@ -16,6 +16,7 @@ import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
+const auditRunMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 describe('audit config', () => {
   const $$ = new AuditTestContext();
@@ -256,6 +257,15 @@ describe('audit config', () => {
       expect(auditConf.policies.connectedApps).to.be.undefined;
       expect(auditConf.classifications.userPermissions.filePath).not.to.be.undefined;
       expect(auditConf.policies.profiles.filePath).not.to.be.undefined;
+    });
+
+    it('bubbles zod parse exceptions as formatted SfError', async () => {
+      // Assert
+      const expectedErrorMsg = auditRunMessages.getMessage('error.InvalidConfigFileSchema', [
+        'users.yml',
+        'Unrecognized key: "unknownKeyForOptions" in "options"',
+      ]);
+      expect(() => loadAuditConfig(buildAuditConfigPath('invalid-schema'))).to.throw(expectedErrorMsg);
     });
   });
 

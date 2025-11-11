@@ -3,7 +3,7 @@ import { NoInactiveUsersOptions, NoInactiveUsersOptionsSchema } from '../../file
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { differenceInDays } from '../../utils.js';
 import { ResolvedUser } from '../users.js';
-import PolicyRule, { ConfigurableRuleOptions } from './policyRule.js';
+import PolicyRule, { ConfigurableRuleOptions, parseRuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -13,7 +13,12 @@ export default class NoInactiveUsers extends PolicyRule<ResolvedUser> {
 
   public constructor(localOpts: ConfigurableRuleOptions<NoInactiveUsersOptions>) {
     super(localOpts);
-    this.ruleConfig = NoInactiveUsersOptionsSchema.parse(localOpts.ruleConfig ?? {});
+    this.ruleConfig = parseRuleOptions(
+      'users.yml',
+      ['rules', 'NoInactiveUsers'],
+      NoInactiveUsersOptionsSchema,
+      localOpts.ruleConfig
+    ) as NoInactiveUsersOptions;
   }
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {

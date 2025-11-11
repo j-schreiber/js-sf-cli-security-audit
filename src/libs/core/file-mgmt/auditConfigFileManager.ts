@@ -4,7 +4,13 @@ import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
 import { isEmpty } from '../utils.js';
 import { classificationDefs, ClassificationNames, policyDefs, PolicyNames } from '../policyRegistry.js';
-import { AuditRunConfig, AuditRunConfigClassifications, AuditRunConfigPolicies, ConfigFile } from './schema.js';
+import {
+  AuditRunConfig,
+  AuditRunConfigClassifications,
+  AuditRunConfigPolicies,
+  ConfigFile,
+  throwAsSfError,
+} from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -81,8 +87,12 @@ export default class AuditConfigFileManager {
       const filePath = path.join(dirPath.toString(), subdirName, `${fileName}.yml`);
       if (fs.existsSync(filePath)) {
         const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
-        const content = fileConfig.schema.parse(fileContent);
-        parseResults[fileName] = { filePath, content };
+        const parseResult = fileConfig.schema.safeParse(fileContent);
+        if (parseResult.success) {
+          parseResults[fileName] = { filePath, content: parseResult.data };
+        } else {
+          throwAsSfError(`${fileName}.yml`, parseResult.error);
+        }
       }
     });
     return parseResults;

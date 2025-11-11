@@ -1,7 +1,13 @@
 import { Messages } from '@salesforce/core';
+import z from 'zod';
 import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../../result-types.js';
 import { PartialPolicyRuleResult, RowLevelPolicyRule, RuleAuditContext } from '../types.js';
-import { AuditRunConfig, NamedPermissionsClassification, PermissionsClassification } from '../../file-mgmt/schema.js';
+import {
+  AuditRunConfig,
+  NamedPermissionsClassification,
+  PermissionsClassification,
+  throwAsSfError,
+} from '../../file-mgmt/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -48,6 +54,20 @@ export default abstract class PolicyRule<EntityType> implements RowLevelPolicyRu
   }
 
   public abstract run(context: RuleAuditContext<EntityType>): Promise<PartialPolicyRuleResult>;
+}
+
+export function parseRuleOptions(
+  policyName: string,
+  rulePath: string[],
+  schema: z.ZodObject,
+  anyObject?: unknown
+): z.infer<typeof schema> {
+  const parseResult = schema.safeParse(anyObject ?? {});
+  if (parseResult.success) {
+    return parseResult.data;
+  } else {
+    throwAsSfError(policyName, parseResult.error, [...rulePath, 'options']);
+  }
 }
 
 function nameClassification(
