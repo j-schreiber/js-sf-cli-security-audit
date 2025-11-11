@@ -3,9 +3,8 @@ import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
-import ConnectedAppPolicy from '../../../src/libs/policies/connectedAppPolicy.js';
+import ConnectedAppPolicy from '../../../src/libs/core/policies/connectedAppPolicy.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/core/constants.js';
-import { ResolvedConnectedApp } from '../../../src/libs/core/registries/connectedApps.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -99,7 +98,7 @@ describe('connected apps policy', () => {
     expect(resolveResult.ignoredEntities).to.deep.equal([]);
     expect(Object.keys(resolveResult.resolvedEntities).length).to.equal(5);
     Object.values(resolveResult.resolvedEntities).forEach((appConf) => {
-      const resolvedApp = appConf as ResolvedConnectedApp;
+      const resolvedApp = appConf;
       expect(resolvedApp.overrideByApiSecurityAccess).to.be.false;
     });
     const executedRuleNames = Object.keys(policyResult.executedRules);

@@ -4,12 +4,17 @@ import { Optional } from '../utils.js';
 import { ConnectedAppsRegistry } from './connectedApps.js';
 import { PermissionSetsRegistry } from './permissionSets.js';
 import { ProfilesRegistry } from './profiles.js';
+import { UsersRegistry } from './users.js';
 
 export const RuleRegistries = {
   ConnectedApps: ConnectedAppsRegistry,
   Profiles: ProfilesRegistry,
   PermissionSets: PermissionSetsRegistry,
+  Users: UsersRegistry,
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Constructor<T, Args extends any[] = any[]> = new (...args: Args) => T;
 
 /**
  * A rule must only implement a subset of the rule result. All optional

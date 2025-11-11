@@ -1,0 +1,29 @@
+[
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/0054P00000AYPYXQA5"
+    },
+    "Id": "0054P00000AYPYXQA5",
+    "Username": "guest-user@example.com",
+    "UserType": "Guest"
+  },
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/005Pl000001p3HqIAI"
+    },
+    "Id": "005Pl000001p3HqIAI",
+    "Username": "insightsintegration@sf.com",
+    "UserType": "Standard"
+  },
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/0054P00000AaGueQAF"
+    },
+    "Id": "0054P00000AaGueQAF",
+    "Username": "test-user-1@example.com",
+    "UserType": "Standard"
+  }
+]

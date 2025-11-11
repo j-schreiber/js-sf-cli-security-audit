@@ -22,6 +22,9 @@ export type OauthToken = Record & {
 
 export type User = Record & {
   Username: string;
+  LastLoginDate?: string;
+  CreatedDate: string;
+  Profile: ProfileBasic;
 };
 
 export type Profile = ProfileBasic & {
@@ -42,4 +45,17 @@ export type PermissionSet = Record & {
   Label: string;
   Profile: ProfileBasic;
   NamespacePrefix?: string;
+};
+
+export type PermissionSetAssignment = Record & {
+  AssigneeId: string;
+  PermissionSet: Pick<PermissionSet, 'Name'>;
+};
+
+export type UserLoginsAggregate = Record & {
+  LoginType: string;
+  Application: string;
+  UserId: string;
+  LoginCount: number;
+  LastLogin: string;
 };

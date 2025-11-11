@@ -20,7 +20,7 @@ const NamedPermissionsClassificationSchema = PermissionsClassificationSchema.ext
 
 const PolicyRuleConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  config: z.unknown().optional(),
+  options: z.unknown().optional(),
 });
 
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
@@ -30,6 +30,19 @@ const PermSetConfig = z.object({
 });
 
 const PermSetMap = z.record(z.string(), PermSetConfig);
+
+const UserConfig = z.object({ role: z.enum(ProfilesRiskPreset) });
+
+const UsersMap = z.record(z.string(), UserConfig);
+
+export const UsersPolicyConfig = z.object({
+  defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
+  analyseLastNDaysOfLoginHistory: z.number().optional(),
+});
+
+export const NoInactiveUsersOptionsSchema = z.object({
+  daysAfterUserIsInactive: z.number().default(90),
+});
 
 // FILE CONTENT SCHEMATA
 
@@ -50,16 +63,28 @@ export const PermissionsConfigFileSchema = z.object({
   permissions: z.record(z.string(), PermissionsClassificationSchema),
 });
 
+export const UsersPolicyFileSchema = PolicyFileSchema.extend({
+  users: UsersMap,
+  options: UsersPolicyConfig,
+});
+
 // EXPORTED TYPES
 
+// low-level elements
 export type PermissionsClassification = z.infer<typeof PermissionsClassificationSchema>;
 export type NamedPermissionsClassification = z.infer<typeof NamedPermissionsClassificationSchema>;
 export type PermsClassificationsMap = z.infer<typeof PermsClassificationsMapSchema>;
 export type PermissionsConfig = z.infer<typeof PermissionsConfigFileSchema>;
+export type NoInactiveUsersOptions = z.infer<typeof NoInactiveUsersOptionsSchema>;
+
+// Policies
 export type PolicyRuleConfig = z.infer<typeof PolicyRuleConfigSchema>;
 export type BasePolicyFileContent = z.infer<typeof PolicyFileSchema>;
 export type ProfilesPolicyFileContent = z.infer<typeof ProfilesPolicyFileSchema>;
 export type PermSetsPolicyFileContent = z.infer<typeof PermSetsPolicyFileSchema>;
+export type UsersPolicyFileContent = z.infer<typeof UsersPolicyFileSchema>;
+
+// Utility types
 export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
 export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;
 export type RuleMap = z.infer<typeof RuleMapSchema>;
@@ -72,20 +97,18 @@ export type ConfigFile<T> = {
 };
 
 export type AuditRunConfigClassifications = {
-  [classificationName: string]: unknown;
   userPermissions?: ConfigFile<PermissionsConfig>;
   customPermissions?: ConfigFile<PermissionsConfig>;
 };
 
 export type AuditRunConfigPolicies = {
-  [policyName: string]: unknown;
-  Profiles?: ConfigFile<ProfilesPolicyFileContent>;
-  PermissionSets?: ConfigFile<PermSetsPolicyFileContent>;
-  ConnectedApps?: ConfigFile<BasePolicyFileContent>;
+  profiles?: ConfigFile<ProfilesPolicyFileContent>;
+  permissionSets?: ConfigFile<PermSetsPolicyFileContent>;
+  connectedApps?: ConfigFile<BasePolicyFileContent>;
+  users?: ConfigFile<UsersPolicyFileContent>;
 };
 
 export type AuditRunConfig = {
-  [configType: string]: unknown;
   classifications: AuditRunConfigClassifications;
   policies: AuditRunConfigPolicies;
 };

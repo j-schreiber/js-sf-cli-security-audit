@@ -1,27 +1,27 @@
 import { Messages } from '@salesforce/core';
-import { EntityResolveError } from '../core/result-types.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../core/file-mgmt/schema.js';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { AuditContext, RuleRegistries } from '../core/registries/types.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
-import { ResolvedProfile } from '../core/registries/profiles.js';
+import { EntityResolveError } from '../result-types.js';
+import { AuditRunConfig, ProfilesPolicyFileContent } from '../file-mgmt/schema.js';
+import MDAPI from '../mdapi/mdapiRetriever.js';
+import { AuditContext } from '../registries/types.js';
+import { ProfilesRiskPreset } from '../policy-types.js';
+import { ProfilesRegistry, ResolvedProfile } from '../registries/profiles.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export default class ProfilePolicy extends Policy {
+export default class ProfilePolicy extends Policy<ResolvedProfile> {
   private totalEntities: number;
   public constructor(
     public config: ProfilesPolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry = RuleRegistries.Profiles
+    registry = ProfilesRegistry
   ) {
     super(config, auditConfig, registry);
     this.totalEntities = this.config.profiles ? Object.keys(this.config.profiles).length : 0;
   }
 
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedProfile>> {
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,

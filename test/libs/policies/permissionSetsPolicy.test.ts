@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import PermissionSetPolicy from '../../../src/libs/policies/permissionSetPolicy.js';
+import PermissionSetPolicy from '../../../src/libs/core/policies/permissionSetPolicy.js';
 import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';

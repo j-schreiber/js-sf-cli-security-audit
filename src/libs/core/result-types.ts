@@ -1,3 +1,5 @@
+import { AuditRunConfigPolicies } from './file-mgmt/schema.js';
+
 /**
  * A single violation from a policy rule execution.
  */
@@ -190,6 +192,6 @@ export type AuditResult = {
    * Record map of all modules (policies) that were run.
    */
   policies: {
-    [moduleName: string]: AuditPolicyResult;
+    [P in keyof AuditRunConfigPolicies]: AuditPolicyResult;
   };
 };

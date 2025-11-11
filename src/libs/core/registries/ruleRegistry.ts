@@ -1,13 +1,10 @@
 import { Messages } from '@salesforce/core';
 import { EntityResolveError, PolicyRuleSkipResult } from '../result-types.js';
 import { AuditRunConfig, RuleMap } from '../../core/file-mgmt/schema.js';
-import { RowLevelPolicyRule } from './types.js';
+import { Constructor, RowLevelPolicyRule } from './types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Constructor<T, Args extends any[] = any[]> = new (...args: Args) => T;
 
 /**
  * Result contains the actually available and enabled rules
@@ -52,7 +49,7 @@ export default class RuleRegistry {
     Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {
       if (this.rules[ruleName] && ruleConfig.enabled) {
         enabledRules.push(
-          new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.config })
+          new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.options })
         );
       } else if (!ruleConfig.enabled) {
         skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });

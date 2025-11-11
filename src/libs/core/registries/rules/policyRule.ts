@@ -8,14 +8,17 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 export type RuleOptions = {
   auditContext: AuditRunConfig;
   ruleDisplayName: string;
-  ruleConfig?: unknown;
+};
+
+export type ConfigurableRuleOptions<T> = RuleOptions & {
+  ruleConfig: T;
 };
 
 export default abstract class PolicyRule<EntityType> implements RowLevelPolicyRule<EntityType> {
   public auditContext: AuditRunConfig;
   public ruleDisplayName: string;
 
-  public constructor(opts: RuleOptions) {
+  public constructor(protected opts: RuleOptions) {
     this.auditContext = opts.auditContext;
     this.ruleDisplayName = opts.ruleDisplayName;
   }

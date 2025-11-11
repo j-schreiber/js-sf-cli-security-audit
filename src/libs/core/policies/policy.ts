@@ -1,16 +1,16 @@
 import EventEmitter from 'node:events';
-import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../core/result-types.js';
-import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
-import RuleRegistry, { RegistryRuleResolveResult } from '../core/registries/ruleRegistry.js';
-import { AuditContext, IPolicy, PartialPolicyRuleResult } from '../core/registries/types.js';
+import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../result-types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../file-mgmt/schema.js';
+import RuleRegistry, { RegistryRuleResolveResult } from '../registries/ruleRegistry.js';
+import { AuditContext, IPolicy, PartialPolicyRuleResult } from '../registries/types.js';
 
-export type ResolveEntityResult = {
-  resolvedEntities: Record<string, unknown>;
+export type ResolveEntityResult<T> = {
+  resolvedEntities: Record<string, T>;
   ignoredEntities: EntityResolveError[];
 };
-export default abstract class Policy extends EventEmitter implements IPolicy {
+export default abstract class Policy<T> extends EventEmitter implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
-  protected entities?: ResolveEntityResult;
+  protected entities?: ResolveEntityResult<T>;
 
   public constructor(
     public config: BasePolicyFileContent,
@@ -24,7 +24,12 @@ export default abstract class Policy extends EventEmitter implements IPolicy {
   /**
    * Resolves all entities of the policy.
    */
-  public async resolve(context: AuditContext): Promise<ResolveEntityResult> {
+  public async resolve(context: AuditContext): Promise<ResolveEntityResult<T>> {
+    // when a policy is disabled, we still want to appear it in audit results
+    // as disabled with 0 resolved entities and 0 executed rules
+    if (!this.config.enabled) {
+      return { resolvedEntities: {}, ignoredEntities: [] };
+    }
     if (!this.entities) {
       this.entities = await this.resolveEntities(context);
     }
@@ -57,7 +62,7 @@ export default abstract class Policy extends EventEmitter implements IPolicy {
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
     for (const ruleResult of ruleResults) {
-      const { compliantEntities, violatedEntities } = evalResolvedEntities(ruleResult, resolveResult);
+      const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(ruleResult, resolveResult);
       executedRules[ruleResult.ruleName] = {
         ...ruleResult,
         isCompliant: ruleResult.violations.length === 0,
@@ -75,7 +80,7 @@ export default abstract class Policy extends EventEmitter implements IPolicy {
     };
   }
 
-  protected abstract resolveEntities(context: AuditContext): Promise<ResolveEntityResult>;
+  protected abstract resolveEntities(context: AuditContext): Promise<ResolveEntityResult<T>>;
 }
 
 function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): boolean {
@@ -86,9 +91,9 @@ function isCompliant(ruleResults: Record<string, PolicyRuleExecutionResult>): bo
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
 
-function evalResolvedEntities(
+function evalResolvedEntities<T>(
   ruleResult: PartialPolicyRuleResult,
-  entities: ResolveEntityResult
+  entities: ResolveEntityResult<T>
 ): { compliantEntities: string[]; violatedEntities: string[] } {
   const compliantEntities: string[] = [];
   const violatedEntities = new Set<string>();
@@ -105,7 +110,7 @@ function evalResolvedEntities(
   return { compliantEntities, violatedEntities: Array.from(violatedEntities) };
 }
 
-export function getTotal(resolveResult: ResolveEntityResult): number {
+export function getTotal(resolveResult: ResolveEntityResult<unknown>): number {
   const resolvedCount = resolveResult.resolvedEntities ? Object.keys(resolveResult.resolvedEntities).length : 0;
   const ignoredCount = resolveResult.ignoredEntities ? resolveResult.ignoredEntities.length : 0;
   return resolvedCount + ignoredCount;

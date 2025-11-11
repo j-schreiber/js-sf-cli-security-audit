@@ -9,6 +9,10 @@ import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
+  ACTIVE_USERS_DETAILS_QUERY,
+  ACTIVE_USERS_QUERY,
+  buildLoginHistoryQuery,
+  buildPermsetAssignmentsQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
@@ -140,6 +144,16 @@ export function stubMultiStageUx(sandbox: SinonSandbox): AuditRunMultiStageOutpu
   return multiStageStub;
 }
 
+/**
+ * Build path to test configs in test/mocks/data/audit-configs
+ *
+ * @param dirName
+ * @returns
+ */
+export function buildAuditConfigPath(dirName: string): string {
+  return path.join(MOCK_DATA_BASE_PATH, 'audit-configs', dirName);
+}
+
 function buildDefaultMocks() {
   const defaults = structuredClone(DEFAULT_MOCKS);
   defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
@@ -147,9 +161,16 @@ function buildDefaultMocks() {
   defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
+  defaults.queries[ACTIVE_USERS_QUERY] = 'active-users';
   defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
+  defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
+  defaults.queries[buildLoginHistoryQuery()] = 'empty';
+  // 14 days is option config in "full-valid" user policy
+  defaults.queries[buildLoginHistoryQuery(14)] = 'empty';
+  const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+  defaults.queries[buildPermsetAssignmentsQuery(testUserIds)] = 'test-user-assignments';
   return defaults;
 }
 

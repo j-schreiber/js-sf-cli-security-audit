@@ -1,0 +1,22 @@
+[
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Application",
+    "Application": "Browser",
+    "UserId": "005Pl000001p3HqIAI",
+    "LoginCount": 264,
+    "LastLogin": "2025-11-10T12:00:00.000+0000"
+  },
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Application",
+    "Application": "Browser",
+    "UserId": "0054P00000AaGueQAF",
+    "LoginCount": 123,
+    "LastLogin": "2025-11-11T12:00:00.000+0000"
+  }
+]

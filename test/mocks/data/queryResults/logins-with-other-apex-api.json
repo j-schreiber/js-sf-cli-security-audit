@@ -1,0 +1,22 @@
+[
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Application",
+    "Application": "Browser",
+    "UserId": "005Pl000001p3HqIAI",
+    "LoginCount": 264,
+    "LastLogin": "2025-08-07T10:01:17.000+0000"
+  },
+  {
+    "attributes": {
+      "type": "AggregateResult"
+    },
+    "LoginType": "Other Apex API",
+    "Application": "N/A",
+    "UserId": "005Pl000001p3HqIAI",
+    "LoginCount": 10,
+    "LastLogin": "2025-08-07T10:01:17.000+0000"
+  }
+]

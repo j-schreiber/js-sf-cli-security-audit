@@ -1,0 +1,30 @@
+[
+  {
+    "attributes": {
+      "type": "PermissionSetAssignment",
+      "url": "/services/data/v65.0/sobjects/PermissionSetAssignment/0Pa4P00000BpdOkSAJ"
+    },
+    "AssigneeId": "0054P00000AaGueQAF",
+    "PermissionSet": {
+      "attributes": {
+        "type": "PermissionSet",
+        "url": "/services/data/v65.0/sobjects/PermissionSet/0PS4P000001lD3aWAE"
+      },
+      "Name": "Test_Admin_Permission_Set_1"
+    }
+  },
+  {
+    "attributes": {
+      "type": "PermissionSetAssignment",
+      "url": "/services/data/v65.0/sobjects/PermissionSetAssignment/0Pa4P00000BqELzSAN"
+    },
+    "AssigneeId": "0054P00000AaGueQAF",
+    "PermissionSet": {
+      "attributes": {
+        "type": "PermissionSet",
+        "url": "/services/data/v65.0/sobjects/PermissionSet/0PS4P000001lFw1WAE"
+      },
+      "Name": "Test_Power_User_Permission_Set_1"
+    }
+  }
+]

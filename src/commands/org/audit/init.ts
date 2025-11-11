@@ -9,6 +9,7 @@ import {
   isPolicyConfig,
 } from '../../../libs/core/file-mgmt/schema.js';
 import { AuditInitPresets } from '../../../libs/conf-init/presets.js';
+import { capitalize } from '../../../libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
@@ -78,7 +79,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
         if (def.filePath) {
           this.logSuccess(
             messages.getMessage('success.policy-summary', [
-              name,
+              capitalize(name),
               Object.keys(def.content.rules).length ?? 0,
               def.filePath,
             ])

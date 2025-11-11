@@ -1,6 +1,6 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
-import { BasePolicyFileContent, ConfigFile } from '../libs/core/file-mgmt/schema.js';
-import AuditRun, { EntityResolveEvent } from '../libs/policies/auditRun.js';
+import AuditRun, { EntityResolveEvent } from '../libs/core/auditRun.js';
+import { capitalize } from '../libs/core/utils.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
@@ -87,26 +87,28 @@ export default class AuditRunMultiStageOutput {
   public startPolicyResolve(runInstance: AuditRun): void {
     this.mso.goto(RESOLVE_POLICIES, { currentStatus: 'Resolving' });
     Object.entries(runInstance.configs.policies).forEach(([policyName, policy]) => {
-      const policyDef = policy as ConfigFile<BasePolicyFileContent>;
-      this.addPolicyStatsListener(policyName, runInstance);
-      this.stageSpecificBlocks.push({
-        stage: RESOLVE_POLICIES,
-        type: 'dynamic-key-value',
-        label: policyName,
-        get: (data: AuditRunData): string => {
-          if (data?.policies?.[policyName]) {
-            return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;
-          } else {
-            return '';
-          }
-        },
-      });
-      if (policyDef.content.rules && Object.keys(policyDef.content.rules).length > 0) {
+      if (policy.content.enabled) {
+        this.addPolicyStatsListener(policyName, runInstance);
         this.stageSpecificBlocks.push({
-          stage: EXECUTE_RULES,
-          type: 'message',
-          get: () => `Execute ${Object.keys(policyDef.content.rules).length} rule(s) for ${policyName}`,
+          stage: RESOLVE_POLICIES,
+          type: 'dynamic-key-value',
+          label: capitalize(policyName),
+          get: (data: AuditRunData): string => {
+            if (data?.policies?.[policyName]) {
+              return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;
+            } else {
+              return '';
+            }
+          },
         });
+        if (policy.content.rules && Object.keys(policy.content.rules).length > 0) {
+          const enabledRules = Object.values(policy.content.rules).filter((ruleConfig) => ruleConfig.enabled).length;
+          this.stageSpecificBlocks.push({
+            stage: EXECUTE_RULES,
+            type: 'message',
+            get: () => `Execute ${enabledRules} rule(s) for ${policyName}`,
+          });
+        }
       }
     });
     this.mso.updateData({});

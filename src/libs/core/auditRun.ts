@@ -1,16 +1,14 @@
 // import fs from 'node:fs';
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
-import { AuditPolicyResult, AuditResult } from '../core/result-types.js';
-import { AuditRunConfig } from '../core/file-mgmt/schema.js';
-import { loadAuditConfig } from '../core/file-mgmt/auditConfigFileManager.js';
-import ProfilePolicy from './profilePolicy.js';
-import Policy, { ResolveEntityResult } from './policy.js';
-import PermissionSetPolicy from './permissionSetPolicy.js';
-import ConnectedAppPolicy from './connectedAppPolicy.js';
+import { AuditPolicyResult, AuditResult } from './result-types.js';
+import { AuditRunConfig, ConfigFile } from './file-mgmt/schema.js';
+import { loadAuditConfig } from './file-mgmt/auditConfigFileManager.js';
+import { policyDefs, PolicyNames } from './policyRegistry.js';
+import Policy, { ResolveEntityResult } from './policies/policy.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
-type PolicyMap = Record<string, Policy>;
+type PolicyMap = Record<string, Policy<unknown>>;
 
 export function startAuditRun(directoryPath: string): AuditRun {
   const conf = loadAuditConfig(directoryPath);
@@ -43,7 +41,7 @@ export default class AuditRun extends EventEmitter {
       return this.executablePolicies;
     }
     this.executablePolicies = this.loadPolicies(this.configs);
-    const resolveResultPromises: Array<Promise<ResolveEntityResult>> = [];
+    const resolveResultPromises: Array<Promise<ResolveEntityResult<unknown>>> = [];
     Object.values(this.executablePolicies).forEach((executable) => {
       resolveResultPromises.push(executable.resolve({ targetOrgConnection }));
     });
@@ -70,19 +68,15 @@ export default class AuditRun extends EventEmitter {
 
   private loadPolicies(config: AuditRunConfig): PolicyMap {
     const pols: PolicyMap = {};
-    if (config.policies.Profiles) {
-      pols.Profiles = new ProfilePolicy(config.policies.Profiles.content, config);
-    }
-    if (config.policies.PermissionSets) {
-      pols.PermissionSets = new PermissionSetPolicy(config.policies.PermissionSets.content, config);
-    }
-    if (config.policies.ConnectedApps) {
-      pols.ConnectedApps = new ConnectedAppPolicy(config.policies.ConnectedApps.content, config);
-    }
-    Object.entries(pols).forEach(([policyName, policy]) => {
+    Object.entries(config.policies).forEach(([policyName, policyConfig]) => {
+      const policy = new policyDefs[policyName as PolicyNames].handler(
+        (policyConfig as ConfigFile<unknown>).content,
+        config
+      );
       policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
         this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
       });
+      pols[policyName] = policy;
     });
     return pols;
   }
@@ -90,6 +84,9 @@ export default class AuditRun extends EventEmitter {
 
 function isCompliant(results: ResultsMap): boolean {
   const list = Object.values(results);
+  if (list.length === 0) {
+    return true;
+  }
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
 

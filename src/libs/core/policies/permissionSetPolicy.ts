@@ -1,27 +1,27 @@
 import { Messages } from '@salesforce/core';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../core/file-mgmt/schema.js';
-import { AuditContext, RuleRegistries } from '../core/registries/types.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
-import { EntityResolveError } from '../core/result-types.js';
-import { ResolvedPermissionSet } from '../core/registries/permissionSets.js';
+import MDAPI from '../mdapi/mdapiRetriever.js';
+import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditContext } from '../registries/types.js';
+import { ProfilesRiskPreset } from '../policy-types.js';
+import { EntityResolveError } from '../result-types.js';
+import { PermissionSetsRegistry, ResolvedPermissionSet } from '../registries/permissionSets.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export default class PermissionSetPolicy extends Policy {
+export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
   private totalEntities: number;
   public constructor(
     public config: PermSetsPolicyFileContent,
     public auditContext: AuditRunConfig,
-    registry = RuleRegistries.PermissionSets
+    registry = PermissionSetsRegistry
   ) {
     super(config, auditContext, registry);
     this.totalEntities = this.config.permissionSets ? Object.keys(this.config.permissionSets).length : 0;
   }
 
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedPermissionSet>> {
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,

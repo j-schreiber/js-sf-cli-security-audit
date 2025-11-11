@@ -1,7 +1,7 @@
 {
   "isCompliant": true,
   "policies": {
-    "Profiles": {
+    "profiles": {
       "isCompliant": true,
       "enabled": true,
       "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
@@ -27,7 +27,7 @@
       },
       "skippedRules": []
     },
-    "PermissionSets": {
+    "permissionSets": {
       "isCompliant": true,
       "enabled": true,
       "auditedEntities": [
@@ -52,7 +52,12 @@
               "message": "Permission was not classified. Update classification to LOW or higher to resolve."
             }
           ],
-          "errors": []
+          "errors": [],
+          "compliantEntities": [
+            "Standard_User_Permission_Set_1",
+            "Standard_User_Permission_Set_2",
+            "Power_User_Permission_Set_1"
+          ]
         }
       },
       "skippedRules": []

@@ -5,7 +5,7 @@ import { StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
 import OrgAuditRun from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../../../mocks/auditTestContext.js';
-import AuditRun from '../../../../src/libs/policies/auditRun.js';
+import AuditRun from '../../../../src/libs/core/auditRun.js';
 import { AuditResult } from '../../../../src/libs/core/result-types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -16,7 +16,7 @@ const AUDIT_CONFIGS_DIR = path.join('test', 'mocks', 'data', 'audit-configs');
 const DEFAULT_WORKING_DIR = path.join(AUDIT_CONFIGS_DIR, 'full-valid');
 
 const NON_COMPLIANT_RESULT = parseMockAuditConfig('full-non-compliant.json');
-// const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
+const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
 const EMPTY_RESULT = parseMockAuditConfig('empty-policy-no-rules.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
@@ -197,6 +197,36 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.table.callCount).to.equal(1);
     expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
       data: [{ policy: 'Profiles', isCompliant: true, rulesExecuted: 0, auditedEntities: 3, ignoredEntities: 1 }],
+    });
+  });
+
+  it('does not report policies that were disabled', async () => {
+    // Arrange
+    const mr = structuredClone(COMPLIANT_RESULT);
+    mr.policies.profiles!.enabled = false;
+    mockResult(mr);
+
+    // Act
+    await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+    // Assert
+    // ensure contract - all relevant params are actually passed to lib
+    expect($$.sfCommandStubs.table.callCount).to.equal(2);
+    expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
+      data: [{ policy: 'PermissionSets', isCompliant: true, rulesExecuted: 1, auditedEntities: 3, ignoredEntities: 0 }],
+    });
+    expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
+      data: [
+        {
+          rule: 'EnforceUserPermissionClassifications',
+          isCompliant: true,
+          violations: 0,
+          errors: 0,
+          warnings: 2,
+          compliantEntities: 3,
+          violatedEntities: 0,
+        },
+      ],
     });
   });
 });

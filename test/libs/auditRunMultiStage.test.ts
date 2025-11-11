@@ -7,13 +7,17 @@ import AuditRunMultiStageOutput, {
   EXECUTE_RULES,
   RESOLVE_POLICIES,
 } from '../../src/ux/auditRunMultiStage.js';
-import AuditRun from '../../src/libs/policies/auditRun.js';
+import AuditRun from '../../src/libs/core/auditRun.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 
 const PROFILES_CONFIG = {
   content: {
     enabled: true,
-    rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
+    rules: {
+      Rule1: { enabled: true },
+      Rule2: { enabled: true },
+      Rule3: { enabled: false },
+    },
     profiles: { 'Test Profile 1': { preset: ProfilesRiskPreset.DEVELOPER } },
   },
 };
@@ -58,7 +62,7 @@ describe('audit run multi stage output', () => {
   it('initialises each policy from config as stubstage of resolve and execute', () => {
     // Act
     const auditRun = new AuditRun({
-      policies: { Profiles: PROFILES_CONFIG },
+      policies: { profiles: PROFILES_CONFIG },
       classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
@@ -76,30 +80,45 @@ describe('audit run multi stage output', () => {
     expect(uxStub?.updateData.callCount).to.equal(1);
   });
 
-  it('updates policy resolve sub block with entity statistics', () => {
+  it('does not initialise disabled policies as substage', () => {
     // Act
+    const profilesConfig = structuredClone(PROFILES_CONFIG);
+    profilesConfig.content.enabled = false;
     const auditRun = new AuditRun({
-      policies: { Profiles: PROFILES_CONFIG, PermissionSets: PERMSETS_CONFIG },
+      policies: { profiles: profilesConfig },
       classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
-    auditRun.emit('entityresolve-Profiles', { total: 12, resolved: 0 });
-    auditRun.emit('entityresolve-PermissionSets', { total: 20, resolved: 0 });
-    auditRun.emit('entityresolve-Profiles', { total: 12, resolved: 4 });
-    auditRun.emit('entityresolve-Profiles', { total: 12, resolved: 12 });
-    auditRun.emit('entityresolve-PermissionSets', { total: 20, resolved: 20 });
+
+    // Assert
+    // policy is disabled, no stage specific blocks for resolve & rules are created
+    expect(testInstance.stageSpecificBlocks).to.deep.equal([]);
+  });
+
+  it('updates policy resolve sub block with entity statistics', () => {
+    // Act
+    const auditRun = new AuditRun({
+      policies: { profiles: PROFILES_CONFIG, permissionSets: PERMSETS_CONFIG },
+      classifications: {},
+    });
+    testInstance.startPolicyResolve(auditRun);
+    auditRun.emit('entityresolve-profiles', { total: 12, resolved: 0 });
+    auditRun.emit('entityresolve-permissionSets', { total: 20, resolved: 0 });
+    auditRun.emit('entityresolve-profiles', { total: 12, resolved: 4 });
+    auditRun.emit('entityresolve-profiles', { total: 12, resolved: 12 });
+    auditRun.emit('entityresolve-permissionSets', { total: 20, resolved: 20 });
 
     // Assert
     expect(uxStub?.updateData.callCount).to.equal(6);
     expect(uxStub?.updateData.args.flat()[1]).to.deep.equal({
       policies: {
-        Profiles: { total: 12, resolved: 0 },
+        profiles: { total: 12, resolved: 0 },
       },
     });
     expect(uxStub?.updateData.args.flat()[2]).to.deep.equal({
       policies: {
-        PermissionSets: { total: 20, resolved: 0 },
-        Profiles: { total: 12, resolved: 0 },
+        permissionSets: { total: 20, resolved: 0 },
+        profiles: { total: 12, resolved: 0 },
       },
     });
   });
@@ -107,18 +126,37 @@ describe('audit run multi stage output', () => {
   it('handles incomplete entity resolve result from audit run', () => {
     // Act
     const auditRun = new AuditRun({
-      policies: { Profiles: PROFILES_CONFIG },
+      policies: { profiles: PROFILES_CONFIG },
       classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
-    auditRun.emit('entityresolve-Profiles', { total: 12 });
+    auditRun.emit('entityresolve-profiles', { total: 12 });
 
     // Assert
     expect(uxStub?.updateData.callCount).to.equal(2);
     expect(uxStub?.updateData.args.flat()[1]).to.deep.equal({
       policies: {
-        Profiles: { total: 12, resolved: 0 },
+        profiles: { total: 12, resolved: 0 },
       },
     });
+  });
+
+  it('does not count disabled rules in executed rules summary', () => {
+    // Act
+    const auditRun = new AuditRun({
+      policies: { profiles: PROFILES_CONFIG },
+      classifications: {},
+    });
+    testInstance.startPolicyResolve(auditRun);
+
+    // Assert
+    expect(testInstance.stageSpecificBlocks.length).to.equal(2);
+    expect(testInstance.stageSpecificBlocks[1]).to.deep.contain({
+      type: 'message',
+      stage: EXECUTE_RULES,
+    });
+    const ruleBlockText = testInstance.stageSpecificBlocks[1].get({} as AuditRunData);
+    expect(ruleBlockText).to.equal('Execute 2 rule(s) for profiles');
+    expect(uxStub?.updateData.callCount).to.equal(1);
   });
 });

@@ -1,23 +1,23 @@
-import { EntityResolveError } from '../core/result-types.js';
-import { AuditRunConfig, BasePolicyFileContent } from '../core/file-mgmt/schema.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../core/constants.js';
-import { AuditContext, RuleRegistries } from '../core/registries/types.js';
-import { ResolvedConnectedApp } from '../core/registries/connectedApps.js';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
+import { EntityResolveError } from '../result-types.js';
+import { AuditRunConfig, BasePolicyFileContent } from '../file-mgmt/schema.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../constants.js';
+import { AuditContext } from '../registries/types.js';
+import { ConnectedAppsRegistry, ResolvedConnectedApp } from '../registries/connectedApps.js';
+import MDAPI from '../mdapi/mdapiRetriever.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 import { ConnectedApp, OauthToken } from './salesforceStandardTypes.js';
 
-export default class ConnectedAppPolicy extends Policy {
+export default class ConnectedAppPolicy extends Policy<ResolvedConnectedApp> {
   public constructor(
     public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
-    registry = RuleRegistries.ConnectedApps
+    registry = ConnectedAppsRegistry
   ) {
     super(config, auditConfig, registry);
   }
 
   // eslint-disable-next-line class-methods-use-this
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedConnectedApp>> {
     const successfullyResolved: Record<string, ResolvedConnectedApp> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const metadataApi = new MDAPI(context.targetOrgConnection);
