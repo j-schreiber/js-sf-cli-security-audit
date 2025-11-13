@@ -1,6 +1,18 @@
 import z from 'zod';
+import { Messages } from '@salesforce/core';
 import { PermissionRiskLevel } from '../classification-types.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
+
+export function throwAsSfError(fileName: string, parseError: z.ZodError, rulePath?: PropertyKey[]): never {
+  const issues = parseError.issues.map((zodIssue) => {
+    const definitivePath = rulePath ? [...rulePath, ...zodIssue.path] : zodIssue.path;
+    return definitivePath.length > 0 ? `${zodIssue.message} in "${definitivePath.join('.')}"` : zodIssue.message;
+  });
+  throw messages.createError('error.InvalidConfigFileSchema', [fileName, issues.join(', ')]);
+}
 
 const PermissionsClassificationSchema = z.object({
   /** UI Label */
@@ -35,12 +47,12 @@ const UserConfig = z.object({ role: z.enum(ProfilesRiskPreset) });
 
 const UsersMap = z.record(z.string(), UserConfig);
 
-export const UsersPolicyConfig = z.object({
+export const UsersPolicyConfig = z.strictObject({
   defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
-export const NoInactiveUsersOptionsSchema = z.object({
+export const NoInactiveUsersOptionsSchema = z.strictObject({
   daysAfterUserIsInactive: z.number().default(90),
 });
 

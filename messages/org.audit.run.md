@@ -1,10 +1,10 @@
 # summary
 
-Audit your org.
+Audit your org with an existing config.
 
 # description
 
-Loads a given audit config (a set of classifications and policies) and runs the policies against the target org. The audit run creates a comprehensive report that lists all executed policies and all resolved entities that were audited.
+Loads an existing audit config from the source directory and audits the target org. The audit run always creates a comprehensive report in JSON format.
 
 # flags.target-org.summary
 
@@ -12,7 +12,7 @@ The org that is audited.
 
 # flags.source-dir.summary
 
-Location of the audit config.
+Source directory of the audit config to run.
 
 # flags.source-dir.description
 
@@ -47,3 +47,11 @@ The "Profiles" policy requires at least userPermissions to be initialised, but n
 # UserPermClassificationRequiredForPermSets
 
 The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.
+
+# error.InvalidConfigFileSchema
+
+Failed to parse %s: %s.
+
+# error.InvalidConfigFileSchema.actions
+
+Verify that your config matches the expected schema.

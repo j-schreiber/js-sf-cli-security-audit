@@ -15,6 +15,7 @@ import { differenceInDays } from '../../../src/libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
+const auditRunMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -259,6 +260,21 @@ describe('users policy', () => {
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
         assert.isDefined(result.executedRules.NoInactiveUsers);
+      });
+
+      it('bubbles zod error as sf error when parsing fails', async () => {
+        // Arrange
+        const config = structuredClone(DEFAULT_CONFIG);
+        config.rules = {
+          NoInactiveUsers: { enabled: true, options: { smthInvalid: 10 } },
+        };
+
+        // Assert
+        const expectedErrorMsg = auditRunMessages.getMessage('error.InvalidConfigFileSchema', [
+          'users.yml',
+          'Unrecognized key: "smthInvalid" in "rules.NoInactiveUsers.options"',
+        ]);
+        expect(() => new UserPolicy(config, $$.mockAuditConfig)).to.throw(expectedErrorMsg);
       });
 
       it('reports violation if user has never logged in', async () => {
