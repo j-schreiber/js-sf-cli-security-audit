@@ -1,10 +1,10 @@
 # summary
 
-Initialises classifications and policies for a security audit.
+Initialise a new audit config.
 
 # description
 
-Exports permissions (standard and custom), permission sets, profiles, users, etc from the target org. All classifications are initialised with sane defaults that you can customize later.
+Uses your org's configuration to set up a new audit config at the target destination. This creates the basic classification and policy files that make up an audit config. You can select from presets to initialise risk levels with default values. After initialisation, you can customize the files to suit your needs.
 
 # flags.target-org.summary
 
@@ -16,7 +16,7 @@ Directory where the audit config is initialised. If not set, the root directory 
 
 # flags.preset.summary
 
-Select a preset to initialise permission classifications (risk levels).
+Preset to initialise defaults for permission risk levels.
 
 # flags.preset.description
 
