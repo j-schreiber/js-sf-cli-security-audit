@@ -35,7 +35,7 @@ Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.co
 
 ## `sf org audit init`
 
-Initialises classifications and policies for a security audit.
+Initialise a new audit config.
 
 ```
 USAGE
@@ -46,7 +46,7 @@ FLAGS
   -d, --output-dir=<value>   Directory where the audit config is initialised. If not set, the root directory will be
                              used.
   -o, --target-org=<value>   (required) Target org to export permissions, profiles, users, etc.
-  -p, --preset=<option>      [default: strict] Select a preset to initialise permission classifications (risk levels).
+  -p, --preset=<option>      [default: strict] Preset to initialise defaults for permission risk levels.
                              <options: strict|loose|none>
       --api-version=<value>  Override the api version used for api requests made by this command
 
@@ -55,10 +55,11 @@ GLOBAL FLAGS
   --json               Format output as json.
 
 DESCRIPTION
-  Initialises classifications and policies for a security audit.
+  Initialise a new audit config.
 
-  Exports permissions (standard and custom), permission sets, profiles, users, etc from the target org. All
-  classifications are initialised with sane defaults that you can customize later.
+  Uses your org's configuration to set up a new audit config at the target destination. This creates the basic
+  classification and policy files that make up an audit config. You can select from presets to initialise risk levels
+  with default values. After initialisation, you can customize the files to suit your needs.
 
 EXAMPLES
   Initialise audit policies at the root directory
@@ -70,7 +71,7 @@ EXAMPLES
     $ sf org audit init -o MyTargetOrg -d my_dir -p loose
 
 FLAG DESCRIPTIONS
-  -p, --preset=strict|loose|none  Select a preset to initialise permission classifications (risk levels).
+  -p, --preset=strict|loose|none  Preset to initialise defaults for permission risk levels.
 
     The selected preset is applied before any other default mechanisms (such as template configs). This means, values
     from a selected template override the preset. Consult the documentation to learn more about the rationale behind the
@@ -78,18 +79,18 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.7.1/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
-Audit your org.
+Audit your org with an existing config.
 
 ```
 USAGE
   $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>]
 
 FLAGS
-  -d, --source-dir=<value>   Location of the audit config.
+  -d, --source-dir=<value>   Source directory of the audit config to run.
   -o, --target-org=<value>   (required) The org that is audited.
       --api-version=<value>  Override the api version used for api requests made by this command
 
@@ -98,10 +99,10 @@ GLOBAL FLAGS
   --json               Format output as json.
 
 DESCRIPTION
-  Audit your org.
+  Audit your org with an existing config.
 
-  Loads a given audit config (a set of classifications and policies) and runs the policies against the target org. The
-  audit run creates a comprehensive report that lists all executed policies and all resolved entities that were audited.
+  Loads an existing audit config from the source directory and audits the target org. The audit run always creates a
+  comprehensive report in JSON format.
 
 EXAMPLES
   Audit the org MyTargetOrg with the config in configs/prod
@@ -109,18 +110,18 @@ EXAMPLES
     $ sf org audit run -o MyTargetOrg -d configs/prod
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.7.1/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
-Performs a quick scan to check permission sets and profiles for user permissions.
+Performs a quick scan for specific user permissions.
 
 ```
 USAGE
   $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>]
 
 FLAGS
-  -n, --name=<value>...      (required) One or more permissions to be scanned.
+  -n, --name=<value>...      (required) One or more permissions to be searched for.
   -o, --target-org=<value>   (required) The target org to scan.
       --api-version=<value>  Override the api version used for api requests made by this command
 
@@ -129,23 +130,26 @@ GLOBAL FLAGS
   --json               Format output as json.
 
 DESCRIPTION
-  Performs a quick scan to check permission sets and profiles for user permissions.
+  Performs a quick scan for specific user permissions.
 
-  The quick scan does not need an audit config and does not create reports. The target org is scanned "in memory" and
-  simply outputs information, where the searched user permissions
+  The target org is scanned "in memory" and searches Profiles and Permission Sets for the named user permissions. This
+  command does not need an audit config and does not create a report file.
 
 EXAMPLES
-  $ sf org scan user-perms
+  Search for multiple permissions on MyTargetOrg
+
+    $ sf org scan user-perms -o MyTargetOrg -n AuthorApex -n ModifyMetadata
 
 FLAG DESCRIPTIONS
-  -n, --name=<value>...  One or more permissions to be scanned.
+  -n, --name=<value>...  One or more permissions to be searched for.
 
     You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication" or "ViewSetup".
     If you are unsure what permissions are available on your org, initialise a new audit config and check the created
-    userPermissions.yml.
+    userPermissions.yml. Currently, the names are not validated: If you have a typo (such as "AutorApex", the scan will
+    retun 0 results).
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.6.0/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.7.1/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
