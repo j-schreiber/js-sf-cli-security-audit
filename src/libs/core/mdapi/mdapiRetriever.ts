@@ -11,10 +11,10 @@ import SingletonMetadata from './singletonMetadataType.js';
 import NamedMetadataQueryable from './namedMetadataToolingQueryable.js';
 
 export default class MDAPI {
-  private static retrievers = new Map<string, MDAPI>();
-  private cache: MetadataCache;
+  private static readonly retrievers = new Map<string, MDAPI>();
+  private readonly cache: MetadataCache;
 
-  public constructor(private connection: Connection) {
+  public constructor(private readonly connection: Connection) {
     this.cache = new MetadataCache();
   }
 

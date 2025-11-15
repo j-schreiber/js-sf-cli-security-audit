@@ -30,21 +30,17 @@ export default class UserPolicy extends Policy<ResolvedUser> {
     const usersById: Record<string, ResolvedUser> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const configuredUsers = this.config.users ?? {};
-    const classifiedUsers = [];
-    const userIds: string[] = [];
-    Object.entries(configuredUsers).forEach(([userName, userDef]) => {
+    for (const [userName, userDef] of Object.entries(configuredUsers)) {
       if (userDef.role === ProfilesRiskPreset.UNKNOWN) {
         ignoredEntities[userName] = {
           name: userName,
           message: messages.getMessage('user-with-role-unknown'),
         };
-      } else {
-        classifiedUsers.push(userName);
       }
-    });
+    }
     // fetch all users from org and merge with configured users
     const allUsersOnOrg = await context.targetOrgConnection.query<User>(ACTIVE_USERS_DETAILS_QUERY);
-    allUsersOnOrg.records.forEach((user) => {
+    for (const user of allUsersOnOrg.records) {
       if (ignoredEntities[user.Username] === undefined) {
         usersById[user.Id!] = {
           userId: user.Id!,
@@ -52,31 +48,22 @@ export default class UserPolicy extends Policy<ResolvedUser> {
           lastLogin: user.LastLoginDate ? Date.parse(user.LastLoginDate) : undefined,
           createdDate: Date.parse(user.CreatedDate),
           assignedProfile: user.Profile.Name,
-          assignedPermissionSets: [],
           logins: [],
           role: configuredUsers[user.Username]?.role ?? this.config.options.defaultRoleForMissingUsers,
         };
-        userIds.push(user.Id!);
       }
-    });
+    }
     this.totalEntities = allUsersOnOrg.totalSize;
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,
     });
     const userLogins = await resolveLogins(context, this.config.options.analyseLastNDaysOfLoginHistory);
-    Object.entries(userLogins).forEach(([userId, user]) => {
+    for (const [userId, user] of Object.entries(userLogins)) {
       if (usersById[userId] !== undefined) {
         usersById[userId].logins = user.logins;
       }
-    });
-    // resolve perm set assignments per user
-    // const assignments = await context.targetOrgConnection.query<PermissionSetAssignment>(
-    //   buildPermsetAssignmentsQuery(userIds)
-    // );
-    // assignments.records.forEach(assignment => {
-
-    // })
+    }
     const result = { resolvedEntities: organizeByUsername(usersById), ignoredEntities: Object.values(ignoredEntities) };
     this.emit('entityresolve', {
       total: this.totalEntities,
@@ -86,12 +73,12 @@ export default class UserPolicy extends Policy<ResolvedUser> {
   }
 }
 
-async function resolveLogins(context: AuditContext, daysToAnalyse?: number): Promise<PartialUsersRecord> {
+async function resolveLogins(context: AuditContext, daysToAnalyse?: number): Promise<UserLogins> {
   const loginHistory = await context.targetOrgConnection.query<UserLoginsAggregate>(
     buildLoginHistoryQuery(daysToAnalyse)
   );
   const partialUsers: Awaited<ReturnType<typeof resolveLogins>> = {};
-  loginHistory.records.forEach((loginHistoryRow) => {
+  for (const loginHistoryRow of loginHistory.records) {
     if (!partialUsers[loginHistoryRow.UserId]) {
       partialUsers[loginHistoryRow.UserId] = { logins: [] };
     }
@@ -101,16 +88,16 @@ async function resolveLogins(context: AuditContext, daysToAnalyse?: number): Pro
       application: loginHistoryRow.Application,
       lastLogin: Date.parse(loginHistoryRow.LastLogin),
     });
-  });
+  }
   return partialUsers;
 }
 
-type PartialUsersRecord = Record<string, Pick<ResolvedUser, 'logins'>>;
+type UserLogins = Record<string, Pick<ResolvedUser, 'logins'>>;
 
 function organizeByUsername(partial: Record<string, ResolvedUser>): Record<string, ResolvedUser> {
   const full: Record<string, ResolvedUser> = {};
-  Object.values(partial).forEach((resolved) => {
+  for (const resolved of Object.values(partial)) {
     full[resolved.username] = resolved;
-  });
+  }
   return full;
 }

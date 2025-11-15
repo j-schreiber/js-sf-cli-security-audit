@@ -12,7 +12,6 @@ import {
   ACTIVE_USERS_DETAILS_QUERY,
   ACTIVE_USERS_QUERY,
   buildLoginHistoryQuery,
-  buildPermsetAssignmentsQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
@@ -101,7 +100,7 @@ export default class AuditTestContext {
 }
 
 class MetadataApiRetrieveMock {
-  public constructor(private dirPath?: string) {}
+  public constructor(private readonly dirPath?: string) {}
 
   public async pollStatus(): Promise<RetrieveResult> {
     let cmpSet: ComponentSet;
@@ -169,8 +168,6 @@ function buildDefaultMocks() {
   defaults.queries[buildLoginHistoryQuery()] = 'empty';
   // 14 days is option config in "full-valid" user policy
   defaults.queries[buildLoginHistoryQuery(14)] = 'empty';
-  const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
-  defaults.queries[buildPermsetAssignmentsQuery(testUserIds)] = 'test-user-assignments';
   return defaults;
 }
 
