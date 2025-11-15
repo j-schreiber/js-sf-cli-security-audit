@@ -10,9 +10,9 @@ import { Profile } from '../../../src/libs/core/policies/salesforceStandardTypes
 import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
 import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import EnforceUserPermsClassificationOnProfiles from '../../../src/libs/core/registries/rules/enforceUserPermsClassificationOnProfiles.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
+import EnforcePermissionsOnEntity from '../../../src/libs/core/registries/rules/enforcePermissionsOnEntity.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -33,7 +33,7 @@ const DEFAULT_PROFILE_CONFIG: ProfilesPolicyFileContent = {
     },
   },
   rules: {
-    EnforceUserPermissionClassifications: {
+    EnforcePermissionClassifications: {
       enabled: true,
     },
   },
@@ -56,7 +56,7 @@ describe('profile policy', () => {
   const $$ = new AuditTestContext();
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
-    return $$.context.SANDBOX.stub(EnforceUserPermsClassificationOnProfiles.prototype, 'run').resolves(mockResult);
+    return $$.context.SANDBOX.stub(EnforcePermissionsOnEntity.prototype, 'run').resolves(mockResult);
   }
 
   beforeEach(async () => {
@@ -107,7 +107,7 @@ describe('profile policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
+    expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
   });
 
   it('ignores configured rules that cannot be resolved by implementation', async () => {
@@ -122,30 +122,13 @@ describe('profile policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
+    expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
   });
 
-  it('returns compliant for custom permissions rule when context has no custom permissions', async () => {
+  it('reports error in custom perms if permission classification does not match preset', async () => {
     // Arrange
     const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
-
-    // Act
-    const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
-    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
-
-    // Assert
-    expect(policyResult.isCompliant).to.equal(true);
-    const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceCustomPermissionClassifications']);
-    assert.isDefined(policyResult.executedRules.EnforceCustomPermissionClassifications);
-    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.isCompliant).to.be.true;
-  });
-
-  it('reports error in custom perms rule if permission classification does not match preset', async () => {
-    // Arrange
-    const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    CONFIG.rules = { EnforceCustomPermissionClassifications: { enabled: true } };
+    CONFIG.rules = { EnforcePermissionClassifications: { enabled: true } };
     const auditConfig: AuditRunConfig = {
       policies: {},
       classifications: {
@@ -166,10 +149,10 @@ describe('profile policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(false);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceCustomPermissionClassifications']);
-    assert.isDefined(policyResult.executedRules.EnforceCustomPermissionClassifications);
-    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.isCompliant).to.be.false;
-    expect(policyResult.executedRules.EnforceCustomPermissionClassifications.violations).to.deep.equal([
+    expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
+    assert.isDefined(policyResult.executedRules.EnforcePermissionClassifications);
+    expect(policyResult.executedRules.EnforcePermissionClassifications.isCompliant).to.be.false;
+    expect(policyResult.executedRules.EnforcePermissionClassifications.violations).to.deep.equal([
       {
         identifier: ['Standard User', 'CriticalCustomPermission'],
         message: 'Permission is classified as "Critical" and not allowed in preset "Standard User".',
@@ -179,7 +162,7 @@ describe('profile policy', () => {
 
   it('ignores profiles from config that cannot be resolved from target org', async () => {
     // Arrange
-    stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
+    stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
     $$.mocks.setQueryMock("SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'", 'empty');
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
@@ -197,7 +180,7 @@ describe('profile policy', () => {
 
   it('ignores profiles with UNKNOWN preset without attempting to resolve', async () => {
     // Arrange
-    stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
+    stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
     const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.UNKNOWN };
 
@@ -214,7 +197,7 @@ describe('profile policy', () => {
 
   it('ignores profile from config where metadata resolves to null', async () => {
     // Arrange
-    stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
+    stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
     $$.mocks.setQueryMock(
       "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
       'profile-with-null-metadata'
@@ -238,9 +221,11 @@ describe('profile policy', () => {
 
   it('evaluates entities with no violations as compliant', async () => {
     // Arrange
-    const mockResult = newRuleResult('EnforceUserPermissionClassifications');
-    mockResult.violations.push({ identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' });
-    mockResult.violations.push({ identifier: ['Standard User', 'CustomizeApplication'], message: 'Irrelevant msg' });
+    const mockResult = newRuleResult('EnforcePermissionClassifications');
+    mockResult.violations.push(
+      { identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' },
+      { identifier: ['Standard User', 'CustomizeApplication'], message: 'Irrelevant msg' }
+    );
     stubUserClassificationRule(mockResult);
 
     // Act
@@ -249,16 +234,18 @@ describe('profile policy', () => {
 
     // Assert
     expect(policyResult.isCompliant).to.be.false;
-    const ruleResult = policyResult.executedRules.EnforceUserPermissionClassifications;
+    const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
     expect(ruleResult.compliantEntities).to.deep.equal(['System Administrator']);
     expect(ruleResult.violatedEntities).to.deep.equal(['Standard User']);
   });
 
   it('evaluates entities with warnings as compliant', async () => {
     // Arrange
-    const mockResult = newRuleResult('EnforceUserPermissionClassifications');
-    mockResult.warnings.push({ identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' });
-    mockResult.warnings.push({ identifier: ['Standard User', 'ViewAllData'], message: 'Irrelevant msg' });
+    const mockResult = newRuleResult('EnforcePermissionClassifications');
+    mockResult.warnings.push(
+      { identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' },
+      { identifier: ['Standard User', 'ViewAllData'], message: 'Irrelevant msg' }
+    );
     stubUserClassificationRule(mockResult);
 
     // Act
@@ -267,7 +254,7 @@ describe('profile policy', () => {
 
     // Assert
     expect(policyResult.isCompliant).to.be.true;
-    const ruleResult = policyResult.executedRules.EnforceUserPermissionClassifications;
+    const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
     expect(ruleResult.compliantEntities).to.deep.equal(['System Administrator', 'Standard User']);
     expect(ruleResult.violatedEntities).to.deep.equal([]);
   });
@@ -282,7 +269,7 @@ function loadProfileMetadata(profileFileName: string): ProfileMetadata {
 class TestProfilesRegistry extends RuleRegistry {
   public constructor() {
     super({
-      TestRule: EnforceUserPermsClassificationOnProfiles,
+      TestRule: EnforcePermissionsOnEntity,
     });
   }
 }

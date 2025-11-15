@@ -3,5 +3,5 @@ profiles:
   System Administrator:
     preset: Admin
 rules:
-  EnforceUserPermissionClassifications:
+  EnforcePermissionClassifications:
     enabled: true
