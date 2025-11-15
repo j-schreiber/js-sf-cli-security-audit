@@ -44,7 +44,7 @@
           }
         },
         "rules": {
-          "EnforceUserPermissionClassifications": {
+          "EnforcePermissionClassifications": {
             "enabled": true
           }
         }

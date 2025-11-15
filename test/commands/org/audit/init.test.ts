@@ -49,7 +49,7 @@ describe('org audit init', () => {
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
       'Initialised 3 permissions at tmp/prod/classification/userPermissions.yml.',
       'Initialised 1 permissions at tmp/prod/classification/customPermissions.yml.',
-      'Initialised "Profiles" policy with 2 rule(s) at tmp/prod/policies/profiles.yml.',
+      'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
       'Initialised "PermissionSets" policy with 1 rule(s) at tmp/prod/policies/permissionSets.yml.',
     ]);
   });

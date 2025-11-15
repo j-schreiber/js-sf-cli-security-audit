@@ -74,7 +74,7 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
       data: [
         {
-          rule: 'EnforceUserPermissionClassifications',
+          rule: 'EnforcePermissionClassifications',
           isCompliant: false,
           violations: 3,
           errors: 0,
@@ -218,7 +218,7 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
       data: [
         {
-          rule: 'EnforceUserPermissionClassifications',
+          rule: 'EnforcePermissionClassifications',
           isCompliant: true,
           violations: 0,
           errors: 0,

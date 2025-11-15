@@ -12,7 +12,7 @@ import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/cor
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
-import EnforcePermissionsOnEntity from '../../../src/libs/core/registries/rules/enforcePermissionsOnEntity.js';
+import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -56,7 +56,7 @@ describe('profile policy', () => {
   const $$ = new AuditTestContext();
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
-    return $$.context.SANDBOX.stub(EnforcePermissionsOnEntity.prototype, 'run').resolves(mockResult);
+    return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
   }
 
   beforeEach(async () => {
@@ -269,7 +269,7 @@ function loadProfileMetadata(profileFileName: string): ProfileMetadata {
 class TestProfilesRegistry extends RuleRegistry {
   public constructor() {
     super({
-      TestRule: EnforcePermissionsOnEntity,
+      TestRule: EnforcePermissionsOnProfileLike,
     });
   }
 }

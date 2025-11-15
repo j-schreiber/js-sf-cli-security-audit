@@ -1,6 +1,6 @@
 import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import RuleRegistry from './ruleRegistry.js';
-import EnforcePermissionsOnEntity from './rules/enforcePermissionsOnEntity.js';
+import EnforcePermissionsOnProfileLike from './rules/enforcePermissionsOnProfileLike.js';
 
 export type ResolvedProfile = {
   name: string;
@@ -11,7 +11,7 @@ export type ResolvedProfile = {
 export default class ProfilesRuleRegistry extends RuleRegistry {
   public constructor() {
     super({
-      EnforcePermissionClassifications: EnforcePermissionsOnEntity,
+      EnforcePermissionClassifications: EnforcePermissionsOnProfileLike,
     });
   }
 }

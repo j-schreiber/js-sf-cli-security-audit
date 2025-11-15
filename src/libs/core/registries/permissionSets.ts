@@ -1,6 +1,6 @@
 import { PermissionSet } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import RuleRegistry from './ruleRegistry.js';
-import EnforcePermissionsOnEntity from './rules/enforcePermissionsOnEntity.js';
+import EnforcePermissionsOnProfileLike from './rules/enforcePermissionsOnProfileLike.js';
 
 export type ResolvedPermissionSet = {
   name: string;
@@ -10,7 +10,7 @@ export type ResolvedPermissionSet = {
 export default class PermSetsRuleRegistry extends RuleRegistry {
   public constructor() {
     super({
-      EnforcePermissionClassifications: EnforcePermissionsOnEntity,
+      EnforcePermissionClassifications: EnforcePermissionsOnProfileLike,
     });
   }
 }

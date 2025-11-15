@@ -25,7 +25,7 @@ type ScanResult = {
   warnings: RuleComponentMessage[];
 };
 
-export default class EnforcePermissionsOnEntity extends PolicyRule<ResolvedProfileLike> {
+export default class EnforcePermissionsOnProfileLike extends PolicyRule<ResolvedProfileLike> {
   public constructor(opts: RuleOptions) {
     super(opts);
   }

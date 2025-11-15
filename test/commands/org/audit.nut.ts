@@ -27,16 +27,16 @@ describe('org audit NUTs', () => {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = DefaultFileManager.parse(configDirPath);
     if (conf.policies.profiles?.content.profiles) {
-      Object.values(conf.policies.profiles.content.profiles).forEach((profile) => {
+      for (const profile of Object.values(conf.policies.profiles.content.profiles)) {
         // eslint-disable-next-line no-param-reassign
         profile.preset = preset;
-      });
+      }
     }
     if (conf.policies.permissionSets?.content.permissionSets) {
-      Object.values(conf.policies.permissionSets.content.permissionSets).forEach((permSet) => {
+      for (const profile of Object.values(conf.policies.permissionSets.content.permissionSets)) {
         // eslint-disable-next-line no-param-reassign
-        permSet.preset = preset;
-      });
+        profile.preset = preset;
+      }
     }
     DefaultFileManager.save(configDirPath, conf);
   }
@@ -111,10 +111,10 @@ describe('org audit NUTs', () => {
     // Assert
     assert.isDefined(result);
     expect(Object.keys(result.policies)).to.deep.equal(['profiles', 'permissionSets', 'connectedApps', 'users']);
-    Object.entries(result.policies).forEach(([policyName, policy]) => {
+    for (const [policyName, policy] of Object.entries(result.policies)) {
       // every policy should have at least one audited entity
       expect(policy.auditedEntities, policyName).not.deep.equal([]);
-    });
+    }
   });
 
   it('initialises a full audit config at root directory', () => {

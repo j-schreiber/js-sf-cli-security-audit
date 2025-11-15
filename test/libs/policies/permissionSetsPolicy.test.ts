@@ -8,7 +8,7 @@ import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import EnforcePermissionsOnEntity from '../../../src/libs/core/registries/rules/enforcePermissionsOnEntity.js';
+import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -36,7 +36,7 @@ describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
-    return $$.context.SANDBOX.stub(EnforcePermissionsOnEntity.prototype, 'run').resolves(mockResult);
+    return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
   }
 
   beforeEach(async () => {
