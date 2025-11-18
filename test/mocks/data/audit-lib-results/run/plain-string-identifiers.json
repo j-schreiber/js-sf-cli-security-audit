@@ -1,0 +1,36 @@
+{
+  "isCompliant": true,
+  "policies": {
+    "permissionSets": {
+      "isCompliant": true,
+      "enabled": true,
+      "auditedEntities": [
+        "Standard_User_Permission_Set_1",
+        "Standard_User_Permission_Set_2",
+        "Power_User_Permission_Set_1"
+      ],
+      "ignoredEntities": [],
+      "executedRules": {
+        "MockRule": {
+          "ruleName": "MockRule",
+          "isCompliant": false,
+          "violations": [
+            {
+              "identifier": "Plain_Text_Identifier",
+              "message": "Error message"
+            }
+          ],
+          "mutedViolations": [],
+          "warnings": [],
+          "errors": [],
+          "compliantEntities": [
+            "Standard_User_Permission_Set_1",
+            "Standard_User_Permission_Set_2",
+            "Power_User_Permission_Set_1"
+          ]
+        }
+      },
+      "skippedRules": []
+    }
+  }
+}

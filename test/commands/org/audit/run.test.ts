@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect } from 'chai';
 import { StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import OrgAuditRun from '../../../../src/commands/org/audit/run.js';
+import OrgAuditRun, { MERGE_CHAR } from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../../../mocks/auditTestContext.js';
 import AuditRun from '../../../../src/libs/core/auditRun.js';
 import { AuditResult } from '../../../../src/libs/core/result-types.js';
@@ -17,6 +17,7 @@ const DEFAULT_WORKING_DIR = path.join(AUDIT_CONFIGS_DIR, 'full-valid');
 
 const NON_COMPLIANT_RESULT = parseMockAuditConfig('full-non-compliant.json');
 const COMPLIANT_RESULT = parseMockAuditConfig('full-compliant.json');
+const PLAIN_IDENTIFIERS_RESULT = parseMockAuditConfig('plain-string-identifiers.json');
 const EMPTY_RESULT = parseMockAuditConfig('empty-policy-no-rules.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
@@ -96,16 +97,48 @@ describe('org audit run', () => {
     expect($$.sfCommandStubs.table.args.flat()[2]).to.deep.contain({
       data: [
         {
-          identifier: ['Standard User', 'ViewSetup'],
+          identifier: ['Standard User', 'ViewSetup'].join(MERGE_CHAR),
           message: 'Permission is classified as High but profile uses preset Standard User',
         },
         {
-          identifier: ['Custom Standard User', 'ViewSetup'],
+          identifier: ['Custom Standard User', 'ViewSetup'].join(MERGE_CHAR),
           message: 'Permission is classified as High but profile uses preset Standard User',
         },
         {
-          identifier: ['System Administrator', 'AuthorApex'],
+          identifier: ['System Administrator', 'AuthorApex'].join(MERGE_CHAR),
           message: 'Permission is classified as Critical but profile uses preset Admin',
+        },
+      ],
+    });
+  });
+
+  it('reports violations with plain string identifiers in data table', async () => {
+    // Arrange
+    mockResult(PLAIN_IDENTIFIERS_RESULT);
+
+    // Act
+    await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+    // Arrange
+    expect($$.sfCommandStubs.table.callCount).to.equal(3);
+    expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
+      data: [
+        {
+          rule: 'MockRule',
+          isCompliant: false,
+          violations: 1,
+          errors: 0,
+          warnings: 0,
+          compliantEntities: 3,
+          violatedEntities: 0,
+        },
+      ],
+    });
+    expect($$.sfCommandStubs.table.args.flat()[2]).to.deep.contain({
+      data: [
+        {
+          identifier: 'Plain_Text_Identifier',
+          message: 'Error message',
         },
       ],
     });
