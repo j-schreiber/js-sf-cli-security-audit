@@ -24,6 +24,31 @@ export type PartialProfileLike = Pick<Profile, 'userPermissions' | 'customPermis
 
 type PermissionsListKey = keyof PartialProfileLike;
 
+/**
+ * Scan userPermissions and customPermissions of a profile or permission set and
+ * get a unified scan result with violations (risk level not allowed) and warnings
+ * (risk level not classified)
+ *
+ * @param profileLike
+ * @param auditRun
+ * @param rootIdentifier Optional root identifier for messages to prepend.
+ * @returns
+ */
+export function scanProfileLike(
+  profileLike: ResolvedProfileLike,
+  auditRun: AuditRunConfig,
+  rootIdentifier?: string[]
+): ScanResult {
+  if (!profileLike.metadata) {
+    return { violations: [], warnings: [] };
+  }
+  const userPermsResult = scanPermissions(profileLike, 'userPermissions', auditRun, rootIdentifier);
+  const customPermsResult = scanPermissions(profileLike, 'customPermissions', auditRun, rootIdentifier);
+  userPermsResult.violations.push(...customPermsResult.violations);
+  userPermsResult.warnings.push(...customPermsResult.warnings);
+  return userPermsResult;
+}
+
 export function scanPermissions(
   profile: ResolvedProfileLike,
   permissionListName: PermissionsListKey,

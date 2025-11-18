@@ -2,7 +2,7 @@ import { buildPermsetAssignmentsQuery } from '../../constants.js';
 import MDAPI from '../../mdapi/mdapiRetriever.js';
 import { PermissionSetAssignment } from '../../policies/salesforceStandardTypes.js';
 import { isNullish } from '../../utils.js';
-import { PartialProfileLike, scanPermissions, ScanResult } from '../helpers/permissionsScanning.js';
+import { PartialProfileLike, scanProfileLike, ScanResult } from '../helpers/permissionsScanning.js';
 import { AuditContext, PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { ResolvedUser, UserPermissionSetAssignment } from '../users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
@@ -21,13 +21,10 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
   public async run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const users = context.resolvedEntities;
-    const assignments = await resolveAssignments(context, Object.values(users));
-    const usedPermSetNames = getPermissionSetsInUse(assignments);
-    if (usedPermSetNames.length === 0) {
-      return result;
-    }
-    const permsetRepo = MDAPI.create(context.targetOrgConnection);
-    const permsets = await permsetRepo.resolve('PermissionSet', usedPermSetNames);
+    const assignments = await fetchAssignments(context, Object.values(users));
+    const mdapiRepo = MDAPI.create(context.targetOrgConnection);
+    const permsets = await mdapiRepo.resolve('PermissionSet', uniquePermSetNames(assignments));
+    const profiles = await mdapiRepo.resolve('Profile', uniqueProfileNames(Object.values(users)));
     for (const user of Object.values(users)) {
       const resolvedPermsetAssignments = assignments[user.userId]
         ? assignments[user.userId].map((ass) => ({
@@ -35,9 +32,16 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
             metadata: permsets[ass.permissionSetIdentifier],
           }))
         : [];
-      const userResult = this.scanAssignedPermissionSets(user, resolvedPermsetAssignments);
-      result.violations.push(...userResult.violations);
-      result.warnings.push(...userResult.warnings);
+      const permsetResult = this.scanAssignedPermissionSets(user, resolvedPermsetAssignments);
+      result.violations.push(...permsetResult.violations);
+      result.warnings.push(...permsetResult.warnings);
+      const profileResult = scanProfileLike(
+        { preset: user.role, metadata: profiles[user.assignedProfile], name: user.assignedProfile },
+        this.auditContext,
+        [user.username]
+      );
+      result.violations.push(...profileResult.violations);
+      result.warnings.push(...profileResult.warnings);
     }
     return result;
   }
@@ -48,9 +52,8 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       if (!assignedPermSet.metadata) {
         continue;
       }
-      const permsetScan = scanPermissions(
+      const permsetScan = scanProfileLike(
         { preset: user.role, metadata: assignedPermSet.metadata, name: assignedPermSet.permissionSetIdentifier },
-        'userPermissions',
         this.auditContext,
         [user.username]
       );
@@ -61,8 +64,8 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
   }
 }
 
-async function resolveAssignments(context: AuditContext, users: ResolvedUser[]): Promise<UserPermSetAssignments> {
-  const permSetAssignments: Awaited<ReturnType<typeof resolveAssignments>> = {};
+async function fetchAssignments(context: AuditContext, users: ResolvedUser[]): Promise<UserPermSetAssignments> {
+  const permSetAssignments: Awaited<ReturnType<typeof fetchAssignments>> = {};
   const assignments = await context.targetOrgConnection.query<PermissionSetAssignment>(
     buildPermsetAssignmentsQuery(users.map((u) => u.userId))
   );
@@ -72,13 +75,14 @@ async function resolveAssignments(context: AuditContext, users: ResolvedUser[]):
     }
     permSetAssignments[assignment.AssigneeId].push({
       permissionSetIdentifier: assignment.PermissionSet.Name,
-      permissionSetSource: 'direct',
+      permissionSetSource: assignment.PermissionSetGroupId ? 'group' : 'direct',
+      groupName: assignment.PermissionSetGroup?.DeveloperName,
     });
   }
   return permSetAssignments;
 }
 
-function getPermissionSetsInUse(assignments: UserPermSetAssignments): string[] {
+function uniquePermSetNames(assignments: UserPermSetAssignments): string[] {
   const uniquePermSets = new Set<string>();
   for (const assList of Object.values(assignments)) {
     for (const ass of assList) {
@@ -86,4 +90,12 @@ function getPermissionSetsInUse(assignments: UserPermSetAssignments): string[] {
     }
   }
   return Array.from(uniquePermSets);
+}
+
+function uniqueProfileNames(users: ResolvedUser[]): string[] {
+  const uniqueProfiles = new Set<string>();
+  for (const usr of users) {
+    uniqueProfiles.add(usr.assignedProfile);
+  }
+  return Array.from(uniqueProfiles);
 }

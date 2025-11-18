@@ -57,6 +57,14 @@ describe('users policy', () => {
     return mockLastLogin;
   }
 
+  function mockSingleActiveUser(profileName: string): void {
+    $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'single-active-user', (record) => ({
+      ...record,
+      Profile: { Name: profileName },
+    }));
+    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(['005000000000000AAA']), 'empty');
+  }
+
   beforeEach(async () => {
     await $$.init();
   });
@@ -81,9 +89,7 @@ describe('users policy', () => {
       expect(resolveResult.resolvedEntities['guest-user@example.de'].role).to.equal('Standard User');
       expect(resolveResult.resolvedEntities['guest-user@example.de'].assignedProfile).to.equal('Guest User Profile');
       expect(resolveResult.resolvedEntities['test-user-1@example.de'].role).to.equal('Standard User');
-      expect(resolveResult.resolvedEntities['test-user-1@example.de'].assignedProfile).to.equal(
-        'Standard User Profile'
-      );
+      expect(resolveResult.resolvedEntities['test-user-1@example.de'].assignedProfile).to.equal('Standard User');
       expect(resolveResult.resolvedEntities['test-user-2@example.de'].role).to.equal('Admin');
       expect(resolveResult.resolvedEntities['test-user-2@example.de'].assignedProfile).to.equal('System Administrator');
     });
@@ -333,11 +339,13 @@ describe('users policy', () => {
       it('reports compliance if user role allows all assigned permissions', async () => {
         // Arrange
         // mock classification for some of the profile & perm sets that are okay for user
+        // profiles and permsets grant >200 perms, but all of them will be ignored because
+        // they are not classified. LOW is okay for standard users
         $$.mockAuditConfig.classifications.userPermissions = {
           content: {
             permissions: {
               ViewSetup: {
-                classification: PermissionRiskLevel.HIGH,
+                classification: PermissionRiskLevel.LOW,
               },
             },
           },
@@ -377,18 +385,43 @@ describe('users policy', () => {
         assert.isDefined(result.executedRules.EnforcePermissionClassifications);
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
         expect(ruleResult.isCompliant).to.be.false;
-        expect(ruleResult.compliantEntities).to.deep.equal(['guest-user@example.de', 'test-user-1@example.de']);
-        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.compliantEntities).to.deep.equal(['guest-user@example.de']);
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-1@example.de', 'test-user-2@example.de']);
         expect(ruleResult.violations).to.deep.equal([
           {
+            identifier: ['test-user-1@example.de', 'Standard User', 'ViewSetup'],
+            message: criticalMismatchMsg('Standard User'),
+          },
+          {
             identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
-            message: permScanningMessages.getMessage('violations.classification-preset-mismatch', [
-              PermissionRiskLevel.CRITICAL,
-              'Admin',
-            ]),
+            message: criticalMismatchMsg('Admin'),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
+            message: criticalMismatchMsg('Admin'),
           },
         ]);
+      });
+
+      it('skips users with a profile that cannot be resolved to metadata', async () => {
+        // Arrange
+        mockSingleActiveUser('Custom Profile');
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.isCompliant).to.be.true;
       });
     });
   });
 });
+
+function criticalMismatchMsg(presetName: string): string {
+  return permScanningMessages.getMessage('violations.classification-preset-mismatch', [
+    PermissionRiskLevel.CRITICAL,
+    presetName,
+  ]);
+}

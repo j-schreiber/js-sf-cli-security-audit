@@ -164,6 +164,7 @@ function buildDefaultMocks() {
   defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
+  defaults.queries[buildProfilesQuery('Guest User Profile')] = 'empty';
   defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
   defaults.queries[buildLoginHistoryQuery()] = 'empty';
   // 14 days is option config in "full-valid" user policy

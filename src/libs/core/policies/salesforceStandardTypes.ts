@@ -47,9 +47,15 @@ export type PermissionSet = Record & {
   NamespacePrefix?: string;
 };
 
+export type PermissionSetGroup = Record & {
+  DeveloperName: string;
+};
+
 export type PermissionSetAssignment = Record & {
   AssigneeId: string;
   PermissionSet: Pick<PermissionSet, 'Name'>;
+  PermissionSetGroupId?: string;
+  PermissionSetGroup?: PermissionSetGroup;
 };
 
 export type UserLoginsAggregate = Record & {
