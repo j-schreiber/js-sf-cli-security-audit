@@ -71,9 +71,9 @@ export default class MDAPI {
   }
 
   private cacheResults(results: Record<string, Metadata>): void {
-    Object.entries(results).forEach(([cname, mdata]) => {
+    for (const [cname, mdata] of Object.entries(results)) {
       this.cache.set(cname, mdata);
-    });
+    }
   }
 
   private fetchCached(componentNames: string[]): { toRetrieve: string[]; cached: Record<string, Metadata> } {

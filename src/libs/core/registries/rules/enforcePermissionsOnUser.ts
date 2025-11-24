@@ -36,7 +36,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       result.violations.push(...permsetResult.violations);
       result.warnings.push(...permsetResult.warnings);
       const profileResult = scanProfileLike(
-        { preset: user.role, metadata: profiles[user.assignedProfile], name: user.assignedProfile },
+        { preset: user.role, metadata: profiles[user.profileName], name: user.profileName },
         this.auditContext,
         [user.username]
       );
@@ -95,7 +95,7 @@ function uniquePermSetNames(assignments: UserPermSetAssignments): string[] {
 function uniqueProfileNames(users: ResolvedUser[]): string[] {
   const uniqueProfiles = new Set<string>();
   for (const usr of users) {
-    uniqueProfiles.add(usr.assignedProfile);
+    uniqueProfiles.add(usr.profileName);
   }
   return Array.from(uniqueProfiles);
 }

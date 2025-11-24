@@ -18,14 +18,14 @@ export default class SfConnectionMocks {
     this.describes = {};
     this.queries = {};
     if (config.describes) {
-      Object.entries(config.describes).forEach(([sobjectName, describePath]) => {
+      for (const [sobjectName, describePath] of Object.entries(config.describes)) {
         this.setDescribeMock(sobjectName, describePath);
-      });
+      }
     }
     if (config.queries) {
-      Object.entries(config.queries).forEach(([queryString, resultsPath]) => {
+      for (const [queryString, resultsPath] of Object.entries(config.queries)) {
         this.setQueryMock(queryString, resultsPath);
-      });
+      }
     }
   }
 

@@ -87,11 +87,11 @@ describe('users policy', () => {
         'test-user-2@example.de',
       ]);
       expect(resolveResult.resolvedEntities['guest-user@example.de'].role).to.equal('Standard User');
-      expect(resolveResult.resolvedEntities['guest-user@example.de'].assignedProfile).to.equal('Guest User Profile');
+      expect(resolveResult.resolvedEntities['guest-user@example.de'].profileName).to.equal('Guest User Profile');
       expect(resolveResult.resolvedEntities['test-user-1@example.de'].role).to.equal('Standard User');
-      expect(resolveResult.resolvedEntities['test-user-1@example.de'].assignedProfile).to.equal('Standard User');
+      expect(resolveResult.resolvedEntities['test-user-1@example.de'].profileName).to.equal('Standard User');
       expect(resolveResult.resolvedEntities['test-user-2@example.de'].role).to.equal('Admin');
-      expect(resolveResult.resolvedEntities['test-user-2@example.de'].assignedProfile).to.equal('System Administrator');
+      expect(resolveResult.resolvedEntities['test-user-2@example.de'].profileName).to.equal('System Administrator');
     });
 
     it('ignores users with UNKNOWN role in resolve', async () => {
