@@ -22,7 +22,7 @@ export type NamedMetadataQueryableOpts<Type> = {
 
 /**
  * The entry is a typical named metadata that is organized in a dedicated source folder
- * where all entities have the same format. The components are queries from tooling API
+ * where all entities have the same format. The components are queried from tooling API
  * and organized by their developer name.
  */
 export default class NamedMetadataQueryable<Type, Key extends keyof Type> implements NamedMetadataResolver<Type[Key]> {

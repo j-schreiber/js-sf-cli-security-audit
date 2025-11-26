@@ -1,5 +1,7 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
+import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
@@ -124,6 +126,11 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
     warnings: new Array<RuleComponentMessage>(),
     errors: [],
   };
+}
+
+export function parseProfileFromFile(fileName: string): Profile {
+  const profilePath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
+  return (JSON.parse(fs.readFileSync(profilePath, 'utf-8')) as JsForceRecord[])[0]['Metadata'] as Profile;
 }
 
 export function parseFileAsJson<T>(...filePath: string[]): T {

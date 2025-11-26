@@ -1,7 +1,13 @@
 import { Connection } from '@salesforce/core';
 import { PermissionSet, Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { ACTIVE_USERS_DETAILS_QUERY, buildLoginHistoryQuery } from '../constants.js';
-import { User as UserRecord, UserLoginsAggregate } from '../policies/salesforceStandardTypes.js';
+import { ACTIVE_USERS_DETAILS_QUERY, buildLoginHistoryQuery, buildPermsetAssignmentsQuery } from '../constants.js';
+import {
+  User as UserRecord,
+  UserLoginsAggregate,
+  PermissionSetAssignment as PermissionSetAssignmentRecord,
+} from '../policies/salesforceStandardTypes.js';
+import { isNullish } from '../utils.js';
+import MDAPI from './mdapiRetriever.js';
 
 export type User = {
   userId: string;
@@ -13,7 +19,7 @@ export type User = {
 };
 
 export type UserPermissions = {
-  profileMetadata: Profile;
+  profileMetadata?: Profile;
   assignedPermissionsets: PermissionSetAssignment[];
 };
 
@@ -55,13 +61,23 @@ export type ResolveOptions = {
   loginHistoryDaysToAnalyse?: number;
 };
 
+type PartialAssignments = Array<Omit<PermissionSetAssignment, 'metadata'>>;
+
+type PartialAssignmentsResult = {
+  assignments: Map<string, PartialAssignments>;
+  permSetNames: string[];
+};
+
 export default class UsersRepository {
-  public constructor(private readonly connection: Connection) {}
+  private readonly mdapiRepo;
+
+  public constructor(private readonly connection: Connection) {
+    this.mdapiRepo = MDAPI.create(this.connection);
+  }
 
   /**
    * Resolves all users from the target org of this repository
    *
-   * @param canonicalUsername
    * @param opts
    * @returns
    */
@@ -91,6 +107,51 @@ export default class UsersRepository {
     return result;
   }
 
+  /**
+   * Resolves permission-granting entities (profiles and permission sets)
+   * for a list of users.
+   *
+   * @param userIds Users to be resolved
+   * @returns Map of permissions organized by user id
+   */
+  public async resolveUserPermissions(users: User[]): Promise<Map<string, UserPermissions>> {
+    const result = new Map<string, UserPermissions>();
+    const permsets = await this.resolvePermissionSetAssignments(users.map((usr) => usr.userId));
+    const profiles = await this.mdapiRepo.resolve('Profile', uniqueProfileNames(Object.values(users)));
+    for (const user of users) {
+      result.set(user.userId, {
+        assignedPermissionsets: permsets.get(user.userId) ?? [],
+        profileMetadata: profiles[user.profileName],
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Resolves all permission set assignments for the user with metadata of the
+   * permission set. If the user has no assignments, an empty list is returned.
+   *
+   * @param userIds
+   * @returns
+   */
+  public async resolvePermissionSetAssignments(userIds: string[]): Promise<Map<string, PermissionSetAssignment[]>> {
+    const result = new Map<string, PermissionSetAssignment[]>();
+    const { assignments, permSetNames } = await this.fetchAssignments(userIds);
+    const permsets = await this.mdapiRepo.resolve('PermissionSet', permSetNames);
+    for (const userId of userIds) {
+      result.set(
+        userId,
+        assignments.get(userId)
+          ? assignments.get(userId)!.map((ass) => ({
+              ...ass,
+              metadata: permsets[ass.permissionSetIdentifier],
+            }))
+          : []
+      );
+    }
+    return result;
+  }
+
   private async resolveLogins(daysToAnalyse?: number): Promise<Map<string, UserLogins[]>> {
     const loginHistory = await this.connection.query<UserLoginsAggregate>(buildLoginHistoryQuery(daysToAnalyse));
     const partialUsers = new Map<string, UserLogins[]>();
@@ -107,4 +168,32 @@ export default class UsersRepository {
     }
     return partialUsers;
   }
+
+  private async fetchAssignments(userIds: string[]): Promise<PartialAssignmentsResult> {
+    const assignments = new Map<string, PartialAssignments>();
+    const uniquePermSets = new Set<string>();
+    const rawAssignment = await this.connection.query<PermissionSetAssignmentRecord>(
+      buildPermsetAssignmentsQuery(userIds)
+    );
+    for (const assignment of rawAssignment.records) {
+      if (isNullish(assignments.get(assignment.AssigneeId))) {
+        assignments.set(assignment.AssigneeId, []);
+      }
+      assignments.get(assignment.AssigneeId)!.push({
+        permissionSetIdentifier: assignment.PermissionSet.Name,
+        permissionSetSource: assignment.PermissionSetGroupId ? 'group' : 'direct',
+        groupName: assignment.PermissionSetGroup?.DeveloperName,
+      });
+      uniquePermSets.add(assignment.PermissionSet.Name);
+    }
+    return { assignments, permSetNames: Array.from(uniquePermSets) };
+  }
+}
+
+function uniqueProfileNames(users: User[]): string[] {
+  const uniqueProfiles = new Set<string>();
+  for (const usr of users) {
+    uniqueProfiles.add(usr.profileName);
+  }
+  return Array.from(uniqueProfiles);
 }
