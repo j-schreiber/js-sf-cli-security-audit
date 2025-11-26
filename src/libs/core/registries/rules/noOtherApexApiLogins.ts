@@ -13,16 +13,19 @@ export default class NoOtherApexApiLogins extends PolicyRule<ResolvedUser> {
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
-    Object.values(context.resolvedEntities).forEach((user) => {
-      user.logins.forEach((loginSummary) => {
+    for (const user of Object.values(context.resolvedEntities)) {
+      if (!user.logins) {
+        continue;
+      }
+      for (const loginSummary of user.logins) {
         if (loginSummary.loginType === 'Other Apex API') {
           result.violations.push({
             identifier: [user.username],
             message: messages.getMessage('violations.no-other-apex-api-logins', [loginSummary.loginCount]),
           });
         }
-      });
-    });
+      }
+    }
     return Promise.resolve(result);
   }
 }

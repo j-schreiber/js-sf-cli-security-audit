@@ -9,22 +9,6 @@ export type ResolvedUser = User & {
   role: ProfilesRiskPreset;
 };
 
-export type UserPermissionSetAssignment = {
-  /**
-   * Developer name of the permission set
-   */
-  permissionSetIdentifier: string;
-  /**
-   * How user got this permission set assigned
-   */
-  permissionSetSource: 'direct' | 'group';
-  /**
-   * If permission set is assigned through a group,
-   * this is the name of the group.
-   */
-  groupName?: string;
-};
-
 export default class UsersRuleRegistry extends RuleRegistry {
   public constructor() {
     super({
