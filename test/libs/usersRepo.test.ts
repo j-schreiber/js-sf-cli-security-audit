@@ -65,7 +65,7 @@ describe('users repository', () => {
 
     // Act
     const repo = new UsersRepository($$.targetOrgConnection);
-    const userPerms = await repo.resolvePermissionSetAssignments(['0054P00000AaGueQAF']);
+    const userPerms = await repo.resolvePermissionSetAssignments(['0054P00000AaGueQAF'], { withMetadata: true });
 
     // Assert
     expect(userPerms.size).to.equal(1);
@@ -101,9 +101,10 @@ describe('users repository', () => {
 
     // Act
     const repo = new UsersRepository($$.targetOrgConnection);
-    const userPerms = await repo.resolveUserPermissions([
-      { profileName: 'System Administrator', userId: '0054P00000AaGueQAF' } as User,
-    ]);
+    const userPerms = await repo.resolveUserPermissions(
+      [{ profileName: 'System Administrator', userId: '0054P00000AaGueQAF' } as User],
+      { withMetadata: true }
+    );
 
     // Assert
     expect(userPerms.size).to.equal(1);
@@ -114,5 +115,27 @@ describe('users repository', () => {
     // mdapi retriever also applies post processor to clean missing properties
     // .deep.contain matches "good enough" without the need to replicate post processing
     expect(perms.profileMetadata).to.deep.contain(expectedProfile);
+  });
+
+  it('resolves only names and skips metadata if option is set to false', async () => {
+    // Arrange
+    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(['0054P00000AaGueQAF']), 'test-user-assignments');
+
+    // Act
+    const repo = new UsersRepository($$.targetOrgConnection);
+    const userPerms = await repo.resolveUserPermissions(
+      [{ profileName: 'System Administrator', userId: '0054P00000AaGueQAF' } as User],
+      { withMetadata: false }
+    );
+
+    // Assert
+    expect(userPerms.size).to.equal(1);
+    const perms = userPerms.get('0054P00000AaGueQAF');
+    assert.isDefined(perms);
+    expect(perms.assignedPermissionsets.length).to.equal(2);
+    for (const assignment of perms.assignedPermissionsets) {
+      expect(assignment.metadata).to.be.undefined;
+    }
+    expect(perms.profileMetadata).to.be.undefined;
   });
 });

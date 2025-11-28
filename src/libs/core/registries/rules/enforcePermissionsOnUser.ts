@@ -13,7 +13,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     const result = this.initResult();
     const users = context.resolvedEntities;
     const userRepo = new UsersRepository(context.targetOrgConnection);
-    const userPerms = await userRepo.resolveUserPermissions(Object.values(users));
+    const userPerms = await userRepo.resolveUserPermissions(Object.values(users), { withMetadata: true });
     for (const user of Object.values(users)) {
       const resolvedPerms = userPerms.get(user.userId);
       if (!resolvedPerms) {

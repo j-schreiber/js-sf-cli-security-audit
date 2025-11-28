@@ -42,7 +42,7 @@ export type PermissionSetAssignment = {
   /**
    * Metadata of the permission set
    */
-  metadata: PermissionSet;
+  metadata?: PermissionSet;
   /**
    * If permission set is assigned through a group,
    * this is the name of the group.
@@ -50,7 +50,7 @@ export type PermissionSetAssignment = {
   groupName?: string;
 };
 
-export type ResolveOptions = {
+export type ResolveUsersOptions = {
   /**
    * Include aggregated login history
    */
@@ -59,6 +59,13 @@ export type ResolveOptions = {
    * When login history is set, the number of days that is searched
    */
   loginHistoryDaysToAnalyse?: number;
+};
+
+export type ResolvePermissionsOptions = {
+  /**
+   * Resolve permission set and profile metadata
+   */
+  withMetadata: boolean;
 };
 
 type PartialAssignments = Array<Omit<PermissionSetAssignment, 'metadata'>>;
@@ -81,7 +88,7 @@ export default class UsersRepository {
    * @param opts
    * @returns
    */
-  public async resolveAllUsers(opts?: ResolveOptions): Promise<Map<string, User>> {
+  public async resolveAllUsers(opts?: ResolveUsersOptions): Promise<Map<string, User>> {
     const result: Map<string, User> = new Map<string, User>();
     const allUsersOnOrg = await this.connection.query<UserRecord>(ACTIVE_USERS_DETAILS_QUERY);
     for (const user of allUsersOnOrg.records) {
@@ -114,10 +121,18 @@ export default class UsersRepository {
    * @param userIds Users to be resolved
    * @returns Map of permissions organized by user id
    */
-  public async resolveUserPermissions(users: User[]): Promise<Map<string, UserPermissions>> {
+  public async resolveUserPermissions(
+    users: User[],
+    opts?: ResolvePermissionsOptions
+  ): Promise<Map<string, UserPermissions>> {
     const result = new Map<string, UserPermissions>();
-    const permsets = await this.resolvePermissionSetAssignments(users.map((usr) => usr.userId));
-    const profiles = await this.mdapiRepo.resolve('Profile', uniqueProfileNames(Object.values(users)));
+    const permsets = await this.resolvePermissionSetAssignments(
+      users.map((usr) => usr.userId),
+      opts
+    );
+    const profiles = opts?.withMetadata
+      ? await this.mdapiRepo.resolve('Profile', uniqueProfileNames(Object.values(users)))
+      : {};
     for (const user of users) {
       result.set(user.userId, {
         assignedPermissionsets: permsets.get(user.userId) ?? [],
@@ -134,10 +149,13 @@ export default class UsersRepository {
    * @param userIds
    * @returns
    */
-  public async resolvePermissionSetAssignments(userIds: string[]): Promise<Map<string, PermissionSetAssignment[]>> {
+  public async resolvePermissionSetAssignments(
+    userIds: string[],
+    opts?: ResolvePermissionsOptions
+  ): Promise<Map<string, PermissionSetAssignment[]>> {
     const result = new Map<string, PermissionSetAssignment[]>();
     const { assignments, permSetNames } = await this.fetchAssignments(userIds);
-    const permsets = await this.mdapiRepo.resolve('PermissionSet', permSetNames);
+    const permsets = opts?.withMetadata ? await this.mdapiRepo.resolve('PermissionSet', permSetNames) : {};
     for (const userId of userIds) {
       result.set(
         userId,
