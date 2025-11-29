@@ -526,7 +526,7 @@ describe('users policy', () => {
         expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
         expect(ruleResult.violations).to.deep.equal([
           {
-            message: messages.getMessage('violations.entity-unknown-but-used', ['profile']),
+            message: messages.getMessage('violations.entity-unknown-but-used', ['Profile']),
             identifier: ['test-user-2@example.de', 'System Administrator'],
           },
         ]);
@@ -553,7 +553,7 @@ describe('users policy', () => {
         expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
         expect(ruleResult.violations).to.deep.equal([
           {
-            message: messages.getMessage('violations.entity-not-classified-but-used', ['profile', 'profile']),
+            message: messages.getMessage('violations.entity-not-classified-but-used', ['Profile', 'profile']),
             identifier: ['test-user-2@example.de', 'System Administrator'],
           },
         ]);

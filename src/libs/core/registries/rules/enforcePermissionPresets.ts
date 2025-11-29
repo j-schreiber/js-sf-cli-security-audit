@@ -2,6 +2,7 @@ import { Messages } from '@salesforce/core';
 import UsersRepository from '../../mdapi/usersRepository.js';
 import { ProfilesRiskPreset, resolvePresetOrdinalValue } from '../../policy-types.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
+import { capitalize } from '../../utils.js';
 import { ResolvedUser } from '../users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
@@ -51,7 +52,7 @@ function auditPermissionsEntity(
     if (entityPreset === ProfilesRiskPreset.UNKNOWN) {
       result.violations.push({
         identifier: [user.username, entityIdentifier],
-        message: messages.getMessage('violations.entity-unknown-but-used', [entityType]),
+        message: messages.getMessage('violations.entity-unknown-but-used', [capitalize(entityType)]),
       });
     } else if (resolvePresetOrdinalValue(entityPreset) < resolvePresetOrdinalValue(user.role)) {
       result.violations.push({
@@ -66,7 +67,7 @@ function auditPermissionsEntity(
   } else {
     result.violations.push({
       identifier: [user.username, entityIdentifier],
-      message: messages.getMessage('violations.entity-not-classified-but-used', [entityType, entityType]),
+      message: messages.getMessage('violations.entity-not-classified-but-used', [capitalize(entityType), entityType]),
     });
   }
 }
