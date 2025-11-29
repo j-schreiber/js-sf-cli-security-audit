@@ -8,7 +8,7 @@ import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.
 import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import EnforceUserPermsClassificationOnPermSets from '../../../src/libs/core/registries/rules/enforceUserPermsClassificationOnPermSets.js';
+import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -26,7 +26,7 @@ const DEFAULT_PERMSET_CONFIG = {
     },
   },
   rules: {
-    EnforceUserPermissionClassifications: {
+    EnforcePermissionClassifications: {
       enabled: true,
     },
   },
@@ -36,7 +36,7 @@ describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
-    return $$.context.SANDBOX.stub(EnforceUserPermsClassificationOnPermSets.prototype, 'run').resolves(mockResult);
+    return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
   }
 
   beforeEach(async () => {
@@ -55,12 +55,12 @@ describe('permission sets policy', () => {
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
     const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['EnforceUserPermissionClassifications']);
+    expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
   });
 
   it('resolves permission sets from config to actual perm set metadata from org', async () => {
     // Arrange
-    const ruleSpy = stubUserClassificationRule(newRuleResult('EnforceUserPermissionClassifications'));
+    const ruleSpy = stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
 
     // Act
     const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);

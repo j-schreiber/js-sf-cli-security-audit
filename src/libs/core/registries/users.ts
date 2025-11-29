@@ -1,33 +1,23 @@
+import { User } from '../mdapi/usersRepository.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
 import RuleRegistry from './ruleRegistry.js';
+import EnforcePermissionPresets from './rules/enforcePermissionPresets.js';
+import EnforcePermissionsOnUser from './rules/enforcePermissionsOnUser.js';
 import NoInactiveUsers from './rules/noInactiveUsers.js';
 import NoOtherApexApiLogins from './rules/noOtherApexApiLogins.js';
 
-export type ResolvedUser = {
-  userId: string;
-  username: string;
+export type ResolvedUser = User & {
   role: ProfilesRiskPreset;
-  assignedPermissionSets: UserPermissionSetAssignment[];
-  logins: UserLogins[];
-  assignedProfile: string;
-  createdDate: number;
-  lastLogin?: number;
-};
-
-type UserLogins = {
-  loginType: string;
-  application: string;
-  loginCount: number;
-  lastLogin: number;
-};
-
-type UserPermissionSetAssignment = {
-  permissionSetIdentifier: string;
 };
 
 export default class UsersRuleRegistry extends RuleRegistry {
   public constructor() {
-    super({ NoOtherApexApiLogins, NoInactiveUsers });
+    super({
+      NoOtherApexApiLogins,
+      NoInactiveUsers,
+      EnforcePermissionClassifications: EnforcePermissionsOnUser,
+      EnforcePermissionPresets,
+    });
   }
 }
 

@@ -11,10 +11,10 @@ import SingletonMetadata from './singletonMetadataType.js';
 import NamedMetadataQueryable from './namedMetadataToolingQueryable.js';
 
 export default class MDAPI {
-  private static retrievers = new Map<string, MDAPI>();
-  private cache: MetadataCache;
+  private static readonly retrievers = new Map<string, MDAPI>();
+  private readonly cache: MetadataCache;
 
-  public constructor(private connection: Connection) {
+  public constructor(private readonly connection: Connection) {
     this.cache = new MetadataCache();
   }
 
@@ -71,9 +71,9 @@ export default class MDAPI {
   }
 
   private cacheResults(results: Record<string, Metadata>): void {
-    Object.entries(results).forEach(([cname, mdata]) => {
+    for (const [cname, mdata] of Object.entries(results)) {
       this.cache.set(cname, mdata);
-    });
+    }
   }
 
   private fetchCached(componentNames: string[]): { toRetrieve: string[]; cached: Record<string, Metadata> } {

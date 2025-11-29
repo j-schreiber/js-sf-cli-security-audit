@@ -1,5 +1,7 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
+import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
@@ -12,7 +14,6 @@ import {
   ACTIVE_USERS_DETAILS_QUERY,
   ACTIVE_USERS_QUERY,
   buildLoginHistoryQuery,
-  buildPermsetAssignmentsQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
@@ -101,7 +102,7 @@ export default class AuditTestContext {
 }
 
 class MetadataApiRetrieveMock {
-  public constructor(private dirPath?: string) {}
+  public constructor(private readonly dirPath?: string) {}
 
   public async pollStatus(): Promise<RetrieveResult> {
     let cmpSet: ComponentSet;
@@ -125,6 +126,11 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
     warnings: new Array<RuleComponentMessage>(),
     errors: [],
   };
+}
+
+export function parseProfileFromFile(fileName: string): Profile {
+  const profilePath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
+  return (JSON.parse(fs.readFileSync(profilePath, 'utf-8')) as JsForceRecord[])[0]['Metadata'] as Profile;
 }
 
 export function parseFileAsJson<T>(...filePath: string[]): T {
@@ -165,12 +171,11 @@ function buildDefaultMocks() {
   defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
+  defaults.queries[buildProfilesQuery('Guest User Profile')] = 'empty';
   defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
   defaults.queries[buildLoginHistoryQuery()] = 'empty';
   // 14 days is option config in "full-valid" user policy
   defaults.queries[buildLoginHistoryQuery(14)] = 'empty';
-  const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
-  defaults.queries[buildPermsetAssignmentsQuery(testUserIds)] = 'test-user-assignments';
   return defaults;
 }
 

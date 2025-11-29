@@ -44,10 +44,10 @@ describe('audit run execution', () => {
     expect(auditResult.policies.profiles.isCompliant).to.be.true;
     expect(auditResult.policies.permissionSets.isCompliant).to.be.true;
     expect(Object.keys(auditResult.policies.profiles.executedRules)).to.deep.equal([
-      'EnforceUserPermissionClassifications',
+      'EnforcePermissionClassifications',
     ]);
     expect(Object.keys(auditResult.policies.permissionSets.executedRules)).to.deep.equal([
-      'EnforceUserPermissionClassifications',
+      'EnforcePermissionClassifications',
     ]);
   });
 
@@ -64,8 +64,8 @@ describe('audit run execution', () => {
     assert.isDefined(auditResult.policies);
     assert.isDefined(auditResult.policies.profiles);
     expect(auditResult.policies.profiles.isCompliant).to.be.false;
-    assert.isDefined(auditResult.policies.profiles.executedRules.EnforceUserPermissionClassifications);
-    expect(auditResult.policies.profiles.executedRules.EnforceUserPermissionClassifications.isCompliant).to.be.false;
+    assert.isDefined(auditResult.policies.profiles.executedRules.EnforcePermissionClassifications);
+    expect(auditResult.policies.profiles.executedRules.EnforcePermissionClassifications.isCompliant).to.be.false;
   });
 
   it('runs and resolves only enabled policies', async () => {

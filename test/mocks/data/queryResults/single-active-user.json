@@ -1,0 +1,18 @@
+[
+  {
+    "attributes": {
+      "type": "User",
+      "url": "/services/data/v65.0/sobjects/User/005000000000000AAA"
+    },
+    "Id": "005000000000000AAA",
+    "Username": "test-user-1@example.de",
+    "CreatedDate": "2025-10-10T12:00:00.000+0000",
+    "Profile": {
+      "attributes": {
+        "type": "Profile",
+        "url": "/services/data/v65.0/sobjects/Profile/00e4P000000GGz7QAG"
+      },
+      "Name": "System Administrator"
+    }
+  }
+]

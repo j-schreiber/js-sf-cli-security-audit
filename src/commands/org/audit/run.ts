@@ -11,6 +11,8 @@ import { capitalize } from '../../../libs/core/utils.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
+export const MERGE_CHAR = ' \u2022 ';
+
 export type OrgAuditRunResult = AuditResult & {
   filePath: string;
 };
@@ -59,10 +61,10 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
   private printResults(result: AuditResult): void {
     this.printPoliciesSummary(result);
-    Object.entries(result.policies).forEach(([policyName, policyDetails]) => {
+    for (const [policyName, policyDetails] of Object.entries(result.policies)) {
       this.printExecutedRulesSummary(policyName, policyDetails);
       this.printRuleViolations(policyDetails.executedRules);
-    });
+    }
   }
 
   private printPoliciesSummary(result: AuditResult): void {
@@ -92,11 +94,15 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
   }
 
   private printRuleViolations(executedRules: Record<string, PolicyRuleExecutionResult>): void {
-    Object.values(executedRules)
-      .filter((ruleDetails) => !ruleDetails.isCompliant)
-      .forEach((uncompliantRule) => {
-        this.table({ data: uncompliantRule.violations, title: `Violations for ${uncompliantRule.ruleName}` });
+    for (const uncompliantRule of Object.values(executedRules).filter((ruleDetails) => !ruleDetails.isCompliant)) {
+      this.table({
+        data: uncompliantRule.violations.map((viol) => ({
+          ...viol,
+          identifier: typeof viol.identifier === 'string' ? viol.identifier : viol.identifier.join(MERGE_CHAR),
+        })),
+        title: `Violations for ${uncompliantRule.ruleName}`,
       });
+    }
   }
 
   private writeReport(result: AuditResult, flags: OrgAuditRunFlags): string {

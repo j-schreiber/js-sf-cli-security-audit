@@ -12,10 +12,15 @@ import {
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
 import { differenceInDays } from '../../../src/libs/core/utils.js';
+import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
 const auditRunMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
+const permScanningMessages = Messages.loadMessages(
+  '@j-schreiber/sf-cli-security-audit',
+  'rules.enforceClassificationPresets'
+);
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -43,6 +48,23 @@ describe('users policy', () => {
     return result;
   }
 
+  function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
+    const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
+    $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
+      ...record,
+      LastLoginDate: new Date(mockLastLogin).toISOString(),
+    }));
+    return mockLastLogin;
+  }
+
+  function mockSingleActiveUser(profileName: string): void {
+    $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'single-active-user', (record) => ({
+      ...record,
+      Profile: { Name: profileName },
+    }));
+    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(['005000000000000AAA']), 'empty');
+  }
+
   beforeEach(async () => {
     await $$.init();
   });
@@ -65,13 +87,11 @@ describe('users policy', () => {
         'test-user-2@example.de',
       ]);
       expect(resolveResult.resolvedEntities['guest-user@example.de'].role).to.equal('Standard User');
-      expect(resolveResult.resolvedEntities['guest-user@example.de'].assignedProfile).to.equal('Guest User Profile');
+      expect(resolveResult.resolvedEntities['guest-user@example.de'].profileName).to.equal('Guest User Profile');
       expect(resolveResult.resolvedEntities['test-user-1@example.de'].role).to.equal('Standard User');
-      expect(resolveResult.resolvedEntities['test-user-1@example.de'].assignedProfile).to.equal(
-        'Standard User Profile'
-      );
+      expect(resolveResult.resolvedEntities['test-user-1@example.de'].profileName).to.equal('Standard User');
       expect(resolveResult.resolvedEntities['test-user-2@example.de'].role).to.equal('Admin');
-      expect(resolveResult.resolvedEntities['test-user-2@example.de'].assignedProfile).to.equal('System Administrator');
+      expect(resolveResult.resolvedEntities['test-user-2@example.de'].profileName).to.equal('System Administrator');
     });
 
     it('ignores users with UNKNOWN role in resolve', async () => {
@@ -199,15 +219,6 @@ describe('users policy', () => {
     describe('NoInactiveUsers', () => {
       let ruleEnabledConfig: UsersPolicyFileContent;
 
-      function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
-        const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
-        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
-          ...record,
-          LastLoginDate: new Date(mockLastLogin).toISOString(),
-        }));
-        return mockLastLogin;
-      }
-
       beforeEach(() => {
         ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
         ruleEnabledConfig.rules = {
@@ -311,5 +322,249 @@ describe('users policy', () => {
         expect(result.executedRules.NoInactiveUsers.isCompliant).to.be.true;
       });
     });
+
+    describe('EnforcePermissionClassifications', () => {
+      let ruleEnabledConfig: UsersPolicyFileContent;
+      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+
+      beforeEach(() => {
+        ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
+        ruleEnabledConfig.rules = {
+          EnforcePermissionClassifications: { enabled: true },
+        };
+        // no assignments for guest user and user 1, only for test-user-2 (admin)
+        $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+      });
+
+      it('reports compliance if user role allows all assigned permissions', async () => {
+        // Arrange
+        // mock classification for some of the profile & perm sets that are okay for user
+        // profiles and permsets grant >200 perms, but all of them will be ignored because
+        // they are not classified. LOW is okay for standard users
+        $$.mockAuditConfig.classifications.userPermissions = {
+          content: {
+            permissions: {
+              ViewSetup: {
+                classification: PermissionRiskLevel.LOW,
+              },
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionClassifications']);
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.isCompliant).to.be.true;
+        expect(ruleResult.compliantEntities).to.deep.equal([
+          'guest-user@example.de',
+          'test-user-1@example.de',
+          'test-user-2@example.de',
+        ]);
+      });
+
+      it('reports violation if user has an permission that is not allowed', async () => {
+        // Arrange
+        $$.mockAuditConfig.classifications.userPermissions = {
+          content: {
+            permissions: {
+              ViewSetup: {
+                classification: PermissionRiskLevel.CRITICAL,
+              },
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.isCompliant).to.be.false;
+        expect(ruleResult.compliantEntities).to.deep.equal(['guest-user@example.de']);
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-1@example.de', 'test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-1@example.de', 'Standard User', 'ViewSetup'],
+            message: criticalMismatchMsg('Standard User'),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
+            message: criticalMismatchMsg('Admin'),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
+            message: criticalMismatchMsg('Admin'),
+          },
+        ]);
+      });
+
+      it('skips users with a profile that cannot be resolved to metadata', async () => {
+        // Arrange
+        mockSingleActiveUser('Custom Profile');
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.isCompliant).to.be.true;
+      });
+    });
+
+    describe('EnforcePermissionPresets', () => {
+      let ruleEnabledConfig: UsersPolicyFileContent;
+      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+
+      beforeEach(() => {
+        ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
+        ruleEnabledConfig.rules = {
+          EnforcePermissionPresets: { enabled: true },
+        };
+        // no assignments for guest user and user 1, only for test-user-2 (admin)
+        $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+        // default classifications for the permission sets and profiles that are used
+        // throughout the tests of this particular rule
+        $$.mockAuditConfig.policies.permissionSets = {
+          content: {
+            enabled: true,
+            permissionSets: {
+              Test_Admin_Permission_Set_1: {
+                preset: ProfilesRiskPreset.ADMIN,
+              },
+              Test_Power_User_Permission_Set_1: {
+                preset: ProfilesRiskPreset.POWER_USER,
+              },
+            },
+            rules: {},
+          },
+        };
+        $$.mockAuditConfig.policies.profiles = {
+          content: {
+            enabled: true,
+            profiles: {
+              'System Administrator': {
+                preset: ProfilesRiskPreset.ADMIN,
+              },
+              'Standard User': {
+                preset: ProfilesRiskPreset.STANDARD_USER,
+              },
+              'Guest User Profile': {
+                preset: ProfilesRiskPreset.STANDARD_USER,
+              },
+            },
+            rules: {},
+          },
+        };
+      });
+
+      it('reports compliance if user has only permission sets assigned that match their role', async () => {
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionPresets']);
+        assert.isDefined(result.executedRules.EnforcePermissionPresets);
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.isCompliant).to.be.true;
+        expect(ruleResult.compliantEntities).to.deep.equal([
+          'guest-user@example.de',
+          'test-user-1@example.de',
+          'test-user-2@example.de',
+        ]);
+      });
+
+      it('reports violations if user has permissions assigned that are above their role', async () => {
+        // Arrange
+        ruleEnabledConfig.users['test-user-2@example.de'].role = ProfilesRiskPreset.POWER_USER;
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionPresets);
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.compliantEntities).to.deep.equal(['guest-user@example.de', 'test-user-1@example.de']);
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            message: messages.getMessage('violations.entity-not-allowed-for-user-role', [
+              'Power User',
+              'profile',
+              'Admin',
+            ]),
+            identifier: ['test-user-2@example.de', 'System Administrator'],
+          },
+          {
+            message: messages.getMessage('violations.entity-not-allowed-for-user-role', [
+              'Power User',
+              'permission set',
+              'Admin',
+            ]),
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1'],
+          },
+        ]);
+      });
+
+      it('reports violations if users profile is classified as UNKNOWN', async () => {
+        // Arrange
+        $$.mockAuditConfig.policies.profiles!.content.profiles['System Administrator'].preset =
+          ProfilesRiskPreset.UNKNOWN;
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionPresets);
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.compliantEntities).to.deep.equal(['guest-user@example.de', 'test-user-1@example.de']);
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            message: messages.getMessage('violations.entity-unknown-but-used', ['Profile']),
+            identifier: ['test-user-2@example.de', 'System Administrator'],
+          },
+        ]);
+      });
+
+      it('reports violations if profile is not classified in policy', async () => {
+        // Arrange
+        // user has admin, remove it
+        $$.mockAuditConfig.policies.profiles!.content.profiles = {
+          'Standard User': {
+            preset: ProfilesRiskPreset.STANDARD_USER,
+          },
+          'Guest User Profile': {
+            preset: ProfilesRiskPreset.STANDARD_USER,
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun(ruleEnabledConfig);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionPresets);
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            message: messages.getMessage('violations.entity-not-classified-but-used', ['Profile', 'profile']),
+            identifier: ['test-user-2@example.de', 'System Administrator'],
+          },
+        ]);
+      });
+    });
   });
 });
+
+function criticalMismatchMsg(presetName: string): string {
+  return permScanningMessages.getMessage('violations.classification-preset-mismatch', [
+    PermissionRiskLevel.CRITICAL,
+    presetName,
+  ]);
+}

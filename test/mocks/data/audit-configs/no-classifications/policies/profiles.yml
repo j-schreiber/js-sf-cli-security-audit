@@ -9,5 +9,5 @@ profiles:
   Standard User:
     preset: Standard User
 rules:
-  EnforceUserPermissionClassifications:
+  EnforcePermissionClassifications:
     enabled: true
