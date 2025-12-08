@@ -2,7 +2,7 @@ import { Connection } from '@salesforce/core';
 import { AuditRunConfig } from '../core/file-mgmt/schema.js';
 import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
 import { initCustomPermissions, initUserPermissions } from './permissionsClassification.js';
-import { initConnectedApps, initPermissionSets, initProfiles, initUsers } from './policyConfigs.js';
+import { initConnectedApps, initPermissionSets, initProfiles, initSettings, initUsers } from './policyConfigs.js';
 import { AuditInitPresets } from './presets.js';
 
 /**
@@ -41,6 +41,7 @@ export default class AuditConfig {
     conf.policies.permissionSets = { content: await initPermissionSets(targetCon) };
     conf.policies.users = { content: await initUsers(targetCon) };
     conf.policies.connectedApps = { content: initConnectedApps() };
+    conf.policies.settings = { content: initSettings() };
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (opts?.targetDir || opts?.targetDir === '') {
       DefaultFileManager.save(opts.targetDir, conf);
