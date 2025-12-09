@@ -5,12 +5,14 @@ import { ConnectedAppsRegistry } from './connectedApps.js';
 import { PermissionSetsRegistry } from './permissionSets.js';
 import { ProfilesRegistry } from './profiles.js';
 import { UsersRegistry } from './users.js';
+import { SettingsRegistry } from './settings.js';
 
 export const RuleRegistries = {
   ConnectedApps: ConnectedAppsRegistry,
   Profiles: ProfilesRegistry,
   PermissionSets: PermissionSetsRegistry,
   Users: UsersRegistry,
+  Settings: SettingsRegistry,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

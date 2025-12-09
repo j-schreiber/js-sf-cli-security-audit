@@ -161,8 +161,8 @@ describe('mdapi retriever', () => {
 
   it('retrieves a list of valid settings and resolves their contents by name', async () => {
     // Act
-    const settingsRepo = new AnySettingsMetadata();
-    const settings = await settingsRepo.resolve($$.targetOrgConnection, ['Apex', 'Security', 'UserInterface']);
+    const settingsRepo = new AnySettingsMetadata($$.targetOrgConnection);
+    const settings = await settingsRepo.resolve(['Apex', 'Security', 'UserInterface']);
 
     // Assert
     expect(Array.from(settings.keys())).to.deep.equal(['Apex', 'Security', 'UserInterface']);
@@ -188,8 +188,8 @@ describe('mdapi retriever', () => {
 
   it('ignores invalid setting names and does not throw an error', async () => {
     // Act
-    const settingsRepo = new AnySettingsMetadata();
-    const settings = await settingsRepo.resolve($$.targetOrgConnection, ['Apex', 'SomethingUnknown', 'AgentforceBot']);
+    const settingsRepo = new AnySettingsMetadata($$.targetOrgConnection);
+    const settings = await settingsRepo.resolve(['Apex', 'SomethingUnknown', 'AgentforceBot']);
 
     // Assert
     expect(Array.from(settings.keys())).to.deep.equal(['Apex']);

@@ -4,7 +4,7 @@ import { ComponentSet, SourceComponent } from '@salesforce/source-deploy-retriev
 import { XMLParser } from 'fast-xml-parser';
 import { cleanRetrieveDir, retrieve } from './metadataRegistryEntry.js';
 
-type SalesforceSettings = {
+export type SalesforceSetting = {
   [settingsKey: string]: unknown;
 };
 
@@ -15,7 +15,7 @@ export default class AnySettingsMetadata {
   private parser;
   private retrieveType;
 
-  public constructor() {
+  public constructor(private con: Connection) {
     this.parser = new XMLParser();
     this.retrieveType = 'Settings';
   }
@@ -29,19 +29,19 @@ export default class AnySettingsMetadata {
    * @param settingNames
    * @returns
    */
-  public async resolve(con: Connection, settingNames: string[]): Promise<Map<string, SalesforceSettings>> {
+  public async resolve(settingNames: string[]): Promise<Map<string, SalesforceSetting>> {
     const cmpSet = new ComponentSet();
     for (const settingName of settingNames) {
       cmpSet.add({ type: this.retrieveType, fullName: settingName });
     }
-    const retrieveResult = await retrieve(cmpSet, con);
+    const retrieveResult = await retrieve(cmpSet, this.con);
     const result = this.parseSettingsContent(settingNames, retrieveResult.components);
     cleanRetrieveDir(retrieveResult.getFileResponses());
     return result;
   }
 
-  private parseSettingsContent(settingNames: string[], components: ComponentSet): Map<string, SalesforceSettings> {
-    const result = new Map<string, SalesforceSettings>();
+  private parseSettingsContent(settingNames: string[], components: ComponentSet): Map<string, SalesforceSetting> {
+    const result = new Map<string, SalesforceSetting>();
     for (const settingName of settingNames) {
       const cmps = components.getSourceComponents({ type: this.retrieveType, fullName: settingName }).toArray();
       const settingsContent = this.parseSourceFile(cmps, `${settingName}Settings`);
