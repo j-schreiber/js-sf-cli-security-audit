@@ -4,6 +4,7 @@ import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
+import { XMLParser } from 'fast-xml-parser';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
@@ -136,6 +137,11 @@ export function parseProfileFromFile(fileName: string): Profile {
 export function parseFileAsJson<T>(...filePath: string[]): T {
   const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
   return JSON.parse(fileContent) as T;
+}
+
+export function parseXmlFile<T>(...filePath: string[]): T {
+  const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
+  return new XMLParser().parse(fileContent) as T;
 }
 
 export function clearAuditReports(workingDir: string): void {

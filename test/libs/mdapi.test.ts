@@ -1,9 +1,11 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { expect } from 'chai';
-import AuditTestContext, { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
+import { ApexSettings, SecuritySettings } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import AuditTestContext, { MOCK_DATA_BASE_PATH, parseXmlFile, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
 import MDAPI, { NamedTypesRegistry, SingletonRegistry } from '../../src/libs/core/mdapi/mdapiRetriever.js';
 import { RETRIEVE_CACHE } from '../../src/libs/core/constants.js';
+import AnySettingsMetadata from '../../src/libs/core/mdapi/anySettingsMetadata.js';
 
 export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 
@@ -155,5 +157,41 @@ describe('mdapi retriever', () => {
     expect(fs.existsSync(RETRIEVE_CACHE)).to.be.true;
     const dirEntries = fs.readdirSync(RETRIEVE_CACHE);
     expect(dirEntries.length).to.equal(0);
+  });
+
+  it('retrieves a list of valid settings and resolves their contents by name', async () => {
+    // Act
+    const settingsRepo = new AnySettingsMetadata();
+    const settings = await settingsRepo.resolve($$.targetOrgConnection, ['Apex', 'Security', 'UserInterface']);
+
+    // Assert
+    expect(Array.from(settings.keys())).to.deep.equal(['Apex', 'Security', 'UserInterface']);
+    const apexSetting = settings.get('Apex');
+    const expectedApexSetting = parseXmlFile<{ ApexSettings: ApexSettings }>(
+      'mdapi-retrieve-mocks',
+      'full',
+      'settings',
+      'Apex.settings-meta.xml'
+    ).ApexSettings;
+    expect(apexSetting).not.to.be.undefined;
+    expect(apexSetting).to.deep.equal(expectedApexSetting);
+    const securitySetting = settings.get('Security');
+    const expectedSecuritySetting = parseXmlFile<{ SecuritySettings: SecuritySettings }>(
+      'mdapi-retrieve-mocks',
+      'full',
+      'settings',
+      'Security.settings-meta.xml'
+    ).SecuritySettings;
+    expect(securitySetting).not.to.be.undefined;
+    expect(securitySetting).to.deep.equal(expectedSecuritySetting);
+  });
+
+  it('ignores invalid setting names and does not throw an error', async () => {
+    // Act
+    const settingsRepo = new AnySettingsMetadata();
+    const settings = await settingsRepo.resolve($$.targetOrgConnection, ['Apex', 'SomethingUnknown', 'AgentforceBot']);
+
+    // Assert
+    expect(Array.from(settings.keys())).to.deep.equal(['Apex']);
   });
 });
