@@ -29,9 +29,9 @@ export default class SettingsRuleRegistry extends RuleRegistry {
       } else if (!ruleConfig.enabled) {
         result.skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });
       } else {
-        result.resolveErrors.push({
+        result.skippedRules.push({
           name: ruleName,
-          message: messages.getMessage('resolve-error.no-valid-settings-rule'),
+          skipReason: messages.getMessage('resolve-error.no-valid-settings-rule'),
         });
       }
     });

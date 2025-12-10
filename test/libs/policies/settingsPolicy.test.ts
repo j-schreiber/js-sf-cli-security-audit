@@ -94,8 +94,12 @@ describe('settings policy', () => {
       const ruleResolveResult = reg.resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
-      expect(ruleResolveResult.resolveErrors.length).to.equal(3);
-      expect(ruleResolveResult.skippedRules).to.deep.equal([]);
+      expect(ruleResolveResult.skippedRules).to.deep.equal([
+        { name: 'SomeNonSettings', skipReason: messages.getMessage('resolve-error.no-valid-settings-rule') },
+        { name: 'EnforceSomething', skipReason: messages.getMessage('resolve-error.no-valid-settings-rule') },
+        { name: 'CompletelyOffBase', skipReason: messages.getMessage('resolve-error.no-valid-settings-rule') },
+      ]);
+      expect(ruleResolveResult.resolveErrors).to.deep.equal([]);
       expect(ruleResolveResult.enabledRules).to.deep.equal([]);
     });
 
@@ -148,7 +152,7 @@ describe('settings policy', () => {
       expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
     });
 
-    it('ignores an valid rule as an entity and resolves the rest', async () => {
+    it('ignores an invalid rule but does not add it to ignoredEntities', async () => {
       // Arrange
       const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
       confWithInvalidRule.rules['SomeInvalidRuleName'] = { enabled: true };
@@ -158,8 +162,22 @@ describe('settings policy', () => {
       const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
+      expect(result.ignoredEntities).to.deep.equal([]);
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
+    });
+
+    it('ignores the entity of a syntactically valid rule that cannot be resolved to a setting', async () => {
+      // Arrange
+      const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
+      confWithInvalidRule.rules['EnforceSomeInvalidSettings'] = { enabled: true };
+
+      // Act
+      const pol = new SettingsPolicy(confWithInvalidRule, $$.mockAuditConfig);
+      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
       expect(result.ignoredEntities).to.deep.equal([
-        { message: messages.getMessage('resolve-error.no-valid-settings-rule'), name: 'SomeInvalidRuleName' },
+        { message: messages.getMessage('resolve-error.failed-to-resolve-setting'), name: 'SomeInvalid' },
       ]);
       expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
     });
@@ -249,6 +267,26 @@ describe('settings policy', () => {
       ]);
       const secResult = result.executedRules.EnforceSecuritySettings;
       expect(secResult.compliantEntities).to.deep.equal(['SecuritySettings']);
+    });
+
+    it('reports a rule that does not follow naming conventions as skippedRule', async () => {
+      // Arrange
+      const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
+      confWithInvalidRule.rules = {
+        ApexSettings: {
+          enabled: true,
+        },
+      };
+
+      // Act
+      const pol = new SettingsPolicy(confWithInvalidRule, $$.mockAuditConfig);
+      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(result.skippedRules).to.deep.equal([
+        { name: 'ApexSettings', skipReason: messages.getMessage('resolve-error.no-valid-settings-rule') },
+      ]);
+      expect(result.ignoredEntities).to.deep.equal([]);
     });
   });
 });

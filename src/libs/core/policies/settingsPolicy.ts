@@ -51,7 +51,7 @@ function findIgnoredEntities(settingsMap: Map<string, SalesforceSetting>, rules:
   for (const ruleName of Object.keys(rules)) {
     const maybeName = findSettingsName(ruleName);
     if (!maybeName) {
-      result.push({ name: ruleName, message: messages.getMessage('resolve-error.no-valid-settings-rule') });
+      // result.push({ name: ruleName, message: messages.getMessage('resolve-error.no-valid-settings-rule') });
       continue;
     }
     if (!settingsMap.has(maybeName) || !settingsMap.get(maybeName)) {
