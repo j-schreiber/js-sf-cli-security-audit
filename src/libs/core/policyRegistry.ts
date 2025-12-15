@@ -14,6 +14,7 @@ import PermissionSetPolicy from './policies/permissionSetPolicy.js';
 import Policy from './policies/policy.js';
 import ProfilePolicy from './policies/profilePolicy.js';
 import UserPolicy from './policies/userPolicy.js';
+import SettingsPolicy from './policies/settingsPolicy.js';
 
 export const classificationDefs: ClassificationRegistry = {
   userPermissions: {
@@ -51,6 +52,10 @@ export const policyDefs: PolicyRegistry = {
   users: {
     handler: UserPolicy,
     schema: UsersPolicyFileSchema,
+  },
+  settings: {
+    handler: SettingsPolicy,
+    schema: PolicyFileSchema,
   },
 };
 

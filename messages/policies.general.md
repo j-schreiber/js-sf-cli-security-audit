@@ -21,3 +21,11 @@ Rule was disabled in policy config.
 # resolve-error.rule-not-registered
 
 Rule was not available in registry.
+
+# resolve-error.no-valid-settings-rule
+
+Invalid name for rule. Must follow naming convention "Enforce<SettingsName>Settings" (e.g. EnforceSecuritySettings, EnforceApexSettings).
+
+# resolve-error.failed-to-resolve-setting
+
+Failed to resolve a valid setting from extracted setting name.

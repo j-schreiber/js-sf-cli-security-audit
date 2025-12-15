@@ -62,6 +62,7 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
     for (const ruleResult of ruleResults) {
+      // only fill compliant & violated entities, if they have not been set already
       const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(ruleResult, resolveResult);
       executedRules[ruleResult.ruleName] = {
         ...ruleResult,
@@ -107,7 +108,10 @@ function evalResolvedEntities<T>(
       compliantEntities.push(entityIdentifier);
     }
   });
-  return { compliantEntities, violatedEntities: Array.from(violatedEntities) };
+  return {
+    compliantEntities: ruleResult.compliantEntities ?? compliantEntities,
+    violatedEntities: ruleResult.violatedEntities ?? Array.from(violatedEntities),
+  };
 }
 
 export function getTotal(resolveResult: ResolveEntityResult<unknown>): number {

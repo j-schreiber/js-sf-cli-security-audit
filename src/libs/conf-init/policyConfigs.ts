@@ -76,6 +76,21 @@ export function initConnectedApps(): BasePolicyFileContent {
 }
 
 /**
+ * Initialises a new settings policy with default rules enabled.
+ *
+ * @returns
+ */
+export function initSettings(): BasePolicyFileContent {
+  const content: BasePolicyFileContent = { enabled: true, rules: {} };
+  ['Security', 'UserInterface', 'UserManagement', 'ConnectedApp'].forEach((settingName) => {
+    content.rules[`Enforce${settingName}Settings`] = {
+      enabled: true,
+    };
+  });
+  return content;
+}
+
+/**
  * Initialises a users policy with all users flagged as standard user
  *
  * @param targetOrgCon

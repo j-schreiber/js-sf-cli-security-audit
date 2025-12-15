@@ -117,6 +117,7 @@ export type AuditRunConfigPolicies = {
   profiles?: ConfigFile<ProfilesPolicyFileContent>;
   permissionSets?: ConfigFile<PermSetsPolicyFileContent>;
   connectedApps?: ConfigFile<BasePolicyFileContent>;
+  settings?: ConfigFile<BasePolicyFileContent>;
   users?: ConfigFile<UsersPolicyFileContent>;
 };
 
