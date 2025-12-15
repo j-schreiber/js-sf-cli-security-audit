@@ -1,7 +1,7 @@
 {
   "name": "@j-schreiber/sf-cli-security-audit",
   "description": "Salesforce CLI plugin to automate highly configurable security audits",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "repository": {
     "type": "https",
     "url": "https://github.com/j-schreiber/js-sf-cli-security-audit"
