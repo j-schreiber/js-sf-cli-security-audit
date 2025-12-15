@@ -5,6 +5,15 @@ exports/
 .sf/
 .sfdx/
 
+# yarn stuff
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
 # use yarn by default, so ignore npm
 package-lock.json
 

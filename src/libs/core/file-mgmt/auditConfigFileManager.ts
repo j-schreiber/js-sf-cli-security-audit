@@ -40,7 +40,7 @@ export const saveAuditConfig = (dirPath: string, conf: AuditRunConfig): void => 
  * will be enough.
  */
 export default class AuditConfigFileManager {
-  private directoryStructure;
+  private readonly directoryStructure;
 
   public constructor() {
     this.directoryStructure = {

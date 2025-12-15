@@ -1,1 +1,1 @@
-yarn lint && yarn pretty-quick --staged
+yarn lint && yarn pretty-quick-staged

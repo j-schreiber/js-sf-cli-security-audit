@@ -23,21 +23,19 @@
     "zod": "4"
   },
   "devDependencies": {
-    "@oclif/plugin-command-snapshot": "^5.1.9",
-    "@oclif/test": "^4.1.13",
     "@release-it/conventional-changelog": "^10.0.1",
     "@salesforce/cli-plugins-testkit": "^5.3.10",
-    "@salesforce/dev-scripts": "11",
+    "@salesforce/dev-scripts": "^11.0.4",
+    "@salesforce/plugin-command-reference": "^3.1.79",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^24.2.1",
-    "eslint": "8",
+    "@types/node": "25",
     "eslint-plugin-sf-plugin": "^1.18.6",
     "husky": "^9.1.7",
     "oclif": "^4.14.0",
     "release-it": "^19.0.3",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.3"
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3",
+    "wireit": "^0.14.12"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -63,7 +61,8 @@
     "bin": "sf",
     "topicSeparator": " ",
     "devPlugins": [
-      "@oclif/plugin-help"
+      "@oclif/plugin-help",
+      "@salesforce/plugin-command-reference"
     ],
     "topics": {
       "org": {
@@ -85,9 +84,7 @@
     "docs": "sf-docs",
     "format": "wireit",
     "pretty-quick-staged": "pretty-quick --staged",
-    "link-check": "wireit",
     "lint": "wireit",
-    "postpack": "sf-clean --ignore-signing-artifacts",
     "prepack": "sf-prepack",
     "test": "wireit",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
@@ -158,6 +155,7 @@
       "dependencies": [
         "test:compile",
         "test:only",
+        "test:command-reference",
         "lint"
       ]
     },
@@ -177,7 +175,7 @@
       "output": []
     },
     "test:command-reference": {
-      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" commandreference:generate --erroronwarnings",
+      "command": "node --import tsx \"./bin/dev.js\" commandreference:generate --error-on-warnings",
       "files": [
         "src/**/*.ts",
         "messages/**",
@@ -186,33 +184,6 @@
       "output": [
         "tmp/root"
       ]
-    },
-    "test:deprecation-policy": {
-      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" snapshot:compare",
-      "files": [
-        "src/**/*.ts"
-      ],
-      "output": [],
-      "dependencies": [
-        "compile"
-      ]
-    },
-    "test:json-schema": {
-      "command": "node --loader ts-node/esm --no-warnings=ExperimentalWarning \"./bin/dev.js\" schema:compare",
-      "files": [
-        "src/**/*.ts",
-        "schemas"
-      ],
-      "output": []
-    },
-    "link-check": {
-      "command": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || linkinator \"**/*.md\" --skip \"CHANGELOG.md|node_modules|test/|confluence.internal.salesforce.com|my.salesforce.com|%s\" --markdown --retry --directory-listing --verbosity error",
-      "files": [
-        "./*.md",
-        "./!(CHANGELOG).md",
-        "messages/**/*.md"
-      ],
-      "output": []
     },
     "readme": {
       "dependencies": [
@@ -231,5 +202,6 @@
   "directories": {
     "lib": "lib",
     "test": "test"
-  }
+  },
+  "packageManager": "yarn@4.12.0"
 }
