@@ -181,6 +181,34 @@ describe('settings policy', () => {
       ]);
       expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
     });
+
+    it('gracefully skips policy metadata retrieve if it has no rules', async () => {
+      // Act
+      const pol = new SettingsPolicy({ enabled: true, rules: {} }, $$.mockAuditConfig);
+      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
+      // metadata retrieve fails with an error, if the retrieved component set is empty
+      // Error (MetadataApiRetrieveError): No components in the package to retrieve.
+      expect($$.retrieveStub?.callCount).to.equal(0);
+    });
+
+    it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
+      // Act
+      // valid name would be EnforceApexSettings (mind the trailing "s")
+      const pol = new SettingsPolicy(
+        { enabled: true, rules: { EnforceApexSetting: { enabled: true } } },
+        $$.mockAuditConfig
+      );
+      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
+      // metadata retrieve fails with an error, if the retrieved component set is empty
+      // Error (MetadataApiRetrieveError): No components in the package to retrieve.
+      expect($$.retrieveStub?.callCount).to.equal(0);
+    });
   });
 
   describe('run policy', () => {

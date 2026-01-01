@@ -31,6 +31,9 @@ export default class AnySettingsMetadata {
    */
   public async resolve(settingNames: string[]): Promise<Map<string, SalesforceSetting>> {
     const cmpSet = new ComponentSet();
+    if (settingNames.length === 0) {
+      return new Map();
+    }
     for (const settingName of settingNames) {
       cmpSet.add({ type: this.retrieveType, fullName: settingName });
     }

@@ -30,9 +30,7 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     if (!this.config.enabled) {
       return { resolvedEntities: {}, ignoredEntities: [] };
     }
-    if (!this.entities) {
-      this.entities = await this.resolveEntities(context);
-    }
+    this.entities ??= await this.resolveEntities(context);
     return this.entities;
   }
 
