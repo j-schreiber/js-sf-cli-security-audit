@@ -66,6 +66,7 @@ describe('audit run multi stage output', () => {
       classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
+    testInstance.startRuleExecution(auditRun);
 
     // Assert
     expect(testInstance.stageSpecificBlocks.length).to.equal(2);
@@ -77,7 +78,7 @@ describe('audit run multi stage output', () => {
       type: 'message',
       stage: EXECUTE_RULES,
     });
-    expect(uxStub?.updateData.callCount).to.equal(1);
+    expect(uxStub?.updateData.callCount).to.equal(2);
   });
 
   it('does not initialise disabled policies as substage', () => {
@@ -148,6 +149,7 @@ describe('audit run multi stage output', () => {
       classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
+    testInstance.startRuleExecution(auditRun);
 
     // Assert
     expect(testInstance.stageSpecificBlocks.length).to.equal(2);
@@ -156,7 +158,8 @@ describe('audit run multi stage output', () => {
       stage: EXECUTE_RULES,
     });
     const ruleBlockText = testInstance.stageSpecificBlocks[1].get({} as AuditRunData);
-    expect(ruleBlockText).to.equal('Execute 2 rule(s) for profiles');
-    expect(uxStub?.updateData.callCount).to.equal(1);
+    // no rules from test data actually resolve successfully
+    expect(ruleBlockText).to.equal('0 rule(s) for Profiles');
+    expect(uxStub?.updateData.callCount).to.equal(2);
   });
 });
