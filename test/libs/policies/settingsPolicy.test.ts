@@ -316,5 +316,36 @@ describe('settings policy', () => {
       ]);
       expect(result.ignoredEntities).to.deep.equal([]);
     });
+
+    it('reports a rule that does not resolve to a valid setting as skipped', async () => {
+      // Arrange
+      // Act
+      const pol = new SettingsPolicy(
+        {
+          enabled: true,
+          rules: {
+            EnforceInvalidSettings: { enabled: true },
+            EnforceApexSettings: { enabled: true },
+            EnforceOtherInvalidSettings: { enabled: true },
+          },
+        },
+        $$.mockAuditConfig
+      );
+      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(result.auditedEntities).to.deep.equal(['Apex']);
+      expect(Object.keys(result.executedRules)).to.deep.equal(['EnforceApexSettings']);
+      expect(result.skippedRules).to.deep.equal([
+        {
+          name: 'EnforceInvalidSettings',
+          skipReason: messages.getMessage('skip-reason.failed-to-resolve-setting', ['Invalid']),
+        },
+        {
+          name: 'EnforceOtherInvalidSettings',
+          skipReason: messages.getMessage('skip-reason.failed-to-resolve-setting', ['OtherInvalid']),
+        },
+      ]);
+    });
   });
 });
