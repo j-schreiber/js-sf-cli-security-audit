@@ -1813,6 +1813,7 @@ __metadata:
     fast-xml-parser: "npm:5.3.3"
     husky: "npm:^9.1.7"
     js-yaml: "npm:^4.1.1"
+    nyc: "npm:^17.1.0"
     oclif: "npm:^4.14.0"
     release-it: "npm:^19.2.2"
     tsx: "npm:^4.21.0"
@@ -9737,7 +9738,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nyc@npm:^17.0.0":
+"nyc@npm:^17.0.0, nyc@npm:^17.1.0":
   version: 17.1.0
   resolution: "nyc@npm:17.1.0"
   dependencies:
