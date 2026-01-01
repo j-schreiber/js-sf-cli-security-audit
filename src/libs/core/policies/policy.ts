@@ -2,7 +2,7 @@ import EventEmitter from 'node:events';
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from '../result-types.js';
 import { AuditRunConfig, BasePolicyFileContent } from '../file-mgmt/schema.js';
 import RuleRegistry, { RegistryRuleResolveResult } from '../registries/ruleRegistry.js';
-import { AuditContext, IPolicy, PartialPolicyRuleResult } from '../registries/types.js';
+import { AuditContext, IPolicy, PartialPolicyRuleResult, RowLevelPolicyRule } from '../registries/types.js';
 
 export type ResolveEntityResult<T> = {
   resolvedEntities: Record<string, T>;
@@ -21,6 +21,10 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
   }
 
+  public getExecutableRules(): Array<RowLevelPolicyRule<T>> {
+    return this.resolvedRules.enabledRules;
+  }
+
   /**
    * Resolves all entities of the policy.
    */
@@ -30,9 +34,7 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     if (!this.config.enabled) {
       return { resolvedEntities: {}, ignoredEntities: [] };
     }
-    if (!this.entities) {
-      this.entities = await this.resolveEntities(context);
-    }
+    this.entities ??= await this.resolveEntities(context);
     return this.entities;
   }
 

@@ -18,6 +18,10 @@ Users with role UNKNOWN are ignored. To apply the default role, remove them from
 
 Rule was disabled in policy config.
 
+# skip-reason.failed-to-resolve-setting
+
+Rule name resolved to setting "%s" which is not a valid setting on the target org.
+
 # resolve-error.rule-not-registered
 
 Rule was not available in registry.

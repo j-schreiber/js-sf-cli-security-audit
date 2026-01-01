@@ -1,6 +1,7 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
 import AuditRun, { EntityResolveEvent } from '../libs/core/auditRun.js';
 import { capitalize } from '../libs/core/utils.js';
+import { PolicyNames } from '../libs/core/policyRegistry.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
@@ -101,21 +102,24 @@ export default class AuditRunMultiStageOutput {
             }
           },
         });
-        if (policy.content.rules && Object.keys(policy.content.rules).length > 0) {
-          const enabledRules = Object.values(policy.content.rules).filter((ruleConfig) => ruleConfig.enabled).length;
-          this.stageSpecificBlocks.push({
-            stage: EXECUTE_RULES,
-            type: 'message',
-            get: () => `Execute ${enabledRules} rule(s) for ${policyName}`,
-          });
-        }
       }
     });
     this.mso.updateData({});
   }
 
-  public startRuleExecution(): void {
+  public startRuleExecution(runInstance: AuditRun): void {
     this.mso.goto(EXECUTE_RULES, { currentStatus: 'Executing' });
+    Object.entries(runInstance.configs.policies).forEach(([policyName, policy]) => {
+      if (policy.content.enabled) {
+        const enabledRules = runInstance.getExecutableRulesCount(policyName as PolicyNames);
+        this.stageSpecificBlocks.push({
+          stage: EXECUTE_RULES,
+          type: 'message',
+          get: () => `${enabledRules} rule(s) for ${capitalize(policyName)}`,
+        });
+      }
+    });
+    this.mso.updateData({});
   }
 
   public finish(): void {

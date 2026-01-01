@@ -11,8 +11,11 @@ type EnforceSettingsOpts = ConfigurableRuleOptions<Record<string, unknown>> & {
 };
 
 export default class EnforceSettings extends PolicyRule<unknown> {
-  public constructor(private ruleOptions: EnforceSettingsOpts) {
+  public settingName;
+
+  public constructor(private readonly ruleOptions: EnforceSettingsOpts) {
     super(ruleOptions);
+    this.settingName = this.ruleOptions.settingName;
   }
 
   public run(context: RuleAuditContext<SalesforceSetting>): Promise<PartialPolicyRuleResult> {

@@ -50,7 +50,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     const auditRun = startAuditRun(flags['source-dir']);
     stageOutput.startPolicyResolve(auditRun);
     await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
-    stageOutput.startRuleExecution();
+    stageOutput.startRuleExecution(auditRun);
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
     stageOutput.finish();

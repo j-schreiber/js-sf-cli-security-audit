@@ -1,4 +1,3 @@
-// import fs from 'node:fs';
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from './result-types.js';
@@ -29,6 +28,13 @@ export default class AuditRun extends EventEmitter {
 
   public constructor(public configs: AuditRunConfig) {
     super();
+  }
+
+  public getExecutableRulesCount(policyName: PolicyNames): number {
+    if (this.executablePolicies?.[policyName] !== undefined) {
+      return this.executablePolicies[policyName].getExecutableRules().length;
+    }
+    return 0;
   }
 
   /**

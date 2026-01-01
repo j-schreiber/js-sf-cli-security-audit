@@ -4,6 +4,7 @@ import { findSettingsName, SettingsRegistry } from '../registries/settings.js';
 import AnySettingsMetadata, { SalesforceSetting } from '../mdapi/anySettingsMetadata.js';
 import { AuditContext } from '../registries/types.js';
 import { EntityResolveError } from '../result-types.js';
+import EnforceSettings from '../registries/rules/enforceSettings.js';
 import Policy, { ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -27,15 +28,34 @@ export default class SettingsPolicy extends Policy<SalesforceSetting> {
     const settingNames = extractSettingNames(this.config.rules);
     const settingsRetriever = new AnySettingsMetadata(context.targetOrgConnection);
     const actuallyResolvedSettings = await settingsRetriever.resolve(settingNames);
+    this.removeInvalidSettingsFromResolvedRules(actuallyResolvedSettings);
     this.emit('entityresolve', {
       total: numberOfRules,
       resolved: actuallyResolvedSettings.size,
     });
-    return Promise.resolve({
+    return {
       resolvedEntities: convertToRecord(actuallyResolvedSettings),
       ignoredEntities: findIgnoredEntities(actuallyResolvedSettings, this.config.rules),
+    };
+  }
+
+  private removeInvalidSettingsFromResolvedRules(validSettings: Map<string, SalesforceSetting>): void {
+    this.resolvedRules.enabledRules.forEach((rule, index) => {
+      if (isEnforceSettingsRule(rule)) {
+        if (!validSettings.has(rule.settingName)) {
+          this.resolvedRules.enabledRules.splice(index, 1);
+          this.resolvedRules.skippedRules.push({
+            name: rule.ruleDisplayName,
+            skipReason: messages.getMessage('skip-reason.failed-to-resolve-setting', [rule.settingName]),
+          });
+        }
+      }
     });
   }
+}
+
+function isEnforceSettingsRule(cls: unknown): cls is EnforceSettings {
+  return (cls as EnforceSettings).ruleDisplayName !== undefined;
 }
 
 function convertToRecord(settingsMap: Map<string, SalesforceSetting>): Record<string, SalesforceSetting> {
@@ -51,12 +71,10 @@ function findIgnoredEntities(settingsMap: Map<string, SalesforceSetting>, rules:
   for (const ruleName of Object.keys(rules)) {
     const maybeName = findSettingsName(ruleName);
     if (!maybeName) {
-      // result.push({ name: ruleName, message: messages.getMessage('resolve-error.no-valid-settings-rule') });
       continue;
     }
     if (!settingsMap.has(maybeName) || !settingsMap.get(maybeName)) {
       result.push({ name: maybeName, message: messages.getMessage('resolve-error.failed-to-resolve-setting') });
-      continue;
     }
   }
   return result;
