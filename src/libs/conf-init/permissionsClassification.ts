@@ -1,9 +1,15 @@
 import { Connection } from '@salesforce/core';
-import { PermissionsConfig } from '../core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../core/constants.js';
+import {
+  PermissionsClassificationContent,
+  PermissionSetsClassificationContent,
+  ProfilesClassificationContent,
+  UsersClassificationContent,
+} from '../core/file-mgmt/schema.js';
+import { ACTIVE_USERS_QUERY, CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
 import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
+import { CustomPermission, PermissionSet, User } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
+import { ProfilesRiskPreset } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
 
@@ -13,14 +19,17 @@ import { UnclassifiedPerm } from './presets/none.js';
  * @param con
  * @returns
  */
-export async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionsConfig> {
+export async function initUserPermissions(
+  con: Connection,
+  preset?: AuditInitPresets
+): Promise<PermissionsClassificationContent> {
   const describePerms = await parsePermsFromDescribe(con);
   const assignedPerms = await findAssignedPerms(con);
   const allPerms = { ...describePerms, ...assignedPerms };
   const presConfig = loadPreset(preset);
   const perms = presConfig.classifyUserPermissions(Object.values(allPerms));
   perms.sort(classificationSorter);
-  const result: PermissionsConfig = { permissions: {} };
+  const result: PermissionsClassificationContent = { permissions: {} };
   perms.forEach(
     (perm) =>
       (result.permissions[perm.name] = {
@@ -38,8 +47,8 @@ export async function initUserPermissions(con: Connection, preset?: AuditInitPre
  * @param con
  * @returns
  */
-export async function initCustomPermissions(con: Connection): Promise<PermissionsConfig | undefined> {
-  const result: PermissionsConfig = { permissions: {} };
+export async function initCustomPermissions(con: Connection): Promise<PermissionsClassificationContent | undefined> {
+  const result: PermissionsClassificationContent = { permissions: {} };
   const customPerms = await con.query<CustomPermission>(CUSTOM_PERMS_QUERY);
   if (customPerms.records.length === 0) {
     return undefined;
@@ -57,6 +66,54 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
       })
   );
   return result;
+}
+
+/**
+ * Initialises a profiles classification with all profiles from the org.
+ *
+ * @param targetOrgCon
+ * @returns
+ */
+export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesClassificationContent> {
+  const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
+  const content: ProfilesClassificationContent = { profiles: {} };
+  profiles.records.forEach((permsetRecord) => {
+    content.profiles[permsetRecord.Profile.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
+  });
+  return content;
+}
+
+/**
+ * Initialises permission set classification with all perm sets
+ *
+ * @param targetOrgCon
+ * @returns
+ */
+export async function initPermissionSets(targetOrgCon: Connection): Promise<PermissionSetsClassificationContent> {
+  const permSets = await targetOrgCon.query<PermissionSet>(PERMISSION_SETS_QUERY);
+  const content: PermissionSetsClassificationContent = { permissionSets: {} };
+  permSets.records
+    .filter((permsetRecord) => permsetRecord.IsCustom)
+    .forEach((permsetRecord) => {
+      content.permissionSets[permsetRecord.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
+    });
+  return content;
+}
+
+/**
+ * Initialises users classification with all users classified as standard users.
+ *
+ * @param targetOrgCon
+ */
+export async function initUsers(targetOrgCon: Connection): Promise<UsersClassificationContent> {
+  const users = await targetOrgCon.query<User>(ACTIVE_USERS_QUERY);
+  const content: UsersClassificationContent = {
+    users: {},
+  };
+  users.records.forEach((userRecord) => {
+    content.users[userRecord.Username] = { role: ProfilesRiskPreset.STANDARD_USER };
+  });
+  return content;
 }
 
 async function parsePermsFromDescribe(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
@@ -93,5 +150,5 @@ async function findAssignedPerms(con: Connection): Promise<Record<string, Unclas
 }
 
 function sanitiseLabel(rawLabel?: string): string | undefined {
-  return rawLabel?.replace(/[ \t]+$|[\r\n]+/g, '');
+  return rawLabel?.replaceAll(/[ \t]+$|[\r\n]+/g, '');
 }

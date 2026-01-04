@@ -48,6 +48,10 @@ The "Profiles" policy requires at least userPermissions to be initialised, but n
 
 The "Permission Sets" policy requires at least userPermissions to be initialised, but none were found at the target directory.
 
+# ProfileClassificationRequiredForProfiles
+
+The "Profiles" policy requires a corresponding classification to be initialised.
+
 # error.InvalidConfigFileSchema
 
 Failed to parse %s: %s.

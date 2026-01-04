@@ -23,8 +23,6 @@ const PermissionsClassificationSchema = z.object({
   classification: z.enum(PermissionRiskLevel),
 });
 
-const PermsClassificationsMapSchema = z.record(z.string(), PermissionsClassificationSchema);
-
 const NamedPermissionsClassificationSchema = PermissionsClassificationSchema.extend({
   /** Developer name of the permission, used in metadata */
   name: z.string(),
@@ -42,6 +40,8 @@ const PermSetConfig = z.object({
 });
 
 const PermSetMap = z.record(z.string(), PermSetConfig);
+
+const ProfilesMap = z.record(z.string(), PermSetConfig);
 
 const UserConfig = z.object({ role: z.enum(ProfilesRiskPreset) });
 
@@ -71,22 +71,31 @@ export const PermSetsPolicyFileSchema = PolicyFileSchema.extend({
   permissionSets: PermSetMap,
 });
 
-export const PermissionsConfigFileSchema = z.object({
+export const PermissionsClassificationFileSchema = z.object({
   permissions: z.record(z.string(), PermissionsClassificationSchema),
 });
 
 export const UsersPolicyFileSchema = PolicyFileSchema.extend({
-  users: UsersMap,
   options: UsersPolicyConfig,
+});
+
+export const ProfilesClassificationContentSchema = z.object({
+  profiles: ProfilesMap,
+});
+
+export const PermissionSetsClassificationContentSchema = z.object({
+  permissionSets: PermSetMap,
+});
+
+export const UsersClassificationContentSchema = z.object({
+  users: UsersMap,
 });
 
 // EXPORTED TYPES
 
 // low-level elements
-export type PermissionsClassification = z.infer<typeof PermissionsClassificationSchema>;
-export type NamedPermissionsClassification = z.infer<typeof NamedPermissionsClassificationSchema>;
-export type PermsClassificationsMap = z.infer<typeof PermsClassificationsMapSchema>;
-export type PermissionsConfig = z.infer<typeof PermissionsConfigFileSchema>;
+export type PermissionClassification = z.infer<typeof PermissionsClassificationSchema>;
+export type NamedPermissionClassification = z.infer<typeof NamedPermissionsClassificationSchema>;
 export type NoInactiveUsersOptions = z.infer<typeof NoInactiveUsersOptionsSchema>;
 
 // Policies
@@ -96,10 +105,18 @@ export type ProfilesPolicyFileContent = z.infer<typeof ProfilesPolicyFileSchema>
 export type PermSetsPolicyFileContent = z.infer<typeof PermSetsPolicyFileSchema>;
 export type UsersPolicyFileContent = z.infer<typeof UsersPolicyFileSchema>;
 
+// Classifications
+export type PermissionsClassificationContent = z.infer<typeof PermissionsClassificationFileSchema>;
+export type ProfilesClassificationContent = z.infer<typeof ProfilesClassificationContentSchema>;
+export type PermissionSetsClassificationContent = z.infer<typeof PermissionSetsClassificationContentSchema>;
+export type UsersClassificationContent = z.infer<typeof UsersClassificationContentSchema>;
+
 // Utility types
 export type PermissionSetConfig = z.infer<typeof PermSetConfig>;
-export type PermissionSetLikeMap = z.infer<typeof PermSetMap>;
 export type RuleMap = z.infer<typeof RuleMapSchema>;
+export type ProfilesMap = z.infer<typeof ProfilesMap>;
+export type PermissionSetsMap = z.infer<typeof PermSetMap>;
+export type UserConfig = z.infer<typeof UserConfig>;
 
 // AUDIT CONFIG TYPE
 
@@ -108,14 +125,37 @@ export type ConfigFile<T> = {
   content: T;
 };
 
-export type AuditRunConfigClassifications = {
-  userPermissions?: ConfigFile<PermissionsConfig>;
-  customPermissions?: ConfigFile<PermissionsConfig>;
+type ClassificationsFile = {
+  [key: string]: Record<string, unknown>;
 };
 
+export type AuditRunConfigClassifications = {
+  userPermissions?: ConfigFile<PermissionsClassificationContent>;
+  customPermissions?: ConfigFile<PermissionsClassificationContent>;
+  profiles?: ConfigFile<ProfilesClassificationContent>;
+  permissionSets?: ConfigFile<PermissionSetsClassificationContent>;
+  users?: ConfigFile<UsersClassificationContent>;
+};
+
+type ExtractRecordFromConfigFile<C> = C extends ConfigFile<infer T> ? T[keyof T] : never;
+
+/**
+ * Utility type to extract the actual mapped entities from audit run classifications
+ */
+export type ExtractedClassifications = {
+  [K in keyof AuditRunConfigClassifications]: ExtractRecordFromConfigFile<AuditRunConfigClassifications[K]>;
+};
+
+export function extractEntities<C extends ConfigFile<ClassificationsFile>>(config: C): ExtractRecordFromConfigFile<C> {
+  const value = Object.values(config.content)[0];
+  return value as ExtractRecordFromConfigFile<C>;
+}
+
+export type Classifications = keyof AuditRunConfigClassifications;
+
 export type AuditRunConfigPolicies = {
-  profiles?: ConfigFile<ProfilesPolicyFileContent>;
-  permissionSets?: ConfigFile<PermSetsPolicyFileContent>;
+  profiles?: ConfigFile<BasePolicyFileContent>;
+  permissionSets?: ConfigFile<BasePolicyFileContent>;
   connectedApps?: ConfigFile<BasePolicyFileContent>;
   settings?: ConfigFile<BasePolicyFileContent>;
   users?: ConfigFile<UsersPolicyFileContent>;
@@ -126,8 +166,8 @@ export type AuditRunConfig = {
   policies: AuditRunConfigPolicies;
 };
 
-export function isPermissionsConfig(cls: unknown): cls is ConfigFile<PermissionsConfig> {
-  return (cls as ConfigFile<PermissionsConfig>).content?.permissions !== undefined;
+export function isPermissionsClassification(cls: unknown): cls is ConfigFile<PermissionsClassificationContent> {
+  return (cls as ConfigFile<PermissionsClassificationContent>).content?.permissions !== undefined;
 }
 
 export function isPolicyConfig(cls: unknown): cls is ConfigFile<BasePolicyFileContent> {

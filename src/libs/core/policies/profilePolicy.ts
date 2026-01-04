@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
 import { EntityResolveError } from '../result-types.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditRunConfig, BasePolicyFileContent, ProfilesClassificationContent } from '../file-mgmt/schema.js';
 import MDAPI from '../mdapi/mdapiRetriever.js';
 import { AuditContext } from '../registries/types.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
@@ -11,14 +11,17 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 export default class ProfilePolicy extends Policy<ResolvedProfile> {
-  private totalEntities: number;
+  private readonly totalEntities: number;
+  private readonly classifications: ProfilesClassificationContent;
+
   public constructor(
-    public config: ProfilesPolicyFileContent,
+    public config: BasePolicyFileContent,
     public auditConfig: AuditRunConfig,
     registry = ProfilesRegistry
   ) {
     super(config, auditConfig, registry);
-    this.totalEntities = this.config.profiles ? Object.keys(this.config.profiles).length : 0;
+    this.classifications = this.auditConfig.classifications.profiles?.content ?? { profiles: {} };
+    this.totalEntities = Object.keys(this.classifications.profiles).length;
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedProfile>> {
@@ -28,9 +31,8 @@ export default class ProfilePolicy extends Policy<ResolvedProfile> {
     });
     const successfullyResolved: Record<string, ResolvedProfile> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
-    const definitiveProfiles = this.config.profiles ?? {};
     const classifiedProfiles: string[] = [];
-    Object.entries(definitiveProfiles).forEach(([profileName, profileDef]) => {
+    Object.entries(this.classifications.profiles).forEach(([profileName, profileDef]) => {
       if (profileDef.preset === ProfilesRiskPreset.UNKNOWN) {
         ignoredEntities[profileName] = {
           name: profileName,
@@ -44,16 +46,16 @@ export default class ProfilePolicy extends Policy<ResolvedProfile> {
     const resolvedProfiles = await mdapi.resolve('Profile', classifiedProfiles);
     classifiedProfiles.forEach((profileName) => {
       const resolvedProfile = resolvedProfiles[profileName];
-      if (!resolvedProfile) {
+      if (resolvedProfile) {
+        successfullyResolved[profileName] = {
+          name: profileName,
+          preset: this.classifications.profiles[profileName].preset,
+          metadata: resolvedProfile,
+        };
+      } else {
         ignoredEntities[profileName] = {
           name: profileName,
           message: messages.getMessage('entity-not-found'),
-        };
-      } else {
-        successfullyResolved[profileName] = {
-          name: profileName,
-          preset: definitiveProfiles[profileName].preset,
-          metadata: resolvedProfile,
         };
       }
     });

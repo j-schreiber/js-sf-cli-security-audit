@@ -8,11 +8,11 @@ import { UsersRegistry } from './users.js';
 import { SettingsRegistry } from './settings.js';
 
 export const RuleRegistries = {
-  ConnectedApps: ConnectedAppsRegistry,
-  Profiles: ProfilesRegistry,
-  PermissionSets: PermissionSetsRegistry,
-  Users: UsersRegistry,
-  Settings: SettingsRegistry,
+  connectedApps: ConnectedAppsRegistry,
+  profiles: ProfilesRegistry,
+  permissionSets: PermissionSetsRegistry,
+  users: UsersRegistry,
+  settings: SettingsRegistry,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

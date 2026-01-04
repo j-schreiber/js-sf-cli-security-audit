@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
 import MDAPI from '../mdapi/mdapiRetriever.js';
-import { AuditRunConfig, PermissionSetLikeMap, PermSetsPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditRunConfig, BasePolicyFileContent, PermissionSetsClassificationContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
 import { EntityResolveError } from '../result-types.js';
@@ -11,14 +11,17 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
-  private totalEntities: number;
+  private readonly totalEntities: number;
+  private readonly classifications: PermissionSetsClassificationContent;
+
   public constructor(
-    public config: PermSetsPolicyFileContent,
+    public config: BasePolicyFileContent,
     public auditContext: AuditRunConfig,
     registry = PermissionSetsRegistry
   ) {
     super(config, auditContext, registry);
-    this.totalEntities = this.config.permissionSets ? Object.keys(this.config.permissionSets).length : 0;
+    this.classifications = this.auditConfig.classifications.permissionSets?.content ?? { permissionSets: {} };
+    this.totalEntities = Object.keys(this.classifications.permissionSets).length;
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedPermissionSet>> {
@@ -29,16 +32,13 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
     const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
     const unresolved: Record<string, EntityResolveError> = {};
     const retriever = new MDAPI(context.targetOrgConnection);
-    const resolvedPermsets = await retriever.resolve(
-      'PermissionSet',
-      filterCategorizedPermsets(this.config.permissionSets)
-    );
-    Object.entries(this.config.permissionSets).forEach(([key, val]) => {
+    const resolvedPermsets = await retriever.resolve('PermissionSet', filterCategorizedPermsets(this.classifications));
+    Object.entries(this.classifications.permissionSets).forEach(([key, val]) => {
       const resolved = resolvedPermsets[key];
       if (resolved) {
         successfullyResolved[key] = {
           metadata: resolved,
-          preset: this.config.permissionSets[key].preset,
+          preset: val.preset,
           name: key,
         };
       } else if (successfullyResolved[key] === undefined) {
@@ -58,9 +58,9 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
   }
 }
 
-function filterCategorizedPermsets(permSets: PermissionSetLikeMap): string[] {
+function filterCategorizedPermsets(permSets: PermissionSetsClassificationContent): string[] {
   const filteredNames: string[] = [];
-  Object.entries(permSets).forEach(([key, val]) => {
+  Object.entries(permSets.permissionSets).forEach(([key, val]) => {
     if (val.preset !== ProfilesRiskPreset.UNKNOWN) {
       filteredNames.push(key);
     }

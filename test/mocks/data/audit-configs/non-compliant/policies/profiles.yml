@@ -1,7 +1,4 @@
 enabled: true
-profiles:
-  System Administrator:
-    preset: Admin
 rules:
   EnforcePermissionClassifications:
     enabled: true

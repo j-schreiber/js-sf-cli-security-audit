@@ -21,13 +21,15 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
     // options "with/without metadata - only identifiers"
     const userPerms = await userRepo.resolveUserPermissions(Object.values(users), { withMetadata: false });
     for (const user of Object.values(users)) {
-      const profilePreset = this.auditContext.policies.profiles?.content.profiles[user.profileName];
+      const profilePreset = this.auditContext.classifications.profiles?.content.profiles[user.profileName];
       auditPermissionsEntity(result, user, 'profile', user.profileName, profilePreset?.preset);
       const permsets = userPerms.get(user.userId);
       if (permsets) {
         for (const assignment of permsets.assignedPermissionsets) {
           const permsetPreset =
-            this.auditContext.policies.permissionSets?.content.permissionSets[assignment.permissionSetIdentifier];
+            this.auditContext.classifications.permissionSets?.content.permissionSets[
+              assignment.permissionSetIdentifier
+            ];
           auditPermissionsEntity(
             result,
             user,
@@ -41,6 +43,7 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
     return result;
   }
 }
+
 function auditPermissionsEntity(
   result: PartialPolicyRuleResult,
   user: ResolvedUser,

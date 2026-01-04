@@ -1,0 +1,15 @@
+permissionSets:
+  Test_Developer_Permission_Set_1:
+    preset: Developer
+  Test_Admin_Permission_Set_1:
+    preset: Admin
+  Test_Admin_Permission_Set_2:
+    preset: Admin
+  Test_Power_User_Permission_Set_1:
+    preset: Power User
+  Test_Power_User_Permission_Set_2:
+    preset: Power User
+  Test_Standard_User_Permission_Set_1:
+    preset: Standard User
+  Test_Standard_User_Permission_Set_2:
+    preset: Standard User

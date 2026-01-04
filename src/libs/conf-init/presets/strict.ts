@@ -6,6 +6,7 @@ export default class StrictPreset extends NonePreset {
     super({
       UseAnyApiClient: PermissionRiskLevel.BLOCKED,
       BypassMFAForUiLogins: PermissionRiskLevel.BLOCKED,
+      BulkApiHardDelete: PermissionRiskLevel.BLOCKED,
       ManageNamedCredentials: PermissionRiskLevel.CRITICAL,
       ImportCustomObjects: PermissionRiskLevel.CRITICAL,
       ManageSandboxes: PermissionRiskLevel.CRITICAL,
@@ -60,6 +61,7 @@ export default class StrictPreset extends NonePreset {
       ViewAllProfiles: PermissionRiskLevel.HIGH,
       MonitorLoginHistory: PermissionRiskLevel.HIGH,
       ManagePackageLicenses: PermissionRiskLevel.HIGH,
+      EmailAdministration: PermissionRiskLevel.HIGH,
       ScheduleReports: PermissionRiskLevel.MEDIUM,
       EmailMass: PermissionRiskLevel.MEDIUM,
       DataExport: PermissionRiskLevel.MEDIUM,

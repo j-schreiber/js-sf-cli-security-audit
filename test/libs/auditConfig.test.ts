@@ -5,7 +5,7 @@ import { expect, assert } from 'chai';
 import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
-import { AuditRunConfig, ConfigFile, PermissionsConfig } from '../../src/libs/core/file-mgmt/schema.js';
+import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
 import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
 import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
@@ -33,52 +33,6 @@ describe('audit config', () => {
     fs.rmSync('policies', { recursive: true, force: true });
   });
 
-  function assertFile(expectedPath: string, confFile?: ConfigFile<unknown>) {
-    assert.isDefined(confFile?.filePath, `for path: ${expectedPath}`);
-    expect(confFile.filePath).to.equal(expectedPath);
-    expect(fs.existsSync(confFile.filePath)).to.be.true;
-  }
-
-  function assertFullConfig(auditConf: AuditRunConfig, expectedDir: string) {
-    assert.isDefined(auditConf.classifications.userPermissions);
-    assert.isDefined(auditConf.classifications.customPermissions);
-    assert.isDefined(auditConf.policies.profiles);
-    assert.isDefined(auditConf.policies.permissionSets);
-    assert.isDefined(auditConf.policies.connectedApps);
-    assert.isDefined(auditConf.policies.users);
-    assertFile(
-      path.join(expectedDir, 'classifications', 'userPermissions.yml'),
-      auditConf.classifications.userPermissions
-    );
-    assertFile(
-      path.join(expectedDir, 'classifications', 'customPermissions.yml'),
-      auditConf.classifications.customPermissions
-    );
-    assertFile(path.join(expectedDir, 'policies', 'profiles.yml'), auditConf.policies.profiles);
-    assertFile(path.join(expectedDir, 'policies', 'permissionSets.yml'), auditConf.policies.permissionSets);
-    assertFile(path.join(expectedDir, 'policies', 'connectedApps.yml'), auditConf.policies.connectedApps);
-    assertFile(path.join(expectedDir, 'policies', 'users.yml'), auditConf.policies.users);
-  }
-
-  function cleanConfigFiles(auditConf: AuditRunConfig) {
-    Object.values(auditConf.classifications).forEach((fileDef) => {
-      const assertedFileDef = fileDef as ConfigFile<unknown>;
-      if (assertedFileDef.filePath) {
-        fs.rmSync(assertedFileDef.filePath);
-      }
-    });
-    Object.values(auditConf.policies).forEach((fileDef) => {
-      const assertedFileDef = fileDef as ConfigFile<unknown>;
-      if (assertedFileDef.filePath) {
-        fs.rmSync(assertedFileDef.filePath);
-      }
-    });
-  }
-
-  function getTypedUserPerms(auditConf: AuditRunConfig): ConfigFile<PermissionsConfig> {
-    return auditConf.classifications.userPermissions as ConfigFile<PermissionsConfig>;
-  }
-
   describe('initialise new from org', () => {
     it('inits full config', async () => {
       // Act
@@ -87,6 +41,9 @@ describe('audit config', () => {
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
       assert.isDefined(auditConf.classifications.customPermissions);
+      assert.isDefined(auditConf.classifications.profiles);
+      assert.isDefined(auditConf.classifications.permissionSets);
+      assert.isDefined(auditConf.classifications.users);
       assert.isDefined(auditConf.policies.profiles);
       assert.isDefined(auditConf.policies.permissionSets);
       assert.isDefined(auditConf.policies.connectedApps);
@@ -214,9 +171,11 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
+      assert.isDefined(auditConf.classifications.users);
       assert.isDefined(auditConf.policies.users);
+      const userClassification = auditConf.classifications.users.content;
       const userPolicy = auditConf.policies.users.content;
-      expect(Object.keys(userPolicy.users)).to.deep.equal([
+      expect(Object.keys(userClassification.users)).to.deep.equal([
         'guest-user@example.com',
         'insightsintegration@sf.com',
         'test-user-1@example.com',
@@ -233,6 +192,9 @@ describe('audit config', () => {
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
       assert.isDefined(auditConf.classifications.customPermissions);
+      assert.isDefined(auditConf.classifications.profiles);
+      assert.isDefined(auditConf.classifications.permissionSets);
+      assert.isDefined(auditConf.classifications.users);
       assert.isDefined(auditConf.policies.profiles);
       assert.isDefined(auditConf.policies.permissionSets);
       assert.isDefined(auditConf.policies.connectedApps);
@@ -251,6 +213,7 @@ describe('audit config', () => {
 
       // Assert
       assert.isDefined(auditConf.classifications.userPermissions);
+      assert.isDefined(auditConf.classifications.profiles);
       assert.isDefined(auditConf.policies.profiles);
       expect(auditConf.classifications.customPermissions).to.be.undefined;
       expect(auditConf.policies.permissionSets).to.be.undefined;
@@ -295,7 +258,7 @@ describe('audit config', () => {
       saveAuditConfig(testDir, mockAudit);
 
       // Act
-      Object.values(mockAudit.policies.profiles!.content.profiles).forEach((profile) => {
+      Object.values(mockAudit.classifications.profiles!.content.profiles).forEach((profile) => {
         // eslint-disable-next-line no-param-reassign
         profile.preset = ProfilesRiskPreset.ADMIN;
       });
@@ -303,9 +266,61 @@ describe('audit config', () => {
 
       // Assert
       const updatedConf = loadAuditConfig(testDir);
-      Object.values(updatedConf.policies.profiles!.content.profiles).forEach((profile) => {
+      Object.values(updatedConf.classifications.profiles!.content.profiles).forEach((profile) => {
         expect(profile.preset).to.equal(ProfilesRiskPreset.ADMIN);
       });
     });
   });
 });
+
+function assertFullConfig(auditConf: AuditRunConfig, expectedDir: string) {
+  assert.isDefined(auditConf.classifications.userPermissions);
+  assert.isDefined(auditConf.classifications.customPermissions);
+  assert.isDefined(auditConf.classifications.profiles);
+  assert.isDefined(auditConf.classifications.permissionSets);
+  assert.isDefined(auditConf.classifications.users);
+  assert.isDefined(auditConf.policies.profiles);
+  assert.isDefined(auditConf.policies.permissionSets);
+  assert.isDefined(auditConf.policies.connectedApps);
+  assert.isDefined(auditConf.policies.users);
+  assertFile(
+    path.join(expectedDir, 'classifications', 'userPermissions.yml'),
+    auditConf.classifications.userPermissions
+  );
+  assertFile(
+    path.join(expectedDir, 'classifications', 'customPermissions.yml'),
+    auditConf.classifications.customPermissions
+  );
+  assertFile(path.join(expectedDir, 'classifications', 'profiles.yml'), auditConf.classifications.profiles);
+  assertFile(path.join(expectedDir, 'classifications', 'permissionSets.yml'), auditConf.classifications.permissionSets);
+  assertFile(path.join(expectedDir, 'classifications', 'users.yml'), auditConf.classifications.users);
+  assertFile(path.join(expectedDir, 'policies', 'profiles.yml'), auditConf.policies.profiles);
+  assertFile(path.join(expectedDir, 'policies', 'permissionSets.yml'), auditConf.policies.permissionSets);
+  assertFile(path.join(expectedDir, 'policies', 'connectedApps.yml'), auditConf.policies.connectedApps);
+  assertFile(path.join(expectedDir, 'policies', 'users.yml'), auditConf.policies.users);
+}
+
+function assertFile(expectedPath: string, confFile?: ConfigFile<unknown>) {
+  assert.isDefined(confFile?.filePath, `for path: ${expectedPath}`);
+  expect(confFile.filePath).to.equal(expectedPath);
+  expect(fs.existsSync(confFile.filePath)).to.be.true;
+}
+
+function cleanConfigFiles(auditConf: AuditRunConfig) {
+  Object.values(auditConf.classifications).forEach((fileDef) => {
+    const assertedFileDef = fileDef as ConfigFile<unknown>;
+    if (assertedFileDef.filePath) {
+      fs.rmSync(assertedFileDef.filePath);
+    }
+  });
+  Object.values(auditConf.policies).forEach((fileDef) => {
+    const assertedFileDef = fileDef as ConfigFile<unknown>;
+    if (assertedFileDef.filePath) {
+      fs.rmSync(assertedFileDef.filePath);
+    }
+  });
+}
+
+function getTypedUserPerms(auditConf: AuditRunConfig): ConfigFile<PermissionsClassificationContent> {
+  return auditConf.classifications.userPermissions as ConfigFile<PermissionsClassificationContent>;
+}

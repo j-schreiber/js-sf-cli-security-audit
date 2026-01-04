@@ -1,79 +1,7 @@
-import { Connection } from '@salesforce/core';
-import { ACTIVE_USERS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
-import { PermissionSet, User } from '../core/policies/salesforceStandardTypes.js';
-import {
-  BasePolicyFileContent,
-  PermSetsPolicyFileContent,
-  ProfilesPolicyFileContent,
-  UsersPolicyConfig,
-  UsersPolicyFileContent,
-} from '../core/file-mgmt/schema.js';
+import { BasePolicyFileContent, UsersPolicyFileContent } from '../core/file-mgmt/schema.js';
 import { RuleRegistries } from '../core/registries/types.js';
 import { ProfilesRiskPreset } from '../core/policy-types.js';
-
-/**
- * Initialises a new profiles policy with the local org's
- * profiles and all default rules enabled.
- *
- * @param targetOrgCon
- * @param targetDir
- * @returns
- */
-export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesPolicyFileContent> {
-  const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
-  const content: ProfilesPolicyFileContent = { enabled: true, rules: {}, profiles: {} };
-  profiles.records.forEach((permsetRecord) => {
-    content.profiles[permsetRecord.Profile.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
-  });
-  RuleRegistries.Profiles.registeredRules().forEach((ruleName) => {
-    content.rules[ruleName] = {
-      enabled: true,
-    };
-  });
-  return content;
-}
-
-/**
- * Initialises a new permission sets policy with the local org's custom
- * permissions and all default rules enabled.
- *
- * @param targetOrgCon
- * @returns
- */
-export async function initPermissionSets(targetOrgCon: Connection): Promise<PermSetsPolicyFileContent> {
-  const permSets = await targetOrgCon.query<PermissionSet>(PERMISSION_SETS_QUERY);
-  const content: PermSetsPolicyFileContent = {
-    enabled: true,
-    rules: {},
-    permissionSets: {},
-  };
-  permSets.records
-    .filter((permsetRecord) => permsetRecord.IsCustom)
-    .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
-    });
-  RuleRegistries.PermissionSets.registeredRules().forEach((ruleName) => {
-    content.rules[ruleName] = {
-      enabled: true,
-    };
-  });
-  return content;
-}
-
-/**
- * Initialises a new connected apps policy with default rules enabled.
- *
- * @returns
- */
-export function initConnectedApps(): BasePolicyFileContent {
-  const content: BasePolicyFileContent = { enabled: true, rules: {} };
-  RuleRegistries.ConnectedApps.registeredRules().forEach((ruleName) => {
-    content.rules[ruleName] = {
-      enabled: true,
-    };
-  });
-  return content;
-}
+import { PolicyNames } from '../core/policyRegistry.js';
 
 /**
  * Initialises a new settings policy with default rules enabled.
@@ -95,20 +23,26 @@ export function initSettings(): BasePolicyFileContent {
  *
  * @param targetOrgCon
  */
-export async function initUsers(targetOrgCon: Connection): Promise<UsersPolicyFileContent> {
-  const users = await targetOrgCon.query<User>(ACTIVE_USERS_QUERY);
+export function initUserPolicy(): UsersPolicyFileContent {
   const content: UsersPolicyFileContent = {
-    enabled: true,
-    options: UsersPolicyConfig.parse({}),
-    rules: {},
-    users: {},
+    ...initDefaultPolicy('users'),
+    options: {
+      analyseLastNDaysOfLoginHistory: 30,
+      defaultRoleForMissingUsers: ProfilesRiskPreset.STANDARD_USER,
+    },
   };
-  // dont parse all configs with default of 30 - but initialise a new config likle this
-  content.options.analyseLastNDaysOfLoginHistory = 30;
-  users.records.forEach((userRecord) => {
-    content.users[userRecord.Username] = { role: ProfilesRiskPreset.STANDARD_USER };
-  });
-  RuleRegistries.Users.registeredRules().forEach((ruleName) => {
+  return content;
+}
+
+/**
+ * Initialises a default policy with all registered rules.
+ *
+ * @param policyName
+ * @returns
+ */
+export function initDefaultPolicy(policyName: PolicyNames): BasePolicyFileContent {
+  const content: BasePolicyFileContent = { enabled: true, rules: {} };
+  RuleRegistries[policyName].registeredRules().forEach((ruleName) => {
     content.rules[ruleName] = {
       enabled: true,
     };

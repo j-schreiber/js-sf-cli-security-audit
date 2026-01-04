@@ -20,7 +20,23 @@
           }
         }
       },
-      "filePath": "tmp/prod/classification/userPermissions.yml"
+      "filePath": "tmp/prod/classifications/userPermissions.yml"
+    },
+    "profiles": {
+      "content": {
+        "profiles": {
+          "Minimum Access - API Only Integrations": {
+            "preset": "Unknown"
+          },
+          "Standard User": {
+            "preset": "Unknown"
+          },
+          "System Administrator": {
+            "preset": "Unknown"
+          }
+        }
+      },
+      "filePath": "tmp/prod/classifications/profiles.yml"
     },
     "customPermissions": {
       "content": {
@@ -32,17 +48,6 @@
     "profiles": {
       "content": {
         "enabled": true,
-        "profiles": {
-          "Minimum Access - API Only Integrations": {
-            "preset": "Unknown"
-          },
-          "Standard User": {
-            "preset": "Unknown"
-          },
-          "System Administrator": {
-            "preset": "Unknown"
-          }
-        },
         "rules": {
           "EnforcePermissionClassifications": {
             "enabled": true

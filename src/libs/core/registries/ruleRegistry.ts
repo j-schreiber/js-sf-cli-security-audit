@@ -51,7 +51,7 @@ export default class RuleRegistry {
         enabledRules.push(
           new this.rules[ruleName]({ auditContext, ruleDisplayName: ruleName, ruleConfig: ruleConfig.options })
         );
-      } else if (!ruleConfig.enabled) {
+      } else if (ruleConfig.enabled === false) {
         skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });
       } else {
         resolveErrors.push({ name: ruleName, message: messages.getMessage('resolve-error.rule-not-registered') });

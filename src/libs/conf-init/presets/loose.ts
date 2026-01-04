@@ -1,5 +1,5 @@
 import { PermissionRiskLevel } from '../../core/classification-types.js';
-import { NamedPermissionsClassification } from '../../core/file-mgmt/schema.js';
+import { NamedPermissionClassification } from '../../core/file-mgmt/schema.js';
 import NonePreset from './none.js';
 
 export default class LoosePreset extends NonePreset {
@@ -43,6 +43,7 @@ export default class LoosePreset extends NonePreset {
       CodeBuilderUser: PermissionRiskLevel.HIGH,
       MonitorLoginHistory: PermissionRiskLevel.HIGH,
       ManagePackageLicenses: PermissionRiskLevel.HIGH,
+      BulkApiHardDelete: PermissionRiskLevel.HIGH,
       ViewHealthCheck: PermissionRiskLevel.MEDIUM,
       FreezeUsers: PermissionRiskLevel.MEDIUM,
       ManageRoles: PermissionRiskLevel.MEDIUM,
@@ -62,6 +63,7 @@ export default class LoosePreset extends NonePreset {
       ViewAllUsers: PermissionRiskLevel.MEDIUM,
       ViewRoles: PermissionRiskLevel.MEDIUM,
       ModerateNetworkUsers: PermissionRiskLevel.MEDIUM,
+      EmailAdministration: PermissionRiskLevel.MEDIUM,
       ApiEnabled: PermissionRiskLevel.LOW,
       LightningExperienceUser: PermissionRiskLevel.LOW,
       RunReports: PermissionRiskLevel.LOW,
@@ -77,7 +79,7 @@ export default class LoosePreset extends NonePreset {
     });
   }
 
-  public override initDefault(permName: string): NamedPermissionsClassification {
+  public override initDefault(permName: string): NamedPermissionClassification {
     const basePerm = super.initDefault(permName);
     if (basePerm.classification === PermissionRiskLevel.UNKNOWN) {
       basePerm.classification = PermissionRiskLevel.LOW;

@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
 import { EntityResolveError } from '../result-types.js';
-import { AuditRunConfig, UsersPolicyFileContent } from '../file-mgmt/schema.js';
+import { AuditRunConfig, UsersClassificationContent, UsersPolicyFileContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
 import { ResolvedUser, UsersRegistry } from '../registries/users.js';
 import { ProfilesRiskPreset } from '../policy-types.js';
@@ -12,13 +12,16 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 
 export default class UserPolicy extends Policy<ResolvedUser> {
   private totalEntities: number;
+  private readonly classifications: UsersClassificationContent;
+
   public constructor(
     public config: UsersPolicyFileContent,
     public auditConfig: AuditRunConfig,
     registry = UsersRegistry
   ) {
     super(config, auditConfig, registry);
-    this.totalEntities = this.config.users ? Object.keys(this.config.users).length : 0;
+    this.classifications = this.auditConfig.classifications.users?.content ?? { users: {} };
+    this.totalEntities = Object.keys(this.classifications.users).length;
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedUser>> {
@@ -29,7 +32,7 @@ export default class UserPolicy extends Policy<ResolvedUser> {
     const usersRepo = new UsersRepository(context.targetOrgConnection);
     const resolvedEntities: Record<string, ResolvedUser> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
-    for (const [userName, userDef] of Object.entries(this.config.users)) {
+    for (const [userName, userDef] of Object.entries(this.classifications.users)) {
       if (userDef.role === ProfilesRiskPreset.UNKNOWN) {
         ignoredEntities[userName] = {
           name: userName,
@@ -51,7 +54,7 @@ export default class UserPolicy extends Policy<ResolvedUser> {
       if (ignoredEntities[user.username] === undefined) {
         resolvedEntities[user.username] = {
           ...user,
-          role: this.config.users[user.username]?.role ?? this.config.options.defaultRoleForMissingUsers,
+          role: this.classifications.users[user.username]?.role ?? this.config.options.defaultRoleForMissingUsers,
         };
       }
     }

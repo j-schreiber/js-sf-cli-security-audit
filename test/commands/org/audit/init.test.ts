@@ -47,8 +47,8 @@ describe('org audit init', () => {
     expect(result).to.deep.equal(FULL_AUDIT_INIT_RESULT);
     // relevant summary is printed to terminal
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      'Initialised 3 permissions at tmp/prod/classification/userPermissions.yml.',
-      'Initialised 1 permissions at tmp/prod/classification/customPermissions.yml.',
+      'Initialised 3 userPermissions at tmp/prod/classification/userPermissions.yml.',
+      'Initialised 1 customPermissions at tmp/prod/classification/customPermissions.yml.',
       'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
       'Initialised "PermissionSets" policy with 1 rule(s) at tmp/prod/policies/permissionSets.yml.',
     ]);
@@ -64,7 +64,8 @@ describe('org audit init', () => {
     // Assert
     expect(result).to.deep.equal(MINIMAL_AUDIT_INIT_RESULT);
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      'Initialised 3 permissions at tmp/prod/classification/userPermissions.yml.',
+      'Initialised 3 userPermissions at tmp/prod/classifications/userPermissions.yml.',
+      'Initialised 3 profiles at tmp/prod/classifications/profiles.yml.',
       'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
     ]);
   });
