@@ -1,7 +1,6 @@
 import { Messages } from '@salesforce/core';
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { AuditRunConfig, NamedPermissionsClassification, PermissionsClassification } from '../../file-mgmt/schema.js';
-import { ClassificationNames } from '../../policyRegistry.js';
+import { AuditRunConfig, NamedPermissionClassification, PermissionClassification } from '../../file-mgmt/schema.js';
 import { PolicyRuleViolation, RuleComponentMessage } from '../../result-types.js';
 import { PermissionRiskLevel } from '../../classification-types.js';
 import { permissionAllowedInPreset } from '../../policy-types.js';
@@ -89,17 +88,17 @@ export function scanPermissions(
   return result;
 }
 
-export function resolvePerm(
+function resolvePerm(
   permName: string,
   auditRun: AuditRunConfig,
-  type: ClassificationNames
-): NamedPermissionsClassification | undefined {
+  type: PermissionsListKey
+): NamedPermissionClassification | undefined {
   return nameClassification(permName, auditRun.classifications[type]?.content.permissions[permName]);
 }
 
 function nameClassification(
   permName: string,
-  perm?: PermissionsClassification
-): NamedPermissionsClassification | undefined {
+  perm?: PermissionClassification
+): NamedPermissionClassification | undefined {
   return perm ? { name: permName, ...perm } : undefined;
 }

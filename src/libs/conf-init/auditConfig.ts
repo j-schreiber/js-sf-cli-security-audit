@@ -1,8 +1,14 @@
 import { Connection } from '@salesforce/core';
 import { AuditRunConfig } from '../core/file-mgmt/schema.js';
 import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
-import { initCustomPermissions, initUserPermissions } from './permissionsClassification.js';
-import { initConnectedApps, initPermissionSets, initProfiles, initSettings, initUsers } from './policyConfigs.js';
+import {
+  initCustomPermissions,
+  initPermissionSets,
+  initProfiles,
+  initUserPermissions,
+  initUsers,
+} from './permissionsClassification.js';
+import { initDefaultPolicy, initSettings, initUserPolicy } from './policyConfigs.js';
 import { AuditInitPresets } from './presets.js';
 
 /**
@@ -32,15 +38,18 @@ export default class AuditConfig {
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
+    conf.classifications.profiles = { content: await initProfiles(targetCon) };
+    conf.classifications.permissionSets = { content: await initPermissionSets(targetCon) };
+    conf.classifications.users = { content: await initUsers(targetCon) };
     conf.classifications.userPermissions = { content: await initUserPermissions(targetCon, opts?.preset) };
     const customPerms = await initCustomPermissions(targetCon);
     if (customPerms) {
       conf.classifications.customPermissions = { content: customPerms };
     }
-    conf.policies.profiles = { content: await initProfiles(targetCon) };
-    conf.policies.permissionSets = { content: await initPermissionSets(targetCon) };
-    conf.policies.users = { content: await initUsers(targetCon) };
-    conf.policies.connectedApps = { content: initConnectedApps() };
+    conf.policies.profiles = { content: initDefaultPolicy('profiles') };
+    conf.policies.permissionSets = { content: initDefaultPolicy('permissionSets') };
+    conf.policies.users = { content: initUserPolicy() };
+    conf.policies.connectedApps = { content: initDefaultPolicy('connectedApps') };
     conf.policies.settings = { content: initSettings() };
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (opts?.targetDir || opts?.targetDir === '') {

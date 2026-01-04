@@ -9,7 +9,13 @@ import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import { AuditRunConfig } from '../../src/libs/core/file-mgmt/schema.js';
+import {
+  AuditRunConfig,
+  PermissionSetConfig,
+  PermissionSetsMap,
+  ProfilesMap,
+  UserConfig,
+} from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
   ACTIVE_USERS_DETAILS_QUERY,
@@ -99,6 +105,57 @@ export default class AuditTestContext {
       return Promise.resolve(new MetadataApiRetrieveMock(retrievePath) as unknown as MetadataApiRetrieve);
     });
     return this.retrieveStub;
+  }
+
+  /**
+   * Replaces the entire profiles classification
+   *
+   * @param classifications
+   */
+  public mockProfileClassifications(classifications: ProfilesMap): void {
+    this.mockAuditConfig.classifications.profiles = undefined;
+    Object.entries(classifications).forEach(([profileName, classification]) => {
+      this.mockProfileClassification(profileName, classification);
+    });
+  }
+
+  /**
+   * Replaces the entire permission sets classification
+   *
+   * @param classifications
+   */
+  public mockPermSetClassifications(classifications: PermissionSetsMap): void {
+    this.mockAuditConfig.classifications.permissionSets = undefined;
+    Object.entries(classifications).forEach(([permSetName, classification]) => {
+      this.mockPermSetClassification(permSetName, classification);
+    });
+  }
+
+  /**
+   * Mocks classification of a specific profile
+   *
+   * @param profileName
+   * @param classification
+   */
+  public mockProfileClassification(profileName: string, classification: PermissionSetConfig): void {
+    this.mockAuditConfig.classifications.profiles ??= { content: { profiles: {} } };
+    this.mockAuditConfig.classifications.profiles.content.profiles[profileName] = classification;
+  }
+
+  /**
+   * Mocks classification of a specific permission set
+   *
+   * @param permSetName
+   * @param classification
+   */
+  public mockPermSetClassification(permSetName: string, classification: PermissionSetConfig): void {
+    this.mockAuditConfig.classifications.permissionSets ??= { content: { permissionSets: {} } };
+    this.mockAuditConfig.classifications.permissionSets.content.permissionSets[permSetName] = classification;
+  }
+
+  public mockUserClassification(username: string, classification: UserConfig): void {
+    this.mockAuditConfig.classifications.users ??= { content: { users: {} } };
+    this.mockAuditConfig.classifications.users.content.users[username] = classification;
   }
 }
 

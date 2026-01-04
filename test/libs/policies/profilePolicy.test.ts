@@ -8,7 +8,7 @@ import ProfilePolicyRegistry from '../../../src/libs/core/registries/profiles.js
 import ProfilePolicy from '../../../src/libs/core/policies/profilePolicy.js';
 import { Profile } from '../../../src/libs/core/policies/salesforceStandardTypes.js';
 import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
-import { AuditRunConfig, ProfilesPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
+import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
@@ -19,19 +19,8 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 
 const QUERY_RESULTS_DIR = path.join('test', 'mocks', 'data', 'queryResults');
 
-const DEFAULT_PROFILE_CONFIG: ProfilesPolicyFileContent = {
+const DEFAULT_PROFILE_CONFIG: BasePolicyFileContent = {
   enabled: true,
-  profiles: {
-    'System Administrator': {
-      preset: ProfilesRiskPreset.ADMIN,
-    },
-    'Standard User': {
-      preset: ProfilesRiskPreset.STANDARD_USER,
-    },
-    'Custom Profile': {
-      preset: ProfilesRiskPreset.POWER_USER,
-    },
-  },
   rules: {
     EnforcePermissionClassifications: {
       enabled: true,
@@ -60,6 +49,23 @@ describe('profile policy', () => {
   }
 
   beforeEach(async () => {
+    $$.mockAuditConfig.classifications = {
+      profiles: {
+        content: {
+          profiles: {
+            'System Administrator': {
+              preset: ProfilesRiskPreset.ADMIN,
+            },
+            'Standard User': {
+              preset: ProfilesRiskPreset.STANDARD_USER,
+            },
+            'Custom Profile': {
+              preset: ProfilesRiskPreset.POWER_USER,
+            },
+          },
+        },
+      },
+    };
     await $$.init();
   });
 
@@ -129,21 +135,16 @@ describe('profile policy', () => {
     // Arrange
     const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
     CONFIG.rules = { EnforcePermissionClassifications: { enabled: true } };
-    const auditConfig: AuditRunConfig = {
-      policies: {},
-      classifications: {
-        customPermissions: {
-          content: {
-            permissions: {
-              CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
-            },
-          },
+    $$.mockAuditConfig.classifications.customPermissions = {
+      content: {
+        permissions: {
+          CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
         },
       },
     };
 
     // Act
-    const pol = new ProfilePolicy(CONFIG, auditConfig);
+    const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -164,11 +165,10 @@ describe('profile policy', () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
     $$.mocks.setQueryMock("SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'", 'empty');
-    const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
+    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.POWER_USER });
 
     // Act
-    const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
+    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -181,11 +181,10 @@ describe('profile policy', () => {
   it('ignores profiles with UNKNOWN preset without attempting to resolve', async () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
-    const PROFILE_CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-    PROFILE_CONFIG.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.UNKNOWN };
+    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.UNKNOWN });
 
     // Act
-    const pol = new ProfilePolicy(PROFILE_CONFIG, $$.mockAuditConfig);
+    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
@@ -202,11 +201,10 @@ describe('profile policy', () => {
       "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
       'profile-with-null-metadata'
     );
-    const config = structuredClone(DEFAULT_PROFILE_CONFIG);
-    config.profiles['Custom Profile'] = { preset: ProfilesRiskPreset.POWER_USER };
+    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.POWER_USER });
 
     // Act
-    const pol = new ProfilePolicy(config, $$.mockAuditConfig);
+    const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert

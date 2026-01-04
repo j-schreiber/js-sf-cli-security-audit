@@ -22,21 +22,13 @@ const permScanningMessages = Messages.loadMessages(
   'rules.enforceClassificationPresets'
 );
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: UsersPolicyFileContent = {
   enabled: true,
   rules: {},
   options: {
-    defaultRoleForMissingUsers: 'Standard User',
+    defaultRoleForMissingUsers: ProfilesRiskPreset.STANDARD_USER,
   },
-  users: {
-    'guest-user@example.de': {
-      role: 'Standard User',
-    },
-    'test-user-2@example.de': {
-      role: 'Admin',
-    },
-  },
-} as UsersPolicyFileContent;
+};
 
 describe('users policy', () => {
   const $$ = new AuditTestContext();
@@ -66,6 +58,12 @@ describe('users policy', () => {
   }
 
   beforeEach(async () => {
+    $$.mockUserClassification('guest-user@example.de', {
+      role: ProfilesRiskPreset.STANDARD_USER,
+    });
+    $$.mockUserClassification('test-user-2@example.de', {
+      role: ProfilesRiskPreset.ADMIN,
+    });
     await $$.init();
   });
 
@@ -100,11 +98,10 @@ describe('users policy', () => {
         buildPermsetAssignmentsQuery(['005Pl000001p3HqIAI', '0054P00000AaGueQAF']),
         'test-user-assignments'
       );
-      const config = structuredClone(DEFAULT_CONFIG);
-      config.users['guest-user@example.de'].role = ProfilesRiskPreset.UNKNOWN;
+      $$.mockUserClassification('guest-user@example.de', { role: ProfilesRiskPreset.UNKNOWN });
 
       // Act
-      const pol = new UserPolicy(config, $$.mockAuditConfig);
+      const pol = new UserPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -430,37 +427,25 @@ describe('users policy', () => {
         $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
-        $$.mockAuditConfig.policies.permissionSets = {
-          content: {
-            enabled: true,
-            permissionSets: {
-              Test_Admin_Permission_Set_1: {
-                preset: ProfilesRiskPreset.ADMIN,
-              },
-              Test_Power_User_Permission_Set_1: {
-                preset: ProfilesRiskPreset.POWER_USER,
-              },
-            },
-            rules: {},
+        $$.mockPermSetClassifications({
+          Test_Admin_Permission_Set_1: {
+            preset: ProfilesRiskPreset.ADMIN,
           },
-        };
-        $$.mockAuditConfig.policies.profiles = {
-          content: {
-            enabled: true,
-            profiles: {
-              'System Administrator': {
-                preset: ProfilesRiskPreset.ADMIN,
-              },
-              'Standard User': {
-                preset: ProfilesRiskPreset.STANDARD_USER,
-              },
-              'Guest User Profile': {
-                preset: ProfilesRiskPreset.STANDARD_USER,
-              },
-            },
-            rules: {},
+          Test_Power_User_Permission_Set_1: {
+            preset: ProfilesRiskPreset.POWER_USER,
           },
-        };
+        });
+        $$.mockProfileClassifications({
+          'System Administrator': {
+            preset: ProfilesRiskPreset.ADMIN,
+          },
+          'Standard User': {
+            preset: ProfilesRiskPreset.STANDARD_USER,
+          },
+          'Guest User Profile': {
+            preset: ProfilesRiskPreset.STANDARD_USER,
+          },
+        });
       });
 
       it('reports compliance if user has only permission sets assigned that match their role', async () => {
@@ -481,7 +466,7 @@ describe('users policy', () => {
 
       it('reports violations if user has permissions assigned that are above their role', async () => {
         // Arrange
-        ruleEnabledConfig.users['test-user-2@example.de'].role = ProfilesRiskPreset.POWER_USER;
+        $$.mockUserClassification('test-user-2@example.de', { role: ProfilesRiskPreset.POWER_USER });
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -513,8 +498,7 @@ describe('users policy', () => {
 
       it('reports violations if users profile is classified as UNKNOWN', async () => {
         // Arrange
-        $$.mockAuditConfig.policies.profiles!.content.profiles['System Administrator'].preset =
-          ProfilesRiskPreset.UNKNOWN;
+        $$.mockProfileClassification('System Administrator', { preset: ProfilesRiskPreset.UNKNOWN });
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -535,14 +519,14 @@ describe('users policy', () => {
       it('reports violations if profile is not classified in policy', async () => {
         // Arrange
         // user has admin, remove it
-        $$.mockAuditConfig.policies.profiles!.content.profiles = {
+        $$.mockProfileClassifications({
           'Standard User': {
             preset: ProfilesRiskPreset.STANDARD_USER,
           },
           'Guest User Profile': {
             preset: ProfilesRiskPreset.STANDARD_USER,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);

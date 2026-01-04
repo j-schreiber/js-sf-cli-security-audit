@@ -1,8 +1,8 @@
 # @j-schreiber/sf-cli-security-audit
 
-> This plugin is still in beta and under active development. Command signatures may be subject to change.
+> This plugin is still in beta and under active development. Command signatures and directory structures can change.
 
-For an in-depth documentation that goes beyond command signatures and explains the core concepts, design decisions, and a variety of use cases [see our Wiki](https://github.com/j-schreiber/js-sf-cli-security-audit/wiki).
+To go beyond command signatures and learn about the concepts, design decisions, and a variety of use cases [see the official docs](https://securityauditengine.org/docs).
 
 # Installation
 
@@ -23,7 +23,7 @@ sf plugins install @j-schreiber/sf-cli-security-audit
 
 # Contribute
 
-Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.com/in/jannis-schreiber/) or via [Email](mailto:info@lietzau-consulting.de).
+Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.com/in/jannis-schreiber/) or via [Email](mailto:hello@jannis-schreiber.me).
 
 # Documentation
 

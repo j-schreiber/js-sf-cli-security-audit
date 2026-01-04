@@ -2,10 +2,11 @@ import z from 'zod';
 import {
   AuditRunConfigClassifications,
   AuditRunConfigPolicies,
-  PermissionsConfigFileSchema,
-  PermSetsPolicyFileSchema,
+  PermissionsClassificationFileSchema,
+  PermissionSetsClassificationContentSchema,
   PolicyFileSchema,
-  ProfilesPolicyFileSchema,
+  ProfilesClassificationContentSchema,
+  UsersClassificationContentSchema,
   UsersPolicyFileSchema,
 } from './file-mgmt/schema.js';
 import { Constructor } from './registries/types.js';
@@ -18,10 +19,19 @@ import SettingsPolicy from './policies/settingsPolicy.js';
 
 export const classificationDefs: ClassificationRegistry = {
   userPermissions: {
-    schema: PermissionsConfigFileSchema,
+    schema: PermissionsClassificationFileSchema,
   },
   customPermissions: {
-    schema: PermissionsConfigFileSchema,
+    schema: PermissionsClassificationFileSchema,
+  },
+  profiles: {
+    schema: ProfilesClassificationContentSchema,
+  },
+  permissionSets: {
+    schema: PermissionSetsClassificationContentSchema,
+  },
+  users: {
+    schema: UsersClassificationContentSchema,
   },
 };
 
@@ -33,14 +43,14 @@ export type PolicyRegistry = Record<PolicyNames, PolicyRegistryEntry>;
 export const policyDefs: PolicyRegistry = {
   profiles: {
     handler: ProfilePolicy,
-    schema: ProfilesPolicyFileSchema,
+    schema: PolicyFileSchema,
     dependencies: [
       { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
     ],
   },
   permissionSets: {
     handler: PermissionSetPolicy,
-    schema: PermSetsPolicyFileSchema,
+    schema: PolicyFileSchema,
     dependencies: [
       { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
     ],

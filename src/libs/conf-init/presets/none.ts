@@ -1,15 +1,15 @@
 import { Messages } from '@salesforce/core';
-import { NamedPermissionsClassification } from '../../core/file-mgmt/schema.js';
+import { NamedPermissionClassification } from '../../core/file-mgmt/schema.js';
 import { PermissionRiskLevel } from '../../core/classification-types.js';
 import { Optional } from '../../core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const descriptions = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 
-export type UnclassifiedPerm = Optional<NamedPermissionsClassification, 'classification'>;
+export type UnclassifiedPerm = Optional<NamedPermissionClassification, 'classification'>;
 
 export type Preset = {
-  classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionsClassification[];
+  classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionClassification[];
 };
 
 /**
@@ -17,7 +17,7 @@ export type Preset = {
  * and initialises classification descriptions
  */
 export default class NonePreset implements Preset {
-  protected userPermissions: Record<string, Partial<NamedPermissionsClassification>>;
+  protected userPermissions: Record<string, Partial<NamedPermissionClassification>>;
 
   public constructor(userPerms?: Record<string, PermissionRiskLevel>) {
     this.userPermissions = {};
@@ -38,7 +38,7 @@ export default class NonePreset implements Preset {
    *
    * @param perms
    */
-  public classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionsClassification[] {
+  public classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionClassification[] {
     return rawPerms.map((perm) => ({
       ...this.initDefault(perm.name),
       ...perm,
@@ -52,7 +52,7 @@ export default class NonePreset implements Preset {
    * @param permName
    * @returns
    */
-  public initDefault(permName: string): NamedPermissionsClassification {
+  public initDefault(permName: string): NamedPermissionClassification {
     const def = this.userPermissions[permName];
     const hasDescription = descriptions.messages.has(permName);
     return {

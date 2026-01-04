@@ -32,9 +32,9 @@ The selected preset is applied before any other default mechanisms (such as temp
 
   <%= config.bin %> <%= command.id %> -o MyTargetOrg -d my_dir -p loose
 
-# success.perm-classification-summary
+# success.classification-summary
 
-Initialised %s permissions at %s.
+Initialised %s %s at %s.
 
 # success.policy-summary
 

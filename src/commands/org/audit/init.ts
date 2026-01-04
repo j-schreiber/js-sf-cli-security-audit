@@ -5,7 +5,7 @@ import {
   AuditRunConfig,
   AuditRunConfigClassifications,
   AuditRunConfigPolicies,
-  isPermissionsConfig,
+  extractEntities,
   isPolicyConfig,
 } from '../../../libs/core/file-mgmt/schema.js';
 import { AuditInitPresets } from '../../../libs/conf-init/presets.js';
@@ -61,12 +61,13 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   }
 
   private printClassifications(classifications: AuditRunConfigClassifications): void {
-    Object.values(classifications).forEach((def) => {
-      if (isPermissionsConfig(def)) {
-        const perms = def.content.permissions ? Object.entries(def.content.permissions) : [];
-        if (perms.length > 0) {
+    Object.entries(classifications).forEach(([key, def]) => {
+      const records = extractEntities(def);
+      if (records) {
+        const recordsCount = Object.keys(records).length;
+        if (recordsCount > 0) {
           this.logSuccess(
-            messages.getMessage('success.perm-classification-summary', [perms.length ?? 0, def.filePath])
+            messages.getMessage('success.classification-summary', [recordsCount ?? 0, key, def.filePath])
           );
         }
       }

@@ -1,0 +1,9 @@
+profiles:
+  Guest License User:
+    preset: Unknown
+  Minimum Access - Salesforce:
+    preset: Unknown
+  System Administrator:
+    preset: Admin
+  Standard User:
+    preset: Standard User

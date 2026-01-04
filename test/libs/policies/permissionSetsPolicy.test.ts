@@ -5,7 +5,7 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import PermissionSetPolicy from '../../../src/libs/core/policies/permissionSetPolicy.js';
 import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
-import { PermSetsPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
+import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
@@ -15,22 +15,14 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 
 const RETRIEVE_DIR = path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets');
 
-const DEFAULT_PERMSET_CONFIG = {
+const DEFAULT_PERMSET_CONFIG: BasePolicyFileContent = {
   enabled: true,
-  permissionSets: {
-    Test_Admin_Permission_Set_1: {
-      preset: ProfilesRiskPreset.ADMIN,
-    },
-    Test_Power_User_Permission_Set_1: {
-      preset: ProfilesRiskPreset.POWER_USER,
-    },
-  },
   rules: {
     EnforcePermissionClassifications: {
       enabled: true,
     },
   },
-} as PermSetsPolicyFileContent;
+};
 
 describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
@@ -40,6 +32,20 @@ describe('permission sets policy', () => {
   }
 
   beforeEach(async () => {
+    $$.mockAuditConfig.classifications = {
+      permissionSets: {
+        content: {
+          permissionSets: {
+            Test_Admin_Permission_Set_1: {
+              preset: ProfilesRiskPreset.ADMIN,
+            },
+            Test_Power_User_Permission_Set_1: {
+              preset: ProfilesRiskPreset.POWER_USER,
+            },
+          },
+        },
+      },
+    };
     await $$.init();
   });
 
@@ -95,8 +101,9 @@ describe('permission sets policy', () => {
   it('ignores permission set from config that cannot be resolved from target org', async () => {
     // Arrange
     const PERMSET_CONFIG = structuredClone(DEFAULT_PERMSET_CONFIG);
-    PERMSET_CONFIG.permissionSets['Test_Admin_Permission_Set_N'] = { preset: ProfilesRiskPreset.UNKNOWN };
-    PERMSET_CONFIG.permissionSets['An_Unknown_Permission_Set'] = { preset: ProfilesRiskPreset.STANDARD_USER };
+    const mockedPermsets = $$.mockAuditConfig.classifications.permissionSets!.content.permissionSets;
+    mockedPermsets['Test_Admin_Permission_Set_N'] = { preset: ProfilesRiskPreset.UNKNOWN };
+    mockedPermsets['An_Unknown_Permission_Set'] = { preset: ProfilesRiskPreset.STANDARD_USER };
 
     // Act
     const pol = new PermissionSetPolicy(PERMSET_CONFIG, $$.mockAuditConfig);
