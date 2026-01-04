@@ -23,17 +23,17 @@ describe('org audit NUTs', () => {
     return path.join(session.dir, 'test-sfdx-project', filePath);
   }
 
-  function activatePolicies(dirPath: string, preset: ProfilesRiskPreset) {
+  function activateClassifications(dirPath: string, preset: ProfilesRiskPreset) {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = DefaultFileManager.parse(configDirPath);
-    if (conf.policies.profiles?.content.profiles) {
-      for (const profile of Object.values(conf.policies.profiles.content.profiles)) {
+    if (conf.classifications.profiles?.content.profiles) {
+      for (const profile of Object.values(conf.classifications.profiles.content.profiles)) {
         // eslint-disable-next-line no-param-reassign
         profile.preset = preset;
       }
     }
-    if (conf.policies.permissionSets?.content.permissionSets) {
-      for (const profile of Object.values(conf.policies.permissionSets.content.permissionSets)) {
+    if (conf.classifications.permissionSets?.content.permissionSets) {
+      for (const profile of Object.values(conf.classifications.permissionSets.content.permissionSets)) {
         // eslint-disable-next-line no-param-reassign
         profile.preset = preset;
       }
@@ -100,7 +100,7 @@ describe('org audit NUTs', () => {
 
   it('successfully completes an audit with all policies active', async () => {
     // Arrange
-    activatePolicies('tmp', ProfilesRiskPreset.ADMIN);
+    activateClassifications('tmp', ProfilesRiskPreset.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
