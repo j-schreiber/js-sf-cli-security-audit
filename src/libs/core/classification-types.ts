@@ -1,4 +1,4 @@
-import { NamedPermissionsClassification } from './file-mgmt/schema.js';
+import { NamedPermissionClassification } from './file-mgmt/schema.js';
 
 /**
  * Enum to classify user and custom permissions.
@@ -22,5 +22,5 @@ export function resolveRiskLevelOrdinalValue(value: string): number {
   return Object.keys(PermissionRiskLevel).indexOf(value.toUpperCase());
 }
 
-export const classificationSorter = (a: NamedPermissionsClassification, b: NamedPermissionsClassification): number =>
+export const classificationSorter = (a: NamedPermissionClassification, b: NamedPermissionClassification): number =>
   resolveRiskLevelOrdinalValue(a.classification) - resolveRiskLevelOrdinalValue(b.classification);
