@@ -193,7 +193,7 @@ describe('users policy', () => {
         expect(result.executedRules.NoOtherApexApiLogins.isCompliant).to.be.false;
         expect(result.executedRules.NoOtherApexApiLogins.violations).to.deep.equal([
           {
-            identifier: ['test-user-1@example.de'],
+            identifier: ['test-user-1@example.de', '2025-08-07T10:01:17.000Z'],
             message: messages.getMessage('violations.no-other-apex-api-logins', [10]),
           },
         ]);
