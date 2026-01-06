@@ -1,6 +1,6 @@
 import { BasePolicyFileContent, UsersPolicyFileContent } from '../core/file-mgmt/schema.js';
 import { RuleRegistries } from '../core/registries/types.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
+import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { PolicyNames } from '../core/policyRegistry.js';
 
 /**
@@ -28,7 +28,7 @@ export function initUserPolicy(): UsersPolicyFileContent {
     ...initDefaultPolicy('users'),
     options: {
       analyseLastNDaysOfLoginHistory: 30,
-      defaultRoleForMissingUsers: ProfilesRiskPreset.STANDARD_USER,
+      defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
     },
   };
   return content;

@@ -9,7 +9,7 @@ import {
   buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
 } from '../../../src/libs/core/constants.js';
-import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
 import { differenceInDays } from '../../../src/libs/core/utils.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
@@ -26,7 +26,7 @@ const DEFAULT_CONFIG: UsersPolicyFileContent = {
   enabled: true,
   rules: {},
   options: {
-    defaultRoleForMissingUsers: ProfilesRiskPreset.STANDARD_USER,
+    defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
   },
 };
 
@@ -59,10 +59,10 @@ describe('users policy', () => {
 
   beforeEach(async () => {
     $$.mockUserClassification('guest-user@example.de', {
-      role: ProfilesRiskPreset.STANDARD_USER,
+      role: UserPrivilegeLevel.STANDARD_USER,
     });
     $$.mockUserClassification('test-user-2@example.de', {
-      role: ProfilesRiskPreset.ADMIN,
+      role: UserPrivilegeLevel.ADMIN,
     });
     await $$.init();
   });
@@ -98,7 +98,7 @@ describe('users policy', () => {
         buildPermsetAssignmentsQuery(['005Pl000001p3HqIAI', '0054P00000AaGueQAF']),
         'test-user-assignments'
       );
-      $$.mockUserClassification('guest-user@example.de', { role: ProfilesRiskPreset.UNKNOWN });
+      $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
       const pol = new UserPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
@@ -429,21 +429,21 @@ describe('users policy', () => {
         // throughout the tests of this particular rule
         $$.mockPermSetClassifications({
           Test_Admin_Permission_Set_1: {
-            preset: ProfilesRiskPreset.ADMIN,
+            role: UserPrivilegeLevel.ADMIN,
           },
           Test_Power_User_Permission_Set_1: {
-            preset: ProfilesRiskPreset.POWER_USER,
+            role: UserPrivilegeLevel.POWER_USER,
           },
         });
         $$.mockProfileClassifications({
           'System Administrator': {
-            preset: ProfilesRiskPreset.ADMIN,
+            role: UserPrivilegeLevel.ADMIN,
           },
           'Standard User': {
-            preset: ProfilesRiskPreset.STANDARD_USER,
+            role: UserPrivilegeLevel.STANDARD_USER,
           },
           'Guest User Profile': {
-            preset: ProfilesRiskPreset.STANDARD_USER,
+            role: UserPrivilegeLevel.STANDARD_USER,
           },
         });
       });
@@ -466,7 +466,7 @@ describe('users policy', () => {
 
       it('reports violations if user has permissions assigned that are above their role', async () => {
         // Arrange
-        $$.mockUserClassification('test-user-2@example.de', { role: ProfilesRiskPreset.POWER_USER });
+        $$.mockUserClassification('test-user-2@example.de', { role: UserPrivilegeLevel.POWER_USER });
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -498,7 +498,7 @@ describe('users policy', () => {
 
       it('reports violations if users profile is classified as UNKNOWN', async () => {
         // Arrange
-        $$.mockProfileClassification('System Administrator', { preset: ProfilesRiskPreset.UNKNOWN });
+        $$.mockProfileClassification('System Administrator', { role: UserPrivilegeLevel.UNKNOWN });
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -521,10 +521,10 @@ describe('users policy', () => {
         // user has admin, remove it
         $$.mockProfileClassifications({
           'Standard User': {
-            preset: ProfilesRiskPreset.STANDARD_USER,
+            role: UserPrivilegeLevel.STANDARD_USER,
           },
           'Guest User Profile': {
-            preset: ProfilesRiskPreset.STANDARD_USER,
+            role: UserPrivilegeLevel.STANDARD_USER,
           },
         });
 

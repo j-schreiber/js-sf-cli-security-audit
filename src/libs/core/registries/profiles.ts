@@ -4,7 +4,7 @@ import EnforcePermissionsOnProfileLike from './rules/enforcePermissionsOnProfile
 
 export type ResolvedProfile = {
   name: string;
-  preset: string;
+  role: string;
   metadata: ProfileMetadata;
 };
 

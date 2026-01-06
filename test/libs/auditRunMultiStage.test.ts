@@ -8,9 +8,9 @@ import AuditRunMultiStageOutput, {
   RESOLVE_POLICIES,
 } from '../../src/ux/auditRunMultiStage.js';
 import AuditRun from '../../src/libs/core/auditRun.js';
-import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
+import { BasePolicyFileContent, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
 
-const PROFILES_CONFIG = {
+const PROFILES_CONFIG: ConfigFile<BasePolicyFileContent> = {
   content: {
     enabled: true,
     rules: {
@@ -18,18 +18,13 @@ const PROFILES_CONFIG = {
       Rule2: { enabled: true },
       Rule3: { enabled: false },
     },
-    profiles: { 'Test Profile 1': { preset: ProfilesRiskPreset.DEVELOPER } },
   },
 };
 
-const PERMSETS_CONFIG = {
+const PERMSETS_CONFIG: ConfigFile<BasePolicyFileContent> = {
   content: {
     enabled: true,
     rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
-    permissionSets: {
-      Test_Perm_Set_1: { preset: ProfilesRiskPreset.DEVELOPER },
-      Test_Perm_Set_2: { preset: ProfilesRiskPreset.DEVELOPER },
-    },
   },
 };
 

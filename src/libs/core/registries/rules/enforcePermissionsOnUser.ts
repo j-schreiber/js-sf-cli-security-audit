@@ -24,7 +24,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       result.warnings.push(...permsetResult.warnings);
       if (resolvedPerms.profileMetadata) {
         const profileResult = scanProfileLike(
-          { preset: user.role, metadata: resolvedPerms.profileMetadata, name: user.profileName },
+          { role: user.role, metadata: resolvedPerms.profileMetadata, name: user.profileName },
           this.auditContext,
           [user.username]
         );
@@ -42,7 +42,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
         continue;
       }
       const permsetScan = scanProfileLike(
-        { preset: user.role, metadata: assignedPermSet.metadata, name: assignedPermSet.permissionSetIdentifier },
+        { role: user.role, metadata: assignedPermSet.metadata, name: assignedPermSet.permissionSetIdentifier },
         this.auditContext,
         [user.username]
       );

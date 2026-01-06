@@ -10,7 +10,7 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'ru
 
 export type ResolvedProfileLike = {
   name: string;
-  preset: string;
+  role: string;
   metadata: PartialProfileLike;
 };
 
@@ -64,12 +64,12 @@ export function scanPermissions(
           identifier,
           message: messages.getMessage('violations.permission-is-blocked'),
         });
-      } else if (!permissionAllowedInPreset(permClassification.classification, profile.preset)) {
+      } else if (!permissionAllowedInPreset(permClassification.classification, profile.role)) {
         result.violations.push({
           identifier,
           message: messages.getMessage('violations.classification-preset-mismatch', [
             permClassification.classification,
-            profile.preset,
+            profile.role,
           ]),
         });
       } else if (permClassification.classification === PermissionRiskLevel.UNKNOWN) {

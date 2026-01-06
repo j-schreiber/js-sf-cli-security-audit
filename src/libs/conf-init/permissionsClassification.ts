@@ -9,7 +9,7 @@ import { ACTIVE_USERS_QUERY, CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES
 import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import { CustomPermission, PermissionSet, User } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
-import { ProfilesRiskPreset } from '../core/policy-types.js';
+import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
 
@@ -78,7 +78,7 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesCl
   const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
   const content: ProfilesClassificationContent = { profiles: {} };
   profiles.records.forEach((permsetRecord) => {
-    content.profiles[permsetRecord.Profile.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
+    content.profiles[permsetRecord.Profile.Name] = { role: UserPrivilegeLevel.UNKNOWN };
   });
   return content;
 }
@@ -95,7 +95,7 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
   permSets.records
     .filter((permsetRecord) => permsetRecord.IsCustom)
     .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { preset: ProfilesRiskPreset.UNKNOWN };
+      content.permissionSets[permsetRecord.Name] = { role: UserPrivilegeLevel.UNKNOWN };
     });
   return content;
 }
@@ -111,7 +111,7 @@ export async function initUsers(targetOrgCon: Connection): Promise<UsersClassifi
     users: {},
   };
   users.records.forEach((userRecord) => {
-    content.users[userRecord.Username] = { role: ProfilesRiskPreset.STANDARD_USER };
+    content.users[userRecord.Username] = { role: UserPrivilegeLevel.STANDARD_USER };
   });
   return content;
 }

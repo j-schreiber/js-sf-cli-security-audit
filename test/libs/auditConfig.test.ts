@@ -7,7 +7,7 @@ import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
 import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
-import { ProfilesRiskPreset } from '../../src/libs/core/policy-types.js';
+import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
 import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
@@ -180,7 +180,7 @@ describe('audit config', () => {
         'insightsintegration@sf.com',
         'test-user-1@example.com',
       ]);
-      expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(ProfilesRiskPreset.STANDARD_USER);
+      expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(UserPrivilegeLevel.STANDARD_USER);
     });
   });
 
@@ -260,14 +260,14 @@ describe('audit config', () => {
       // Act
       Object.values(mockAudit.classifications.profiles!.content.profiles).forEach((profile) => {
         // eslint-disable-next-line no-param-reassign
-        profile.preset = ProfilesRiskPreset.ADMIN;
+        profile.role = UserPrivilegeLevel.ADMIN;
       });
       saveAuditConfig(testDir, mockAudit);
 
       // Assert
       const updatedConf = loadAuditConfig(testDir);
       Object.values(updatedConf.classifications.profiles!.content.profiles).forEach((profile) => {
-        expect(profile.preset).to.equal(ProfilesRiskPreset.ADMIN);
+        expect(profile.role).to.equal(UserPrivilegeLevel.ADMIN);
       });
     });
   });

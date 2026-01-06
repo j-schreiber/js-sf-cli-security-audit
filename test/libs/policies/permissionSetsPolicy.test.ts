@@ -6,7 +6,7 @@ import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js
 import PermissionSetPolicy from '../../../src/libs/core/policies/permissionSetPolicy.js';
 import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
-import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 
@@ -37,10 +37,10 @@ describe('permission sets policy', () => {
         content: {
           permissionSets: {
             Test_Admin_Permission_Set_1: {
-              preset: ProfilesRiskPreset.ADMIN,
+              role: UserPrivilegeLevel.ADMIN,
             },
             Test_Power_User_Permission_Set_1: {
-              preset: ProfilesRiskPreset.POWER_USER,
+              role: UserPrivilegeLevel.POWER_USER,
             },
           },
         },
@@ -81,12 +81,12 @@ describe('permission sets policy', () => {
     );
     const expectedResolvedEntities = {
       Test_Admin_Permission_Set_1: {
-        preset: 'Admin',
+        role: 'Admin',
         name: 'Test_Admin_Permission_Set_1',
         metadata: adminPermset,
       },
       Test_Power_User_Permission_Set_1: {
-        preset: 'Power User',
+        role: 'Power User',
         name: 'Test_Power_User_Permission_Set_1',
         metadata: poweruserPermset,
       },
@@ -102,8 +102,8 @@ describe('permission sets policy', () => {
     // Arrange
     const PERMSET_CONFIG = structuredClone(DEFAULT_PERMSET_CONFIG);
     const mockedPermsets = $$.mockAuditConfig.classifications.permissionSets!.content.permissionSets;
-    mockedPermsets['Test_Admin_Permission_Set_N'] = { preset: ProfilesRiskPreset.UNKNOWN };
-    mockedPermsets['An_Unknown_Permission_Set'] = { preset: ProfilesRiskPreset.STANDARD_USER };
+    mockedPermsets['Test_Admin_Permission_Set_N'] = { role: UserPrivilegeLevel.UNKNOWN };
+    mockedPermsets['An_Unknown_Permission_Set'] = { role: UserPrivilegeLevel.STANDARD_USER };
 
     // Act
     const pol = new PermissionSetPolicy(PERMSET_CONFIG, $$.mockAuditConfig);

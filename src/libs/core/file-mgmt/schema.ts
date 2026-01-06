@@ -1,7 +1,7 @@
 import z from 'zod';
 import { Messages } from '@salesforce/core';
 import { PermissionRiskLevel } from '../classification-types.js';
-import { ProfilesRiskPreset } from '../policy-types.js';
+import { UserPrivilegeLevel } from '../policy-types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -36,19 +36,19 @@ const PolicyRuleConfigSchema = z.object({
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
 
 const PermSetConfig = z.object({
-  preset: z.enum(ProfilesRiskPreset),
+  role: z.enum(UserPrivilegeLevel),
 });
 
 const PermSetMap = z.record(z.string(), PermSetConfig);
 
 const ProfilesMap = z.record(z.string(), PermSetConfig);
 
-const UserConfig = z.object({ role: z.enum(ProfilesRiskPreset) });
+const UserConfig = z.object({ role: z.enum(UserPrivilegeLevel) });
 
 const UsersMap = z.record(z.string(), UserConfig);
 
 export const UsersPolicyConfig = z.strictObject({
-  defaultRoleForMissingUsers: z.enum(ProfilesRiskPreset).default(ProfilesRiskPreset.STANDARD_USER),
+  defaultRoleForMissingUsers: z.enum(UserPrivilegeLevel).default(UserPrivilegeLevel.STANDARD_USER),
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 

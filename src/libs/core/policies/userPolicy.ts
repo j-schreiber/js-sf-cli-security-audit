@@ -3,7 +3,7 @@ import { EntityResolveError } from '../result-types.js';
 import { AuditRunConfig, UsersClassificationContent, UsersPolicyFileContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
 import { ResolvedUser, UsersRegistry } from '../registries/users.js';
-import { ProfilesRiskPreset } from '../policy-types.js';
+import { UserPrivilegeLevel } from '../policy-types.js';
 import UsersRepository from '../mdapi/usersRepository.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
@@ -33,7 +33,7 @@ export default class UserPolicy extends Policy<ResolvedUser> {
     const resolvedEntities: Record<string, ResolvedUser> = {};
     const ignoredEntities: Record<string, EntityResolveError> = {};
     for (const [userName, userDef] of Object.entries(this.classifications.users)) {
-      if (userDef.role === ProfilesRiskPreset.UNKNOWN) {
+      if (userDef.role === UserPrivilegeLevel.UNKNOWN) {
         ignoredEntities[userName] = {
           name: userName,
           message: messages.getMessage('user-with-role-unknown'),
