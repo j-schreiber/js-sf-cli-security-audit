@@ -10,7 +10,7 @@ import { Profile } from '../../../src/libs/core/policies/salesforceStandardTypes
 import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 
@@ -30,12 +30,12 @@ const DEFAULT_PROFILE_CONFIG: BasePolicyFileContent = {
 
 const EXPECTED_RESOLVED_DEFAULT_ENTITIES = {
   'System Administrator': {
-    preset: 'Admin',
+    role: 'Admin',
     name: 'System Administrator',
     metadata: loadProfileMetadata('admin-profile-with-metadata.json'),
   },
   'Standard User': {
-    preset: 'Standard User',
+    role: 'Standard User',
     name: 'Standard User',
     metadata: loadProfileMetadata('standard-profile-with-metadata.json'),
   },
@@ -54,13 +54,13 @@ describe('profile policy', () => {
         content: {
           profiles: {
             'System Administrator': {
-              preset: ProfilesRiskPreset.ADMIN,
+              role: UserPrivilegeLevel.ADMIN,
             },
             'Standard User': {
-              preset: ProfilesRiskPreset.STANDARD_USER,
+              role: UserPrivilegeLevel.STANDARD_USER,
             },
             'Custom Profile': {
-              preset: ProfilesRiskPreset.POWER_USER,
+              role: UserPrivilegeLevel.POWER_USER,
             },
           },
         },
@@ -165,7 +165,7 @@ describe('profile policy', () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
     $$.mocks.setQueryMock("SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'", 'empty');
-    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.POWER_USER });
+    $$.mockProfileClassification('Custom Profile', { role: UserPrivilegeLevel.POWER_USER });
 
     // Act
     const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
@@ -181,7 +181,7 @@ describe('profile policy', () => {
   it('ignores profiles with UNKNOWN preset without attempting to resolve', async () => {
     // Arrange
     stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
-    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.UNKNOWN });
+    $$.mockProfileClassification('Custom Profile', { role: UserPrivilegeLevel.UNKNOWN });
 
     // Act
     const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
@@ -201,7 +201,7 @@ describe('profile policy', () => {
       "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
       'profile-with-null-metadata'
     );
-    $$.mockProfileClassification('Custom Profile', { preset: ProfilesRiskPreset.POWER_USER });
+    $$.mockProfileClassification('Custom Profile', { role: UserPrivilegeLevel.POWER_USER });
 
     // Act
     const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);

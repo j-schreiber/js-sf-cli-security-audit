@@ -3,7 +3,7 @@ import { EntityResolveError } from '../result-types.js';
 import { AuditRunConfig, BasePolicyFileContent, ProfilesClassificationContent } from '../file-mgmt/schema.js';
 import MDAPI from '../mdapi/mdapiRetriever.js';
 import { AuditContext } from '../registries/types.js';
-import { ProfilesRiskPreset } from '../policy-types.js';
+import { UserPrivilegeLevel } from '../policy-types.js';
 import { ProfilesRegistry, ResolvedProfile } from '../registries/profiles.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
@@ -33,7 +33,7 @@ export default class ProfilePolicy extends Policy<ResolvedProfile> {
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const classifiedProfiles: string[] = [];
     Object.entries(this.classifications.profiles).forEach(([profileName, profileDef]) => {
-      if (profileDef.preset === ProfilesRiskPreset.UNKNOWN) {
+      if (profileDef.role === UserPrivilegeLevel.UNKNOWN) {
         ignoredEntities[profileName] = {
           name: profileName,
           message: messages.getMessage('preset-unknown', ['Profile']),
@@ -49,7 +49,7 @@ export default class ProfilePolicy extends Policy<ResolvedProfile> {
       if (resolvedProfile) {
         successfullyResolved[profileName] = {
           name: profileName,
-          preset: this.classifications.profiles[profileName].preset,
+          role: this.classifications.profiles[profileName].role,
           metadata: resolvedProfile,
         };
       } else {

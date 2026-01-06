@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
 import UsersRepository from '../../mdapi/usersRepository.js';
-import { ProfilesRiskPreset, resolvePresetOrdinalValue } from '../../policy-types.js';
+import { UserPrivilegeLevel, resolvePresetOrdinalValue } from '../../policy-types.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { capitalize } from '../../utils.js';
 import { ResolvedUser } from '../users.js';
@@ -22,7 +22,7 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
     const userPerms = await userRepo.resolveUserPermissions(Object.values(users), { withMetadata: false });
     for (const user of Object.values(users)) {
       const profilePreset = this.auditContext.classifications.profiles?.content.profiles[user.profileName];
-      auditPermissionsEntity(result, user, 'profile', user.profileName, profilePreset?.preset);
+      auditPermissionsEntity(result, user, 'profile', user.profileName, profilePreset?.role);
       const permsets = userPerms.get(user.userId);
       if (permsets) {
         for (const assignment of permsets.assignedPermissionsets) {
@@ -35,7 +35,7 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
             user,
             'permission set',
             assignment.permissionSetIdentifier,
-            permsetPreset?.preset
+            permsetPreset?.role
           );
         }
       }
@@ -49,10 +49,10 @@ function auditPermissionsEntity(
   user: ResolvedUser,
   entityType: string,
   entityIdentifier: string,
-  entityPreset?: ProfilesRiskPreset
+  entityPreset?: UserPrivilegeLevel
 ): void {
   if (entityPreset) {
-    if (entityPreset === ProfilesRiskPreset.UNKNOWN) {
+    if (entityPreset === UserPrivilegeLevel.UNKNOWN) {
       result.violations.push({
         identifier: [user.username, entityIdentifier],
         message: messages.getMessage('violations.entity-unknown-but-used', [capitalize(entityType)]),

@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import MDAPI from '../mdapi/mdapiRetriever.js';
 import { AuditRunConfig, BasePolicyFileContent, PermissionSetsClassificationContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
-import { ProfilesRiskPreset } from '../policy-types.js';
+import { UserPrivilegeLevel } from '../policy-types.js';
 import { EntityResolveError } from '../result-types.js';
 import { PermissionSetsRegistry, ResolvedPermissionSet } from '../registries/permissionSets.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
@@ -38,11 +38,11 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
       if (resolved) {
         successfullyResolved[key] = {
           metadata: resolved,
-          preset: val.preset,
+          role: val.role,
           name: key,
         };
       } else if (successfullyResolved[key] === undefined) {
-        if (val.preset === ProfilesRiskPreset.UNKNOWN) {
+        if (val.role === UserPrivilegeLevel.UNKNOWN) {
           unresolved[key] = { name: key, message: messages.getMessage('preset-unknown', ['Permission Set']) };
         } else {
           unresolved[key] = { name: key, message: messages.getMessage('entity-not-found') };
@@ -61,7 +61,7 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
 function filterCategorizedPermsets(permSets: PermissionSetsClassificationContent): string[] {
   const filteredNames: string[] = [];
   Object.entries(permSets.permissionSets).forEach(([key, val]) => {
-    if (val.preset !== ProfilesRiskPreset.UNKNOWN) {
+    if (val.role !== UserPrivilegeLevel.UNKNOWN) {
       filteredNames.push(key);
     }
   });

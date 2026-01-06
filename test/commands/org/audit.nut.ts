@@ -5,7 +5,7 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../../src/commands/org/audit/run.js';
 import { DefaultFileManager } from '../../../src/libs/core/file-mgmt/auditConfigFileManager.js';
-import { ProfilesRiskPreset } from '../../../src/libs/core/policy-types.js';
+import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 
 const scratchOrgAlias = 'TestTargetOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
@@ -23,19 +23,19 @@ describe('org audit NUTs', () => {
     return path.join(session.dir, 'test-sfdx-project', filePath);
   }
 
-  function activateClassifications(dirPath: string, preset: ProfilesRiskPreset) {
+  function activateClassifications(dirPath: string, role: UserPrivilegeLevel) {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = DefaultFileManager.parse(configDirPath);
     if (conf.classifications.profiles?.content.profiles) {
       for (const profile of Object.values(conf.classifications.profiles.content.profiles)) {
         // eslint-disable-next-line no-param-reassign
-        profile.preset = preset;
+        profile.role = role;
       }
     }
     if (conf.classifications.permissionSets?.content.permissionSets) {
       for (const profile of Object.values(conf.classifications.permissionSets.content.permissionSets)) {
         // eslint-disable-next-line no-param-reassign
-        profile.preset = preset;
+        profile.role = role;
       }
     }
     DefaultFileManager.save(configDirPath, conf);
@@ -100,7 +100,7 @@ describe('org audit NUTs', () => {
 
   it('successfully completes an audit with all policies active', async () => {
     // Arrange
-    activateClassifications('tmp', ProfilesRiskPreset.ADMIN);
+    activateClassifications('tmp', UserPrivilegeLevel.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
