@@ -21,7 +21,10 @@ export default class NoOtherApexApiLogins extends PolicyRule<ResolvedUser> {
         if (loginSummary.loginType === 'Other Apex API') {
           result.violations.push({
             identifier: [user.username, new Date(loginSummary.lastLogin).toISOString()],
-            message: messages.getMessage('violations.no-other-apex-api-logins', [loginSummary.loginCount]),
+            message: messages.getMessage('violations.no-other-apex-api-logins', [
+              loginSummary.loginCount,
+              this.opts.auditContext.policies.users?.content.options.analyseLastNDaysOfLoginHistory,
+            ]),
           });
         }
       }

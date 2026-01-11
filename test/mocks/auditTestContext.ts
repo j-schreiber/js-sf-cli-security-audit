@@ -89,6 +89,7 @@ export default class AuditTestContext {
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
     this.mocks = new SfConnectionMocks(buildDefaultMocks());
+    this.mockAuditConfig = { policies: {}, classifications: {} };
   }
 
   public stubMetadataRetrieve(dirPath: string) {

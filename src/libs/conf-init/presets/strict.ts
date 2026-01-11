@@ -7,6 +7,8 @@ export default class StrictPreset extends NonePreset {
       UseAnyApiClient: PermissionRiskLevel.BLOCKED,
       BypassMFAForUiLogins: PermissionRiskLevel.BLOCKED,
       BulkApiHardDelete: PermissionRiskLevel.BLOCKED,
+      DeleteFieldHistory: PermissionRiskLevel.BLOCKED,
+      DeleteFieldHistoryArchive: PermissionRiskLevel.BLOCKED,
       ManageNamedCredentials: PermissionRiskLevel.CRITICAL,
       ImportCustomObjects: PermissionRiskLevel.CRITICAL,
       ManageSandboxes: PermissionRiskLevel.CRITICAL,

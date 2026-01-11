@@ -69,3 +69,11 @@ Reports allow to export classified or sensitive data.
 # ManageRemoteAccess
 
 Manage, create, edit, and delete connected applications.
+
+# DeleteFieldHistoryArchive
+
+Enabled in "User Interface" and allows to delete audit records. It should be limited to technical users.
+
+# DeleteFieldHistory
+
+Enabled in "User Interface" and allows to delete audit records. It should be limited to technical users.

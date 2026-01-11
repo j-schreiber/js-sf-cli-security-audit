@@ -45,6 +45,10 @@ export type AuditContext = {
   targetOrgConnection: Connection;
 };
 
+/**
+ * Run-time context of execution, that is directly resolved
+ * from the target org.
+ */
 export type RuleAuditContext<T> = AuditContext & {
   /**
    * Resolved entities from the policy. Can be permission sets,

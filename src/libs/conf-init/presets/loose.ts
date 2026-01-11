@@ -5,6 +5,9 @@ import NonePreset from './none.js';
 export default class LoosePreset extends NonePreset {
   public constructor() {
     super({
+      DeleteFieldHistory: PermissionRiskLevel.CRITICAL,
+      DeleteFieldHistoryArchive: PermissionRiskLevel.CRITICAL,
+      BulkApiHardDelete: PermissionRiskLevel.HIGH,
       UseAnyApiClient: PermissionRiskLevel.HIGH,
       BypassMFAForUiLogins: PermissionRiskLevel.HIGH,
       ExternalClientAppAdmin: PermissionRiskLevel.HIGH,
@@ -43,7 +46,6 @@ export default class LoosePreset extends NonePreset {
       CodeBuilderUser: PermissionRiskLevel.HIGH,
       MonitorLoginHistory: PermissionRiskLevel.HIGH,
       ManagePackageLicenses: PermissionRiskLevel.HIGH,
-      BulkApiHardDelete: PermissionRiskLevel.HIGH,
       ViewHealthCheck: PermissionRiskLevel.MEDIUM,
       FreezeUsers: PermissionRiskLevel.MEDIUM,
       ManageRoles: PermissionRiskLevel.MEDIUM,

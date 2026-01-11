@@ -6,7 +6,7 @@ import { Messages } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/core/result-types.js';
 import { startAuditRun } from '../../../libs/core/auditRun.js';
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
-import { capitalize } from '../../../libs/core/utils.js';
+import { capitalize, formatToLocale } from '../../../libs/core/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -98,7 +98,10 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       this.table({
         data: uncompliantRule.violations.map((viol) => ({
           ...viol,
-          identifier: typeof viol.identifier === 'string' ? viol.identifier : viol.identifier.join(MERGE_CHAR),
+          identifier:
+            typeof viol.identifier === 'string'
+              ? formatToLocale(viol.identifier)
+              : viol.identifier.map((id) => formatToLocale(id)).join(MERGE_CHAR),
         })),
         title: `Violations for ${uncompliantRule.ruleName}`,
       });

@@ -1,0 +1,27 @@
+{
+  "auditDate": "2026-01-06T20:17:14.420Z",
+  "isCompliant": true,
+  "policies": {
+    "users": {
+      "isCompliant": false,
+      "enabled": true,
+      "executedRules": {
+        "NoOtherApexApiLogins": {
+          "ruleName": "NoOtherApexApiLogins",
+          "violations": [
+            { "identifier": ["business@jannis-schreiber.me", "2025-01-11T15:10:00Z"], "message": "Violation message" }
+          ],
+          "mutedViolations": [],
+          "warnings": [],
+          "errors": [],
+          "isCompliant": false,
+          "compliantEntities": [],
+          "violatedEntities": ["business@jannis-schreiber.me"]
+        }
+      },
+      "skippedRules": [],
+      "auditedEntities": ["business@jannis-schreiber.me"],
+      "ignoredEntities": []
+    }
+  }
+}
