@@ -9,7 +9,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
 
 export default class NoInactiveUsers extends PolicyRule<ResolvedUser> {
-  private ruleConfig: NoInactiveUsersOptions;
+  private readonly ruleConfig: NoInactiveUsersOptions;
 
   public constructor(localOpts: ConfigurableRuleOptions<NoInactiveUsersOptions>) {
     super(localOpts);

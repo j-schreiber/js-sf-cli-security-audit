@@ -34,6 +34,7 @@ describe('users policy', () => {
   const $$ = new AuditTestContext();
 
   async function resolveAndRun(config: UsersPolicyFileContent): Promise<AuditPolicyResult> {
+    $$.mockAuditConfig.policies.users = { content: config };
     const pol = new UserPolicy(config, $$.mockAuditConfig);
     await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
     const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
@@ -177,12 +178,16 @@ describe('users policy', () => {
 
       beforeEach(() => {
         ruleEnabledConfig = structuredClone(DEFAULT_CONFIG);
+        ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory = 30;
         ruleEnabledConfig.rules['NoOtherApexApiLogins'] = { enabled: true };
       });
 
       it('reports violation if user has login with "Other Apex API"', async () => {
         // Arrange
-        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-other-apex-api');
+        $$.mocks.setQueryMock(
+          buildLoginHistoryQuery(ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory),
+          'logins-with-other-apex-api'
+        );
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -194,14 +199,20 @@ describe('users policy', () => {
         expect(result.executedRules.NoOtherApexApiLogins.violations).to.deep.equal([
           {
             identifier: ['test-user-1@example.de', '2025-08-07T10:01:17.000Z'],
-            message: messages.getMessage('violations.no-other-apex-api-logins', [10]),
+            message: messages.getMessage('violations.no-other-apex-api-logins', [
+              10,
+              ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory,
+            ]),
           },
         ]);
       });
 
       it('reports no violation if user has no logins with "Other Apex API', async () => {
         // Arrange
-        $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
+        $$.mocks.setQueryMock(
+          buildLoginHistoryQuery(ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory),
+          'logins-with-browser-only'
+        );
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);

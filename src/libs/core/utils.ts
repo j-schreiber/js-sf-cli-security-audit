@@ -1,3 +1,5 @@
+import { isDate } from 'node:util/types';
+
 export function isEmpty(anything?: unknown): boolean {
   if (isNullish(anything)) {
     return true;
@@ -18,6 +20,33 @@ export function capitalize(anyString: string): string {
 
 export function uncapitalize(anyString: string): string {
   return `${anyString[0].toLowerCase()}${anyString.slice(1)}`;
+}
+
+export function isParseableDate(value: unknown): boolean {
+  if (typeof value === 'string') {
+    const d = new Date(value);
+    return !Number.isNaN(d.getTime());
+  }
+  return false;
+}
+
+export function formatToLocale(value: unknown): string {
+  if (isParseableDate(value)) {
+    return new Date(value as string).toLocaleString();
+  }
+  if (isDate(value)) {
+    return value.toLocaleString();
+  }
+  switch (typeof value) {
+    case 'string':
+      return value;
+    case 'number':
+      return value.toLocaleString();
+    case 'object':
+      return JSON.stringify(value);
+    default:
+      return '';
+  }
 }
 
 /**
