@@ -1799,7 +1799,6 @@ __metadata:
     "@release-it/conventional-changelog": "npm:^10.0.4"
     "@salesforce/apex-node": "npm:^8.4.2"
     "@salesforce/cli-plugins-testkit": "npm:^5.3.41"
-    "@salesforce/core": "npm:8.24.0"
     "@salesforce/dev-scripts": "npm:^11.0.4"
     "@salesforce/kit": "npm:^3.2.4"
     "@salesforce/packaging": "npm:^4.18.7"
@@ -2349,7 +2348,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salesforce/core@npm:8.24.0, @salesforce/core@npm:^8.18.7, @salesforce/core@npm:^8.23.1, @salesforce/core@npm:^8.23.3, @salesforce/core@npm:^8.23.4, @salesforce/core@npm:^8.24.0, @salesforce/core@npm:^8.5.1, @salesforce/core@npm:^8.8.0":
+"@salesforce/core@npm:^8.18.7, @salesforce/core@npm:^8.23.1, @salesforce/core@npm:^8.23.3, @salesforce/core@npm:^8.23.4, @salesforce/core@npm:^8.24.0, @salesforce/core@npm:^8.5.1, @salesforce/core@npm:^8.8.0":
   version: 8.24.0
   resolution: "@salesforce/core@npm:8.24.0"
   dependencies:
