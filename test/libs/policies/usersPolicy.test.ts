@@ -133,7 +133,8 @@ describe('users policy', () => {
       $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
 
       // Act
-      const pol = new UserPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
+      const config = { ...DEFAULT_CONFIG, rules: { NoInactiveUsers: { enabled: true } } };
+      const pol = new UserPolicy(config, $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -152,8 +153,14 @@ describe('users policy', () => {
       // Arrange
       const expectedQuery = buildLoginHistoryQuery(30);
       $$.mocks.setQueryMock(expectedQuery, 'logins-with-browser-only');
-      const config = structuredClone(DEFAULT_CONFIG);
-      config.options.analyseLastNDaysOfLoginHistory = 30;
+      const config = {
+        enabled: true,
+        rules: { NoInactiveUsers: { enabled: true } },
+        options: {
+          defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
+          analyseLastNDaysOfLoginHistory: 30,
+        },
+      };
 
       // Act
       const pol = new UserPolicy(config, $$.mockAuditConfig);
