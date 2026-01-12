@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { NoInactiveUsersOptions, NoInactiveUsersOptionsSchema } from '../../file-mgmt/schema.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { differenceInDays } from '../../utils.js';
-import { ResolvedUser } from '../users.js';
+import { ResolvedUser } from '../../policies/userPolicy.js';
 import PolicyRule, { ConfigurableRuleOptions, parseRuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
