@@ -1,7 +1,6 @@
-import UsersRepository, { PermissionSetAssignment } from '../../mdapi/usersRepository.js';
+import { ResolvedUser } from '../../policies/userPolicy.js';
 import { scanProfileLike, ScanResult } from '../helpers/permissionsScanning.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
-import { ResolvedUser } from '../users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
@@ -9,22 +8,16 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     super(opts);
   }
 
-  public async run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
+  public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const users = context.resolvedEntities;
-    const userRepo = new UsersRepository(context.targetOrgConnection);
-    const userPerms = await userRepo.resolveUserPermissions(Object.values(users), { withMetadata: true });
     for (const user of Object.values(users)) {
-      const resolvedPerms = userPerms.get(user.userId);
-      if (!resolvedPerms) {
-        continue;
-      }
-      const permsetResult = this.scanAssignedPermissionSets(user, resolvedPerms.assignedPermissionsets);
-      result.violations.push(...permsetResult.violations);
-      result.warnings.push(...permsetResult.warnings);
-      if (resolvedPerms.profileMetadata) {
+      const { violations, warnings } = this.scanAssignedPermissionSets(user, user.assignments);
+      result.violations.push(...violations);
+      result.warnings.push(...warnings);
+      if (user.profileMetadata) {
         const profileResult = scanProfileLike(
-          { role: user.role, metadata: resolvedPerms.profileMetadata, name: user.profileName },
+          { role: user.role, metadata: user.profileMetadata, name: user.profileName },
           this.auditContext,
           [user.username]
         );
@@ -32,12 +25,15 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
         result.warnings.push(...profileResult.warnings);
       }
     }
-    return result;
+    return Promise.resolve(result);
   }
 
-  private scanAssignedPermissionSets(user: ResolvedUser, actualAssignments: PermissionSetAssignment[]): ScanResult {
+  private scanAssignedPermissionSets(user: ResolvedUser, assignments: ResolvedUser['assignments']): ScanResult {
     const result: ScanResult = { violations: [], warnings: [] };
-    for (const assignedPermSet of actualAssignments) {
+    if (!assignments) {
+      return result;
+    }
+    for (const assignedPermSet of assignments) {
       if (!assignedPermSet.metadata) {
         continue;
       }
