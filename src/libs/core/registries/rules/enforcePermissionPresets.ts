@@ -1,9 +1,8 @@
 import { Messages } from '@salesforce/core';
-import UsersRepository from '../../mdapi/usersRepository.js';
 import { UserPrivilegeLevel, resolvePresetOrdinalValue } from '../../policy-types.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
 import { capitalize } from '../../utils.js';
-import { ResolvedUser } from '../users.js';
+import { ResolvedUser } from '../../policies/userPolicy.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -14,18 +13,14 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
     super(opts);
   }
 
-  public async run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
+  public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const users = context.resolvedEntities;
-    const userRepo = new UsersRepository(context.targetOrgConnection);
-    // options "with/without metadata - only identifiers"
-    const userPerms = await userRepo.resolveUserPermissions(Object.values(users), { withMetadata: false });
     for (const user of Object.values(users)) {
-      const profilePreset = this.auditContext.classifications.profiles?.content.profiles[user.profileName];
-      auditPermissionsEntity(result, user, 'profile', user.profileName, profilePreset?.role);
-      const permsets = userPerms.get(user.userId);
-      if (permsets) {
-        for (const assignment of permsets.assignedPermissionsets) {
+      const profileRole = this.auditContext.classifications.profiles?.content.profiles[user.profileName];
+      auditPermissionsEntity(result, user, 'profile', user.profileName, profileRole?.role);
+      if (user.assignments) {
+        for (const assignment of user.assignments) {
           const permsetPreset =
             this.auditContext.classifications.permissionSets?.content.permissionSets[
               assignment.permissionSetIdentifier
@@ -40,7 +35,7 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
         }
       }
     }
-    return result;
+    return Promise.resolve(result);
   }
 }
 

@@ -176,9 +176,9 @@ describe('audit config', () => {
       const userClassification = auditConf.classifications.users.content;
       const userPolicy = auditConf.policies.users.content;
       expect(Object.keys(userClassification.users)).to.deep.equal([
-        'guest-user@example.com',
-        'insightsintegration@sf.com',
-        'test-user-1@example.com',
+        'guest-user@example.de',
+        'test-user-1@example.de',
+        'test-user-2@example.de',
       ]);
       expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(UserPrivilegeLevel.STANDARD_USER);
     });

@@ -4,15 +4,15 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
-import {
-  ACTIVE_USERS_DETAILS_QUERY,
-  buildLoginHistoryQuery,
-  buildPermsetAssignmentsQuery,
-} from '../../../src/libs/core/constants.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
 import { differenceInDays } from '../../../src/libs/core/utils.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
+import {
+  ACTIVE_USERS_DETAILS_QUERY,
+  buildLoginHistoryQuery,
+  buildPermsetAssignmentsQuery,
+} from '../../../src/libs/core/salesforce-apis/users/queries.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -133,7 +133,8 @@ describe('users policy', () => {
       $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
 
       // Act
-      const pol = new UserPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
+      const config = { ...DEFAULT_CONFIG, rules: { NoInactiveUsers: { enabled: true } } };
+      const pol = new UserPolicy(config, $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -152,8 +153,14 @@ describe('users policy', () => {
       // Arrange
       const expectedQuery = buildLoginHistoryQuery(30);
       $$.mocks.setQueryMock(expectedQuery, 'logins-with-browser-only');
-      const config = structuredClone(DEFAULT_CONFIG);
-      config.options.analyseLastNDaysOfLoginHistory = 30;
+      const config = {
+        enabled: true,
+        rules: { NoInactiveUsers: { enabled: true } },
+        options: {
+          defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
+          analyseLastNDaysOfLoginHistory: 30,
+        },
+      };
 
       // Act
       const pol = new UserPolicy(config, $$.mockAuditConfig);
