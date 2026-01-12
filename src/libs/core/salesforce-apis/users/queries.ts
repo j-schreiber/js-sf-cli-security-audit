@@ -1,5 +1,3 @@
-export const ACTIVE_USERS_QUERY =
-  "SELECT Id,Username,UserType FROM User WHERE IsActive = TRUE AND UserType IN ('Standard') LIMIT 2000";
 export const ACTIVE_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate FROM User WHERE IsActive = TRUE AND UserType IN ('Standard') LIMIT 2000";
 

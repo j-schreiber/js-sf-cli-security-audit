@@ -5,10 +5,11 @@ import {
   ProfilesClassificationContent,
   UsersClassificationContent,
 } from '../core/file-mgmt/schema.js';
-import { ACTIVE_USERS_QUERY, CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
+import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
 import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { CustomPermission, PermissionSet, User } from '../core/policies/salesforceStandardTypes.js';
+import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
+import { Users } from '../core/salesforce-apis/index.js';
 import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
@@ -106,13 +107,12 @@ export async function initPermissionSets(targetOrgCon: Connection): Promise<Perm
  * @param targetOrgCon
  */
 export async function initUsers(targetOrgCon: Connection): Promise<UsersClassificationContent> {
-  const users = await targetOrgCon.query<User>(ACTIVE_USERS_QUERY);
+  const usersRepo = new Users(targetOrgCon);
+  const users = await usersRepo.resolve();
   const content: UsersClassificationContent = {
     users: {},
   };
-  users.records.forEach((userRecord) => {
-    content.users[userRecord.Username] = { role: UserPrivilegeLevel.STANDARD_USER };
-  });
+  for (const username of users.keys()) content.users[username] = { role: UserPrivilegeLevel.STANDARD_USER };
   return content;
 }
 

@@ -19,9 +19,6 @@ import {
 } from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
-  ACTIVE_USERS_DETAILS_QUERY,
-  ACTIVE_USERS_QUERY,
-  buildLoginHistoryQuery,
   CONNECTED_APPS_QUERY,
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
@@ -35,6 +32,10 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
+import {
+  ACTIVE_USERS_DETAILS_QUERY,
+  buildLoginHistoryQuery,
+} from '../../src/libs/core/salesforce-apis/users/queries.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 const DEFAULT_MOCKS = {
@@ -237,7 +238,7 @@ function buildDefaultMocks() {
   defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
-  defaults.queries[ACTIVE_USERS_QUERY] = 'active-users';
+  defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-users';
   defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
   defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';

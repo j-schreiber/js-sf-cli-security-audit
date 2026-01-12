@@ -15,16 +15,9 @@ export type ConnectedApp = Record & {
 
 export type OauthToken = Record & {
   Id: string;
-  User: Pick<User, 'Username'>;
+  User: { Username: string };
   AppName: string;
   UseCount: number;
-};
-
-export type User = Record & {
-  Username: string;
-  LastLoginDate?: string;
-  CreatedDate: string;
-  Profile: ProfileBasic;
 };
 
 export type Profile = ProfileBasic & {
@@ -45,23 +38,4 @@ export type PermissionSet = Record & {
   Label: string;
   Profile: ProfileBasic;
   NamespacePrefix?: string;
-};
-
-export type PermissionSetGroup = Record & {
-  DeveloperName: string;
-};
-
-export type PermissionSetAssignment = Record & {
-  AssigneeId: string;
-  PermissionSet: Pick<PermissionSet, 'Name'>;
-  PermissionSetGroupId?: string;
-  PermissionSetGroup?: PermissionSetGroup;
-};
-
-export type UserLoginsAggregate = Record & {
-  LoginType: string;
-  Application: string;
-  UserId: string;
-  LoginCount: number;
-  LastLogin: string;
 };
