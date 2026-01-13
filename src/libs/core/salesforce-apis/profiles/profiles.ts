@@ -1,7 +1,7 @@
 import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapiRetriever.js';
 import { buildProfilesQuery } from './queries.js';
-import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsSchema } from './profiles.types.js';
+import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsSchema } from './profile.types.js';
 
 export default class Profiles {
   private readonly mdapi: MDAPI;
