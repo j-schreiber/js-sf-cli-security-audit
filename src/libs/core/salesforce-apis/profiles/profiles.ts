@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapiRetriever.js';
-import { PROFILES_QUERY } from './queries.js';
+import { buildProfilesQuery } from './queries.js';
 import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsSchema } from './profiles.types.js';
 
 export default class Profiles {
@@ -16,10 +16,10 @@ export default class Profiles {
    * @param opts
    * @returns
    */
-  public async resolve(opts?: ResolveProfilesOptions): Promise<Map<string, Profile>> {
+  public async resolve(opts?: Partial<ResolveProfilesOptions>): Promise<Map<string, Profile>> {
     const definitiveOpts = ResolveProfilesOptionsSchema.parse(opts ?? {});
     const result = new Map<string, Profile>();
-    const profilePermsets = await this.con.query<PermissionSet>(PROFILES_QUERY);
+    const profilePermsets = await this.con.query<PermissionSet>(buildProfilesQuery(definitiveOpts.filterNames));
     const resolved = definitiveOpts.withMetadata
       ? await this.mdapi.resolve(
           'Profile',
@@ -33,6 +33,9 @@ export default class Profiles {
         name: sfPermSet.Profile.Name,
         metadata: resolved[sfPermSet.Profile.Name],
       });
+      if (definitiveOpts.withMetadata && resolved[sfPermSet.Profile.Name] === undefined) {
+        result.delete(sfPermSet.Profile.Name);
+      }
     }
     return result;
   }

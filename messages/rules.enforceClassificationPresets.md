@@ -1,10 +1,10 @@
 # violations.classification-preset-mismatch
 
-Permission is classified as "%s" and not allowed in preset "%s".
+Permission is classified as "%s" and not allowed in role "%s".
 
 # violations.permission-is-blocked
 
-Permission is BLOCKED and not allowed in any preset.
+Permission is BLOCKED and not allowed for any role.
 
 # warnings.permission-unknown
 

@@ -23,7 +23,6 @@ import {
   CUSTOM_PERMS_QUERY,
   OAUTH_TOKEN_QUERY,
   PERMISSION_SETS_QUERY,
-  PROFILES_QUERY,
   RETRIEVE_CACHE,
 } from '../../src/libs/core/constants.js';
 import {
@@ -32,18 +31,8 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
-import {
-  ACTIVE_USERS_DETAILS_QUERY,
-  buildLoginHistoryQuery,
-} from '../../src/libs/core/salesforce-apis/users/queries.js';
+import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/libs/core/salesforce-apis/users/queries.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
-
-const DEFAULT_MOCKS = {
-  describes: {
-    PermissionSet: 'test/mocks/data/describeResults/PermissionSet.json',
-  },
-  queries: {} as Record<string, string>,
-};
 
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
 export const QUERY_RESULTS_BASE = path.join(MOCK_DATA_BASE_PATH, 'queryResults');
@@ -71,7 +60,7 @@ export default class AuditTestContext {
     } else {
       this.outputDirectory = this.defaultPath;
     }
-    this.mocks = new SfConnectionMocks(buildDefaultMocks());
+    this.mocks = createConnectionMocks();
   }
 
   public async init() {
@@ -90,7 +79,7 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mocks = new SfConnectionMocks(buildDefaultMocks());
+    this.mocks = createConnectionMocks();
     this.mockAuditConfig = { policies: {}, classifications: {} };
   }
 
@@ -231,27 +220,30 @@ export function buildAuditConfigPath(dirName: string): string {
   return path.join(MOCK_DATA_BASE_PATH, 'audit-configs', dirName);
 }
 
-function buildDefaultMocks() {
-  const defaults = structuredClone(DEFAULT_MOCKS);
+function createConnectionMocks(): SfConnectionMocks {
+  const defaults = {
+    describes: {
+      PermissionSet: 'test/mocks/data/describeResults/PermissionSet.json',
+    },
+    queries: {} as Record<string, string>,
+  };
   defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
-  defaults.queries[PROFILES_QUERY] = 'profiles';
   defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
-  defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-users';
-  defaults.queries[buildProfilesQuery('System Administrator')] = 'admin-profile-with-metadata';
-  defaults.queries[buildProfilesQuery('Standard User')] = 'standard-profile-with-metadata';
-  defaults.queries[buildProfilesQuery('Custom Profile')] = 'empty';
-  defaults.queries[buildProfilesQuery('Guest User Profile')] = 'empty';
   defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
-  defaults.queries[buildLoginHistoryQuery()] = 'empty';
+  const mocks = new SfConnectionMocks(defaults);
+  mocks.mockProfiles('profiles');
+  mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
+  mocks.mockProfiles('admin-and-standard-profiles', ['System Administrator', 'Standard User']);
+  mocks.mockProfileResolve('System Administrator', 'admin-profile-with-metadata');
+  mocks.mockProfileResolve('Standard User', 'standard-profile-with-metadata');
+  mocks.mockProfileResolve('Guest User Profile', 'empty');
+  mocks.mockProfileResolve('Custom Profile', 'empty');
+  mocks.mockLoginHistory('empty');
   // 14 days is option config in "full-valid" user policy
-  defaults.queries[buildLoginHistoryQuery(14)] = 'empty';
-  return defaults;
-}
-
-function buildProfilesQuery(profileName: string): string {
-  return `SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`;
+  mocks.mockLoginHistory('empty', 14);
+  return mocks;
 }
 
 export function buildResultsPath(fileName: string): string {

@@ -28,6 +28,8 @@ type SfProfile = Record & {
 export const ResolveProfilesOptionsSchema = z.object({
   /** Resolves profiles with metadata */
   withMetadata: z.boolean().default(false),
+  /** Filters profiles by their name */
+  filterNames: z.string().array().optional(),
 });
 
 export type ResolveProfilesOptions = z.infer<typeof ResolveProfilesOptionsSchema>;

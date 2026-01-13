@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
+import { PERMISSION_SETS_QUERY } from '../../src/libs/core/constants.js';
 import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 
@@ -8,7 +8,6 @@ describe('quick scanners', () => {
 
   beforeEach(async () => {
     $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
-    $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
     await $$.init();
   });
 
@@ -61,26 +60,17 @@ describe('quick scanners', () => {
         users: {},
         status: 'In Progress',
       });
-      expect(progressListener.args.flat()[2]).to.deep.equal({
+      expect(progressListener.args.flat()[6]).to.deep.equal({
         profiles: {
           total: 2,
-          resolved: 0,
-        },
-        permissionSets: {},
-        users: {},
-        status: 'In Progress',
-      });
-      expect(progressListener.args.flat()[3]).to.deep.equal({
-        profiles: {
-          total: 2,
-          resolved: 0,
+          resolved: 2,
         },
         permissionSets: {
           total: 7,
-          resolved: 0,
+          resolved: 7,
         },
         users: {},
-        status: 'In Progress',
+        status: 'Completed',
       });
     });
   });

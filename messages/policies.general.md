@@ -1,6 +1,10 @@
 # entity-not-found
 
-Entity was not found on the target org.
+Entity was classified, but not found on the target org.
+
+# entity-not-classified
+
+Entity was found on the target org, but not classified.
 
 # profile-invalid-no-metadata
 

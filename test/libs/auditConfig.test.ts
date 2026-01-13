@@ -6,7 +6,7 @@ import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mock
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
+import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
 import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
@@ -22,7 +22,6 @@ describe('audit config', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
     await $$.init();
   });
 
@@ -145,7 +144,6 @@ describe('audit config', () => {
       // is the new CanApproveUninstalledApps permission (the corresponding field would have been
       // PermissionsCanApproveUninstalledApps, which does not exist).
       // To remedy that, we parse all profiles and all assigned perms and add any used permissions.
-      $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
 
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });

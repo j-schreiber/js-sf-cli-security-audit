@@ -2,6 +2,8 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { DescribeSObjectResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { AnyJson, isString } from '@salesforce/ts-types';
+import { buildLoginHistoryQuery } from '../../src/libs/core/salesforce-apis/users/queries.js';
+import { buildProfilesQuery } from '../../src/libs/core/salesforce-apis/profiles/queries.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -89,6 +91,37 @@ export default class SfConnectionMocks {
     }
     return Promise.reject(new Error(`No mock was defined for: ${JSON.stringify(request)}`));
   };
+
+  /**
+   * Mocks a "metadata SOQL" to resolve profile metadata.
+   *
+   * @param profileName
+   * @param resultFile
+   */
+  public mockProfileResolve(profileName: string, resultFile: string): void {
+    this.setQueryMock(`SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`, resultFile);
+  }
+
+  /**
+   * Mock login history queries
+   *
+   * @param resultFile
+   * @param daysToAnalyse
+   */
+  public mockLoginHistory(resultFile: string, daysToAnalyse?: number): void {
+    this.setQueryMock(buildLoginHistoryQuery(daysToAnalyse), resultFile);
+  }
+
+  /**
+   * Mocks an unconstrainted profiles query (all profiles) or queries
+   * that include specific profiles.
+   *
+   * @param resultFile
+   * @param profileNames
+   */
+  public mockProfiles(resultFile: string, profileNames?: string[]): void {
+    this.setQueryMock(buildProfilesQuery(profileNames), resultFile);
+  }
 }
 
 function extractDecodedQueryParam(url: string) {
