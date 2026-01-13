@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { NamedPermissionClassification } from '../../core/file-mgmt/schema.js';
 import { PermissionRiskLevel } from '../../core/classification-types.js';
-import { Optional } from '../../core/utils.js';
+import { Optional } from '../../../utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const descriptions = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');

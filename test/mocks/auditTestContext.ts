@@ -31,7 +31,6 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
-import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/libs/core/salesforce-apis/users/queries.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
@@ -231,8 +230,8 @@ function createConnectionMocks(): SfConnectionMocks {
   defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
-  defaults.queries[ACTIVE_USERS_DETAILS_QUERY] = 'active-user-details';
   const mocks = new SfConnectionMocks(defaults);
+  mocks.mockUsers('active-user-details');
   mocks.mockProfiles('profiles');
   mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
   mocks.mockProfiles('admin-and-standard-profiles', ['System Administrator', 'Standard User']);

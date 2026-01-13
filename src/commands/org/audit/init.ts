@@ -9,7 +9,7 @@ import {
   isPolicyConfig,
 } from '../../../libs/core/file-mgmt/schema.js';
 import { AuditInitPresets } from '../../../libs/conf-init/presets.js';
-import { capitalize } from '../../../libs/core/utils.js';
+import { capitalize } from '../../../utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { formatToLocale, isParseableDate } from '../../src/libs/core/utils.js';
+import { formatToLocale, isParseableDate } from '../../src/utils.js';
 
 describe('utils', () => {
   [

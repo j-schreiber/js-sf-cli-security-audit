@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { UserPrivilegeLevel, resolvePresetOrdinalValue } from '../../policy-types.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
-import { capitalize } from '../../utils.js';
+import { capitalize } from '../../../../utils.js';
 import { ResolvedUser } from '../../policies/userPolicy.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 

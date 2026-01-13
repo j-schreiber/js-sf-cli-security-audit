@@ -1,7 +1,7 @@
 import { Connection } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
-import { isNullish } from '../../utils.js';
-import MDAPI from '../../mdapi/mdapiRetriever.js';
+import { isNullish } from '../../../utils.js';
+import MDAPI from '../../../libs/core/mdapi/mdapiRetriever.js';
 import {
   PermissionSetAssignment,
   ResolveUsersOptions,

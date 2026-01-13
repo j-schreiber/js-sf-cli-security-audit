@@ -3,7 +3,7 @@ import { Connection } from '@salesforce/core';
 import { Profile, PermissionSet as PermissionSetMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import MDAPI from '../core/mdapi/mdapiRetriever.js';
 import { PERMISSION_SETS_QUERY } from '../core/constants.js';
-import { Profiles } from '../core/salesforce-apis/index.js';
+import { Profiles } from '../../salesforce/index.js';
 import { PermissionSet } from '../core/policies/salesforceStandardTypes.js';
 import { QuickScanOptions, QuickScanResult } from './types.js';
 

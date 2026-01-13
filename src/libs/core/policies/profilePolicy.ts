@@ -4,7 +4,7 @@ import { AuditRunConfig, BasePolicyFileContent, ProfilesClassificationContent } 
 import { AuditContext } from '../registries/types.js';
 import { UserPrivilegeLevel } from '../policy-types.js';
 import { ProfilesRegistry } from '../registries/profiles.js';
-import { Profile, Profiles } from '../salesforce-apis/index.js';
+import { Profile, Profiles } from '../../../salesforce/index.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

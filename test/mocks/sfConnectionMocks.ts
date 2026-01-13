@@ -2,8 +2,12 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { DescribeSObjectResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { AnyJson, isString } from '@salesforce/ts-types';
-import { buildLoginHistoryQuery } from '../../src/libs/core/salesforce-apis/users/queries.js';
-import { buildProfilesQuery } from '../../src/libs/core/salesforce-apis/profiles/queries.js';
+import {
+  buildLoginHistoryQuery,
+  buildPermsetAssignmentsQuery,
+} from '../../src/salesforce/repositories/users/queries.js';
+import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
+import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/salesforce/repositories/users/queries.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -121,6 +125,25 @@ export default class SfConnectionMocks {
    */
   public mockProfiles(resultFile: string, profileNames?: string[]): void {
     this.setQueryMock(buildProfilesQuery(profileNames), resultFile);
+  }
+
+  /**
+   * Results for active (standard users) query
+   *
+   * @param resultFile
+   */
+  public mockUsers(resultFile: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
+    this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
+  }
+
+  /**
+   * Results for permission set assignments
+   *
+   * @param resultFile
+   * @param assigneeIds
+   */
+  public mockPermsetAssignments(resultFile: string, assigneeIds: string[]): void {
+    this.setQueryMock(buildPermsetAssignmentsQuery(assigneeIds), resultFile);
   }
 }
 

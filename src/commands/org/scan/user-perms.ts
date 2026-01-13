@@ -5,7 +5,7 @@ import UserPermissionScanner, {
   EntityScanStatus,
   ScanStatusEvent,
 } from '../../../libs/quick-scan/userPermissionScanner.js';
-import { capitalize } from '../../../libs/core/utils.js';
+import { capitalize } from '../../../utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.scan.user-perms');

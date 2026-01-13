@@ -8,7 +8,7 @@ import {
 import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY } from '../core/constants.js';
 import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
-import { Profiles, Users } from '../core/salesforce-apis/index.js';
+import { Profiles, Users } from '../../salesforce/index.js';
 import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';

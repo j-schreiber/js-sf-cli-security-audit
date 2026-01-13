@@ -1,6 +1,6 @@
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, PolicyRuleExecutionResult } from '../result-types.js';
-import { Optional } from '../utils.js';
+import { Optional } from '../../../utils.js';
 import { ConnectedAppsRegistry } from './connectedApps.js';
 import { PermissionSetsRegistry } from './permissionSets.js';
 import { ProfilesRegistry } from './profiles.js';
