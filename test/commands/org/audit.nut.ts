@@ -7,7 +7,8 @@ import { OrgAuditRunResult } from '../../../src/commands/org/audit/run.js';
 import { DefaultFileManager } from '../../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 
-const scratchOrgAlias = 'TestTargetOrg';
+const enterpriseOrgAlias = 'TestTargetOrg';
+const professionalOrgAlias = 'ProfTestTargetOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 
 describe('org audit NUTs', () => {
@@ -50,8 +51,14 @@ describe('org audit NUTs', () => {
       devhubAuthStrategy: 'AUTO',
       scratchOrgs: [
         {
-          alias: scratchOrgAlias,
+          alias: enterpriseOrgAlias,
           config: path.join('config', 'default-scratch-def.json'),
+          setDefault: true,
+          duration: 1,
+        },
+        {
+          alias: professionalOrgAlias,
+          config: path.join('config', 'prof-edition-scratch-def.json'),
           setDefault: true,
           duration: 1,
         },
@@ -67,10 +74,27 @@ describe('org audit NUTs', () => {
     // clean audit config files?
   });
 
-  it('initialises a full audit config from org at target directory', () => {
+  it('initialises a full audit config from enterprise org at target directory', () => {
     // Act
     const result = execCmd<OrgAuditInitResult>(
-      `org:audit:init --target-org ${scratchOrgAlias} --output-dir tmp --json`,
+      `org:audit:init --target-org ${enterpriseOrgAlias} --output-dir tmp --json`,
+      { ensureExitCode: 0 }
+    ).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+    assert.isDefined(result.classifications.userPermissions);
+    assert.isDefined(result.classifications.userPermissions.filePath);
+    expect(checkFileExists(result.classifications.userPermissions.filePath)).to.be.true;
+    assert.isDefined(result.policies.profiles);
+    assert.isDefined(result.policies.profiles.filePath);
+    expect(checkFileExists(result.policies.profiles.filePath)).to.be.true;
+  });
+
+  it('initialises a full audit config from professional org at target directory', () => {
+    // Act
+    const result = execCmd<OrgAuditInitResult>(
+      `org:audit:init --target-org ${professionalOrgAlias} --output-dir prof_ed --json`,
       { ensureExitCode: 0 }
     ).jsonOutput?.result;
 
@@ -87,9 +111,12 @@ describe('org audit NUTs', () => {
   it('successfully completes an audit without technical errors from default config', () => {
     // Act
     // relies on the config that was created from the first test
-    const result = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${scratchOrgAlias} --source-dir tmp --json`, {
-      ensureExitCode: 0,
-    }).jsonOutput?.result;
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir tmp --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
 
     // Assert
     assert.isDefined(result);
@@ -98,15 +125,18 @@ describe('org audit NUTs', () => {
     assert.isDefined(result.policies);
   });
 
-  it('successfully completes an audit with all policies active', async () => {
+  it('successfully completes an audit of enterprise ed with all policies active', async () => {
     // Arrange
     activateClassifications('tmp', UserPrivilegeLevel.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
-    const result = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${scratchOrgAlias} --source-dir tmp --json`, {
-      ensureExitCode: 0,
-    }).jsonOutput?.result;
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir tmp --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
 
     // Assert
     assert.isDefined(result);
@@ -123,9 +153,34 @@ describe('org audit NUTs', () => {
     }
   });
 
+  it('successfully completes an audit of professional ed with all policies active', async () => {
+    // Arrange
+    activateClassifications('prof_ed', UserPrivilegeLevel.ADMIN);
+
+    // Act
+    // relies on the config that was created from the first test
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${professionalOrgAlias} --source-dir prof_ed --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+    // each policy was executed
+    expect(Object.keys(result.policies)).to.deep.equal([
+      'profiles',
+      'permissionSets',
+      'connectedApps',
+      'users',
+      'settings',
+    ]);
+  });
+
   it('initialises a full audit config at root directory', () => {
     // Act
-    const initResult = execCmd<OrgAuditInitResult>(`org:audit:init --target-org ${scratchOrgAlias} --json`, {
+    const initResult = execCmd<OrgAuditInitResult>(`org:audit:init --target-org ${enterpriseOrgAlias} --json`, {
       ensureExitCode: 0,
     }).jsonOutput?.result;
 
@@ -138,7 +193,7 @@ describe('org audit NUTs', () => {
 
   it('successfully executes an audit run from root directory', () => {
     // Act
-    const runResult = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${scratchOrgAlias} --json`, {
+    const runResult = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${enterpriseOrgAlias} --json`, {
       ensureExitCode: 0,
     }).jsonOutput?.result;
 
