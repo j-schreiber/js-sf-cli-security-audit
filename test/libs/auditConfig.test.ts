@@ -6,7 +6,6 @@ import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mock
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/core/constants.js';
 import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
@@ -76,7 +75,7 @@ describe('audit config', () => {
 
     it('inits partial classifications if org does not return custom perms', async () => {
       // Arrange
-      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, 'empty');
+      $$.mocks.mockCustomPermissions('empty');
 
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection);

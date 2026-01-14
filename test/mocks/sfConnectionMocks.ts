@@ -8,6 +8,9 @@ import {
 } from '../../src/salesforce/repositories/users/queries.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/salesforce/repositories/users/queries.js';
+import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
+import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -144,6 +147,22 @@ export default class SfConnectionMocks {
    */
   public mockPermsetAssignments(resultFile: string, assigneeIds: string[]): void {
     this.setQueryMock(buildPermsetAssignmentsQuery(assigneeIds), resultFile);
+  }
+
+  public mockPermissionSets(resultFile: string): void {
+    this.setQueryMock(PERMISSION_SETS_QUERY, resultFile);
+  }
+
+  public mockCustomPermissions(resultFile: string): void {
+    this.setQueryMock(CUSTOM_PERMS_QUERY, resultFile);
+  }
+
+  public mockConnectedApps(resultFile: string): void {
+    this.setQueryMock(CONNECTED_APPS_QUERY, resultFile);
+  }
+
+  public mockOAuthTokens(resultFile: string): void {
+    this.setQueryMock(OAUTH_TOKEN_QUERY, resultFile);
   }
 }
 

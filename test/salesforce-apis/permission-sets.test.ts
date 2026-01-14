@@ -1,14 +1,13 @@
 import { expect } from 'chai';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { PermissionSets } from '../../src/salesforce/index.js';
-import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { parsePermSetFromFile } from '../mocks/testHelpers.js';
 
 describe('permission sets resolve', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
+    $$.mocks.mockPermissionSets('resolvable-permission-sets');
     await $$.init();
   });
 

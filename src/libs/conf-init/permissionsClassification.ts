@@ -5,13 +5,14 @@ import {
   ProfilesClassificationContent,
   UsersClassificationContent,
 } from '../core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY } from '../core/constants.js';
 import { CustomPermission } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
 import { PermissionSets, Profiles, Users } from '../../salesforce/index.js';
 import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
+
+export const CUSTOM_PERMS_QUERY = 'SELECT Id,MasterLabel,DeveloperName FROM CustomPermission';
 
 /**
  * Initialises a fresh set of user permissions from target org connection.

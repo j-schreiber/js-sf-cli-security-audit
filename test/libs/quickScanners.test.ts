@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import { PERMISSION_SETS_QUERY } from '../../src/libs/core/constants.js';
 import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 
@@ -7,7 +6,7 @@ describe('quick scanners', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
+    $$.mocks.mockPermissionSets('resolvable-permission-sets');
     await $$.init();
   });
 

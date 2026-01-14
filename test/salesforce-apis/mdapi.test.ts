@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import { expect } from 'chai';
 import { ApexSettings, SecuritySettings } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext, { MOCK_DATA_BASE_PATH, parseXmlFile, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
-import { RETRIEVE_CACHE } from '../../src/libs/core/constants.js';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { MDAPI } from '../../src/salesforce/index.js';
+import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 
 export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
 

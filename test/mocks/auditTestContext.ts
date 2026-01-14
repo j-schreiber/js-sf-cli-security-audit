@@ -16,19 +16,16 @@ import {
 } from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
-  CONNECTED_APPS_QUERY,
-  CUSTOM_PERMS_QUERY,
-  OAUTH_TOKEN_QUERY,
-  PERMISSION_SETS_QUERY,
-  RETRIEVE_CACHE,
-} from '../../src/libs/core/constants.js';
-import {
   PolicyRuleViolation,
   PolicyRuleViolationMute,
   RuleComponentMessage,
 } from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
+import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';
+import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
+import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
+import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
