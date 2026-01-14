@@ -1,24 +1,19 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
-import { Profile as ProfileMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import ProfilePolicyRegistry from '../../../src/libs/core/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/core/policies/profilePolicy.js';
-import { Profile } from '../../../src/libs/core/policies/salesforceStandardTypes.js';
 import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
+import { parseProfileFromFile } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 const ruleMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
-
-const QUERY_RESULTS_DIR = path.join('test', 'mocks', 'data', 'queryResults');
 
 const DEFAULT_PROFILE_CONFIG: BasePolicyFileContent = {
   enabled: true,
@@ -33,12 +28,12 @@ const EXPECTED_RESOLVED_DEFAULT_ENTITIES = {
   'System Administrator': {
     role: 'Admin',
     name: 'System Administrator',
-    metadata: loadProfileMetadata('admin-profile-with-metadata.json'),
+    metadata: parseProfileFromFile('admin-profile-with-metadata'),
   },
   'Standard User': {
     role: 'Standard User',
     name: 'Standard User',
-    metadata: loadProfileMetadata('standard-profile-with-metadata.json'),
+    metadata: parseProfileFromFile('standard-profile-with-metadata'),
   },
 };
 
@@ -291,12 +286,6 @@ describe('profile policy', () => {
     });
   });
 });
-
-function loadProfileMetadata(profileFileName: string): ProfileMetadata {
-  const content = fs.readFileSync(path.join(QUERY_RESULTS_DIR, profileFileName), 'utf-8');
-  const records = JSON.parse(content) as Profile[];
-  return records[0].Metadata;
-}
 
 class TestProfilesRegistry extends RuleRegistry {
   public constructor() {

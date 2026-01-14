@@ -1,17 +1,17 @@
 import { Messages } from '@salesforce/core';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
-import { ResolvedConnectedApp } from '../connectedApps.js';
+import { ConnectedApp } from '../../../../salesforce/index.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.connectedApps');
 
-export default class NoUserCanSelfAuthorize extends PolicyRule<ResolvedConnectedApp> {
+export default class NoUserCanSelfAuthorize extends PolicyRule<ConnectedApp> {
   public constructor(opts: RuleOptions) {
     super(opts);
   }
 
-  public run(context: RuleAuditContext<ResolvedConnectedApp>): Promise<PartialPolicyRuleResult> {
+  public run(context: RuleAuditContext<ConnectedApp>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const resolvedConnectedApps = context.resolvedEntities;
     Object.values(resolvedConnectedApps).forEach((app) => {
