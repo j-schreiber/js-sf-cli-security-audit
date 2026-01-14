@@ -10,4 +10,4 @@ export type { ConnectedApp } from './repositories/connected-apps/connected-app.t
 
 // MDAPI
 export { default as MDAPI } from './mdapi/mdapi.js';
-export type { SalesforceSetting } from './mdapi/genericSettingsMetadata.js';
+export type { MdapiRegistry } from './mdapi/metadataRegistry.js';

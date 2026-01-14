@@ -1,6 +1,6 @@
 import { Messages } from '@salesforce/core';
-import { SalesforceSetting } from '../../mdapi/anySettingsMetadata.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
+import { SalesforceSetting } from '../../policies/settingsPolicy.js';
 import PolicyRule, { ConfigurableRuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -9,7 +9,6 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'ru
 type EnforceSettingsOpts = ConfigurableRuleOptions<Record<string, unknown>> & {
   settingName: string;
 };
-
 export default class EnforceSettings extends PolicyRule<unknown> {
   public settingName;
 

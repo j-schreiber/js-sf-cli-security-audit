@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { AuditRunConfig, BasePolicyFileContent, RuleMap } from '../file-mgmt/schema.js';
 import { findSettingsName, SettingsRegistry } from '../registries/settings.js';
-import { MDAPI, SalesforceSetting } from '../../../salesforce/index.js';
+import { MDAPI, MdapiRegistry } from '../../../salesforce/index.js';
 import { AuditContext } from '../registries/types.js';
 import { EntityResolveError } from '../result-types.js';
 import EnforceSettings from '../registries/rules/enforceSettings.js';
@@ -9,6 +9,8 @@ import Policy, { ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
+
+export type SalesforceSetting = Awaited<ReturnType<MdapiRegistry['namedTypes']['Settings']['resolve']>>['string'];
 
 export default class SettingsPolicy extends Policy<SalesforceSetting> {
   public constructor(
