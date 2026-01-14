@@ -5,19 +5,3 @@ export type CustomPermission = Record & {
   MasterLabel: string;
   DeveloperName: string;
 };
-
-type ProfileBasic = Record & {
-  Id: string;
-  Name: string;
-  UserType: string;
-};
-
-export type PermissionSet = Record & {
-  Id: string;
-  IsOwnedByProfile: boolean;
-  IsCustom: boolean;
-  Name: string;
-  Label: string;
-  Profile: ProfileBasic;
-  NamespacePrefix?: string;
-};

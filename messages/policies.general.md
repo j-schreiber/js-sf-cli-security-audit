@@ -10,6 +10,10 @@ Entity was found on the target org, but not classified.
 
 Org did not return valid metadata for the profile. Entity cannot be processed.
 
+# permission-set-invalid-no-metadata
+
+Org did not return valid metadata for the permission set. Entity cannot be processed.
+
 # preset-unknown
 
 %ss with preset UNKNOWN are ignored.

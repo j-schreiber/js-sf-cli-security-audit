@@ -5,10 +5,10 @@ import {
   ProfilesClassificationContent,
   UsersClassificationContent,
 } from '../core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY } from '../core/constants.js';
-import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
+import { CUSTOM_PERMS_QUERY } from '../core/constants.js';
+import { CustomPermission } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
-import { Profiles, Users } from '../../salesforce/index.js';
+import { PermissionSets, Profiles, Users } from '../../salesforce/index.js';
 import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
@@ -91,13 +91,12 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesCl
  * @returns
  */
 export async function initPermissionSets(targetOrgCon: Connection): Promise<PermissionSetsClassificationContent> {
-  const permSets = await targetOrgCon.query<PermissionSet>(PERMISSION_SETS_QUERY);
+  const permsetsRepo = new PermissionSets(targetOrgCon);
+  const permsets = await permsetsRepo.resolve({ isCustomOnly: true });
   const content: PermissionSetsClassificationContent = { permissionSets: {} };
-  permSets.records
-    .filter((permsetRecord) => permsetRecord.IsCustom)
-    .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { role: UserPrivilegeLevel.UNKNOWN };
-    });
+  for (const permsetName of permsets.keys()) {
+    content.permissionSets[permsetName] = { role: UserPrivilegeLevel.UNKNOWN };
+  }
   return content;
 }
 

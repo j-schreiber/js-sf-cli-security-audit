@@ -1,18 +1,22 @@
 import { Messages } from '@salesforce/core';
-import { AuditRunConfig, BasePolicyFileContent, PermissionSetsClassificationContent } from '../file-mgmt/schema.js';
+import { AuditRunConfig, BasePolicyFileContent, PermissionSetsMap } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
 import { UserPrivilegeLevel } from '../policy-types.js';
 import { EntityResolveError } from '../result-types.js';
-import { MDAPI } from '../../../salesforce/index.js';
-import { PermissionSetsRegistry, ResolvedPermissionSet } from '../registries/permissionSets.js';
-import Policy, { getTotal, ResolveEntityResult } from './policy.js';
+import { PermissionSet, PermissionSets } from '../../../salesforce/index.js';
+import { PermissionSetsRegistry } from '../registries/permissionSets.js';
+import Policy, { ResolveEntityResult } from './policy.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
-  private readonly totalEntities: number;
-  private readonly classifications: PermissionSetsClassificationContent;
+export type ClassifiedPermissionSet = PermissionSet & {
+  role: UserPrivilegeLevel;
+};
+
+export default class PermissionSetPolicy extends Policy<ClassifiedPermissionSet> {
+  private totalEntities: number;
+  private readonly classifications: PermissionSetsMap;
 
   public constructor(
     public config: BasePolicyFileContent,
@@ -20,50 +24,69 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
     registry = PermissionSetsRegistry
   ) {
     super(config, auditContext, registry);
-    this.classifications = this.auditConfig.classifications.permissionSets?.content ?? { permissionSets: {} };
-    this.totalEntities = Object.keys(this.classifications.permissionSets).length;
+    this.classifications = this.auditConfig.classifications.permissionSets?.content.permissionSets ?? {};
+    this.totalEntities = Object.keys(this.classifications).length;
   }
 
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedPermissionSet>> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ClassifiedPermissionSet>> {
+    const permsetsRepo = new PermissionSets(context.targetOrgConnection);
+    permsetsRepo.addListener('entityresolve', (statusEvt) => this.emit('entityresolve', statusEvt));
+    const allPermsets = await permsetsRepo.resolve();
+    const ignoredEntities = this.buildIgnoredEntities(allPermsets);
+    const classifiedPermsets = Object.keys(this.classifications).filter(
+      (permsetName) => ignoredEntities[permsetName] === undefined
+    );
+    this.totalEntities = Object.keys(ignoredEntities).length + classifiedPermsets.length;
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,
     });
-    const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
-    const unresolved: Record<string, EntityResolveError> = {};
-    const retriever = MDAPI.create(context.targetOrgConnection);
-    const resolvedPermsets = await retriever.resolve('PermissionSet', filterCategorizedPermsets(this.classifications));
-    Object.entries(this.classifications.permissionSets).forEach(([key, val]) => {
-      const resolved = resolvedPermsets[key];
-      if (resolved) {
-        successfullyResolved[key] = {
-          metadata: resolved,
-          role: val.role,
-          name: key,
+    const resolvedPermsets = await permsetsRepo.resolve({ withMetadata: true, filterNames: classifiedPermsets });
+    const resolvedEntities: Record<string, ClassifiedPermissionSet> = {};
+    for (const permsetName of classifiedPermsets) {
+      const metadata = resolvedPermsets.get(permsetName);
+      if (metadata) {
+        resolvedEntities[permsetName] = {
+          ...metadata,
+          role: this.classifications[permsetName].role,
         };
-      } else if (successfullyResolved[key] === undefined) {
-        if (val.role === UserPrivilegeLevel.UNKNOWN) {
-          unresolved[key] = { name: key, message: messages.getMessage('preset-unknown', ['Permission Set']) };
-        } else {
-          unresolved[key] = { name: key, message: messages.getMessage('entity-not-found') };
-        }
+      } else {
+        ignoredEntities[permsetName] = {
+          name: permsetName,
+          message: messages.getMessage('permission-set-invalid-no-metadata'),
+        };
       }
-    });
-    const result = { resolvedEntities: successfullyResolved, ignoredEntities: Object.values(unresolved) };
+    }
     this.emit('entityresolve', {
       total: this.totalEntities,
-      resolved: getTotal(result),
+      resolved: this.totalEntities,
     });
-    return result;
+    return { resolvedEntities, ignoredEntities: Object.values(ignoredEntities) };
   }
-}
 
-function filterCategorizedPermsets(permSets: PermissionSetsClassificationContent): string[] {
-  const filteredNames: string[] = [];
-  Object.entries(permSets.permissionSets).forEach(([key, val]) => {
-    if (val.role !== UserPrivilegeLevel.UNKNOWN) {
-      filteredNames.push(key);
+  private buildIgnoredEntities(allPermsets: Map<string, PermissionSet>): Record<string, EntityResolveError> {
+    const ignoredEntities: Record<string, EntityResolveError> = {};
+    for (const [permsetName, permsetDef] of Object.entries(this.classifications)) {
+      if (permsetDef.role === UserPrivilegeLevel.UNKNOWN) {
+        ignoredEntities[permsetName] = {
+          name: permsetName,
+          message: messages.getMessage('preset-unknown', ['Permission Set']),
+        };
+      } else if (!allPermsets.has(permsetName)) {
+        ignoredEntities[permsetName] = {
+          name: permsetName,
+          message: messages.getMessage('entity-not-found'),
+        };
+      }
     }
-  });
-  return filteredNames;
+    for (const permset of allPermsets.values()) {
+      if (this.classifications[permset.name] === undefined) {
+        ignoredEntities[permset.name] = {
+          name: permset.name,
+          message: messages.getMessage('entity-not-classified'),
+        };
+      }
+    }
+    return ignoredEntities;
+  }
 }
