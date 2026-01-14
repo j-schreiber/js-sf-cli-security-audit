@@ -6,5 +6,6 @@ export { default as Profiles } from './repositories/profiles/profiles.js';
 export type { User, ResolveUsersOptions } from './repositories/users/user.types.js';
 export type { Profile } from './repositories/profiles/profile.types.js';
 
-// UTILS
+// MDAPI
 export { default as MDAPI } from './mdapi/mdapi.js';
+export type { SalesforceSetting } from './mdapi/genericSettingsMetadata.js';

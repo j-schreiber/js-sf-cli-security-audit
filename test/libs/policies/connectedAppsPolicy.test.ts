@@ -24,6 +24,7 @@ describe('connected apps policy', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
+    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
     await $$.init();
   });
 
@@ -33,7 +34,6 @@ describe('connected apps policy', () => {
 
   it('resolves all apps from ConnectedApplication and OauthToken', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
     $$.mocks.setQueryMock(OAUTH_TOKEN_QUERY, 'oauth-usage');
 
     // Act
@@ -59,7 +59,6 @@ describe('connected apps policy', () => {
 
   it('uses result form ApiAccess setting to override self-authorize flag', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;
 
@@ -84,7 +83,6 @@ describe('connected apps policy', () => {
 
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
     $$.stubMetadataRetrieve('api-access-not-available');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;

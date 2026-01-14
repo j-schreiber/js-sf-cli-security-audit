@@ -1,7 +1,5 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
-import { PermissionSet, Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { XMLParser } from 'fast-xml-parser';
@@ -9,7 +7,6 @@ import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import { NamedTypesRegistry } from '../../src/libs/core/mdapi/mdapiRetriever.js';
 import {
   AuditRunConfig,
   PermissionSetConfig,
@@ -31,6 +28,7 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/core/result-types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
+import { MDAPI } from '../../src/salesforce/index.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
@@ -80,6 +78,7 @@ export default class AuditTestContext {
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
     this.mocks = createConnectionMocks();
     this.mockAuditConfig = { policies: {}, classifications: {} };
+    MDAPI.clearCache();
   }
 
   public stubMetadataRetrieve(dirPath: string) {
@@ -175,16 +174,6 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
     warnings: new Array<RuleComponentMessage>(),
     errors: [],
   };
-}
-
-export function parseProfileFromFile(fileName: string): Profile {
-  const profilePath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
-  return (JSON.parse(fs.readFileSync(profilePath, 'utf-8')) as JsForceRecord[])[0]['Metadata'] as Profile;
-}
-
-export function parsePermSetFromFile(permSetName: string): PermissionSet {
-  const permsetPath = path.join(RETRIEVES_BASE, 'full-permsets', `${permSetName}.permissionset-meta.xml`);
-  return NamedTypesRegistry.PermissionSet.parse(permsetPath);
 }
 
 export function parseFileAsJson<T>(...filePath: string[]): T {

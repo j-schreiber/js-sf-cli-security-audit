@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { AuditRunConfig, BasePolicyFileContent, RuleMap } from '../file-mgmt/schema.js';
 import { findSettingsName, SettingsRegistry } from '../registries/settings.js';
-import AnySettingsMetadata, { SalesforceSetting } from '../mdapi/anySettingsMetadata.js';
+import { MDAPI, SalesforceSetting } from '../../../salesforce/index.js';
 import { AuditContext } from '../registries/types.js';
 import { EntityResolveError } from '../result-types.js';
 import EnforceSettings from '../registries/rules/enforceSettings.js';
@@ -26,23 +26,23 @@ export default class SettingsPolicy extends Policy<SalesforceSetting> {
       resolved: 0,
     });
     const settingNames = extractSettingNames(this.config.rules);
-    const settingsRetriever = new AnySettingsMetadata(context.targetOrgConnection);
-    const actuallyResolvedSettings = await settingsRetriever.resolve(settingNames);
+    const settingsRetriever = MDAPI.create(context.targetOrgConnection);
+    const actuallyResolvedSettings = await settingsRetriever.resolve('Settings', settingNames);
     this.removeInvalidSettingsFromResolvedRules(actuallyResolvedSettings);
     this.emit('entityresolve', {
       total: numberOfRules,
       resolved: actuallyResolvedSettings.size,
     });
     return {
-      resolvedEntities: convertToRecord(actuallyResolvedSettings),
+      resolvedEntities: actuallyResolvedSettings,
       ignoredEntities: findIgnoredEntities(actuallyResolvedSettings, this.config.rules),
     };
   }
 
-  private removeInvalidSettingsFromResolvedRules(validSettings: Map<string, SalesforceSetting>): void {
+  private removeInvalidSettingsFromResolvedRules(validSettings: Record<string, SalesforceSetting>): void {
     this.resolvedRules.enabledRules.forEach((rule, index) => {
       if (isEnforceSettingsRule(rule)) {
-        if (!validSettings.has(rule.settingName)) {
+        if (!validSettings[rule.settingName]) {
           this.resolvedRules.enabledRules.splice(index, 1);
           this.resolvedRules.skippedRules.push({
             name: rule.ruleDisplayName,
@@ -58,22 +58,14 @@ function isEnforceSettingsRule(cls: unknown): cls is EnforceSettings {
   return (cls as EnforceSettings).ruleDisplayName !== undefined;
 }
 
-function convertToRecord(settingsMap: Map<string, SalesforceSetting>): Record<string, SalesforceSetting> {
-  const result: Record<string, SalesforceSetting> = {};
-  for (const [settingsName, settingsValue] of settingsMap.entries()) {
-    result[settingsName] = settingsValue;
-  }
-  return result;
-}
-
-function findIgnoredEntities(settingsMap: Map<string, SalesforceSetting>, rules: RuleMap): EntityResolveError[] {
+function findIgnoredEntities(settingsMap: Record<string, SalesforceSetting>, rules: RuleMap): EntityResolveError[] {
   const result = new Array<EntityResolveError>();
   for (const ruleName of Object.keys(rules)) {
     const maybeName = findSettingsName(ruleName);
     if (!maybeName) {
       continue;
     }
-    if (!settingsMap.has(maybeName) || !settingsMap.get(maybeName)) {
+    if (!settingsMap[maybeName]) {
       result.push({ name: maybeName, message: messages.getMessage('resolve-error.failed-to-resolve-setting') });
     }
   }

@@ -1,6 +1,7 @@
 import { expect } from 'chai';
-import AuditTestContext, { parseProfileFromFile } from '../mocks/auditTestContext.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
 import { Profiles } from '../../src/salesforce/index.js';
+import { parseProfileFromFile } from '../mocks/testHelpers.js';
 
 describe('profiles resolve', () => {
   const $$ = new AuditTestContext();

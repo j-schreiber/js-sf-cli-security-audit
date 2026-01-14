@@ -1,5 +1,5 @@
 import { Connection } from '@salesforce/core';
-import MDAPI from '../../../libs/core/mdapi/mdapiRetriever.js';
+import MDAPI from '../../mdapi/mdapi.js';
 import { buildProfilesQuery } from './queries.js';
 import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsSchema } from './profile.types.js';
 

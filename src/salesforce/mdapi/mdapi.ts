@@ -10,6 +10,19 @@ export default class MDAPI {
     this.cache = new MetadataCache();
   }
 
+  /**
+   * Clear all cached retrievers. Primarily for testing purposes.
+   */
+  public static clearCache(): void {
+    this.retrievers.clear();
+  }
+
+  /**
+   * Create a new MDAPI retriever instance and cache it.
+   *
+   * @param connection
+   * @returns
+   */
   public static create(connection: Connection): MDAPI {
     if (!this.retrievers.has(connection.instanceUrl)) {
       this.retrievers.set(connection.instanceUrl, new MDAPI(connection));

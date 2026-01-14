@@ -1,7 +1,8 @@
 import { expect, assert } from 'chai';
-import AuditTestContext, { parsePermSetFromFile, parseProfileFromFile } from '../mocks/auditTestContext.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
 import { Users } from '../../src/salesforce/index.js';
 import { buildPermsetAssignmentsQuery } from '../../src/salesforce/repositories/users/queries.js';
+import { parsePermSetFromFile, parseProfileFromFile } from '../mocks/testHelpers.js';
 
 describe('users resolve', () => {
   const $$ = new AuditTestContext();

@@ -1,9 +1,9 @@
 import { Messages } from '@salesforce/core';
-import MDAPI from '../mdapi/mdapiRetriever.js';
 import { AuditRunConfig, BasePolicyFileContent, PermissionSetsClassificationContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
 import { UserPrivilegeLevel } from '../policy-types.js';
 import { EntityResolveError } from '../result-types.js';
+import { MDAPI } from '../../../salesforce/index.js';
 import { PermissionSetsRegistry, ResolvedPermissionSet } from '../registries/permissionSets.js';
 import Policy, { getTotal, ResolveEntityResult } from './policy.js';
 
@@ -31,7 +31,7 @@ export default class PermissionSetPolicy extends Policy<ResolvedPermissionSet> {
     });
     const successfullyResolved: Record<string, ResolvedPermissionSet> = {};
     const unresolved: Record<string, EntityResolveError> = {};
-    const retriever = new MDAPI(context.targetOrgConnection);
+    const retriever = MDAPI.create(context.targetOrgConnection);
     const resolvedPermsets = await retriever.resolve('PermissionSet', filterCategorizedPermsets(this.classifications));
     Object.entries(this.classifications.permissionSets).forEach(([key, val]) => {
       const resolved = resolvedPermsets[key];

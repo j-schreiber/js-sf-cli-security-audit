@@ -1,19 +1,16 @@
 /* eslint-disable camelcase */
-import path from 'node:path';
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
 import PermissionSetPolicy from '../../../src/libs/core/policies/permissionSetPolicy.js';
-import { NamedTypesRegistry } from '../../../src/libs/core/mdapi/mdapiRetriever.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
+import { parsePermSetFromFile } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
-
-const RETRIEVE_DIR = path.join('test', 'mocks', 'data', 'retrieves', 'full-permsets');
 
 const DEFAULT_PERMSET_CONFIG: BasePolicyFileContent = {
   enabled: true,
@@ -73,12 +70,8 @@ describe('permission sets policy', () => {
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
     // Assert
-    const adminPermset = NamedTypesRegistry.PermissionSet.parse(
-      path.join(RETRIEVE_DIR, 'Test_Admin_Permission_Set_1.permissionset-meta.xml')
-    );
-    const poweruserPermset = NamedTypesRegistry.PermissionSet.parse(
-      path.join(RETRIEVE_DIR, 'Test_Power_User_Permission_Set_1.permissionset-meta.xml')
-    );
+    const adminPermset = parsePermSetFromFile('Test_Admin_Permission_Set_1');
+    const poweruserPermset = parsePermSetFromFile('Test_Power_User_Permission_Set_1');
     const expectedResolvedEntities = {
       Test_Admin_Permission_Set_1: {
         role: 'Admin',
