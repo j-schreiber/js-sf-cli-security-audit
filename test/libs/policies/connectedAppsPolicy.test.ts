@@ -82,7 +82,7 @@ describe('connected apps policy', () => {
 
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
-    $$.stubMetadataRetrieve('api-access-not-available');
+    $$.mocks.stubMetadataRetrieve('api-access-not-available');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;
 

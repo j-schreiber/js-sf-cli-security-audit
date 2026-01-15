@@ -2,10 +2,7 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
-import { XMLParser } from 'fast-xml-parser';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
-import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
-import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import {
   AuditRunConfig,
@@ -27,12 +24,13 @@ import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-se
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
+import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 
-export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
-export const QUERY_RESULTS_BASE = path.join(MOCK_DATA_BASE_PATH, 'queryResults');
-export const RETRIEVES_BASE = path.join(MOCK_DATA_BASE_PATH, 'retrieves');
-export const SRC_MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
-
+/**
+ * A test context specifically designed for audit runs. Provides convenience function
+ * to stub & assert command output & file operations, audit configs, and callouts to
+ * Salesforce APIs (query, retrieve).
+ */
 export default class AuditTestContext {
   public context: TestContext;
   public targetOrg: MockTestOrgData;
@@ -43,18 +41,17 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public mocks: SfConnectionMocks;
   public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {} };
-  public retrieveStub?: sinon.SinonStub;
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
     this.targetOrg = new MockTestOrgData();
+    this.mocks = initDefaultMocks(new SfConnectionMocks(this.context));
     this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
       this.outputDirectory = this.defaultPath;
     }
-    this.mocks = createConnectionMocks();
   }
 
   public async init() {
@@ -63,8 +60,8 @@ export default class AuditTestContext {
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
-    this.context.fakeConnectionRequest = this.mocks.fakeConnectionRequest;
-    this.stubMetadataRetrieve('full');
+    this.mocks.stubMetadataRetrieve('full');
+    this.mocks.restoreStubs();
   }
 
   public reset() {
@@ -73,25 +70,9 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mocks = createConnectionMocks();
     this.mockAuditConfig = { policies: {}, classifications: {} };
     MDAPI.clearCache();
-  }
-
-  public stubMetadataRetrieve(dirPath: string) {
-    const fullyResolvedPath = path.join(SRC_MOCKS_BASE_PATH, dirPath);
-    if (this.retrieveStub) {
-      this.retrieveStub.restore();
-    }
-    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').callsFake((opts) => {
-      // this behavior mimicks the original behavior of metadata retrieve as closely as possible
-      // each retrieve creates a temporary dictionary that contains all files
-      const retrievePath = path.join(opts.output, `metadataPackage_${Date.now()}`);
-      fs.mkdirSync(retrievePath, { recursive: true });
-      copyDir(fullyResolvedPath, retrievePath);
-      return Promise.resolve(new MetadataApiRetrieveMock(retrievePath) as unknown as MetadataApiRetrieve);
-    });
-    return this.retrieveStub;
+    initDefaultMocks(this.mocks);
   }
 
   /**
@@ -146,21 +127,37 @@ export default class AuditTestContext {
   }
 }
 
-class MetadataApiRetrieveMock {
-  public constructor(private readonly dirPath?: string) {}
-
-  public async pollStatus(): Promise<RetrieveResult> {
-    let cmpSet: ComponentSet;
-    if (this.dirPath && this.dirPath !== '') {
-      cmpSet = ComponentSet.fromSource(this.dirPath);
-    } else {
-      cmpSet = new ComponentSet();
-    }
-    return new RetrieveResult(
-      { done: true, status: RequestStatus.Succeeded, success: true, fileProperties: [], id: '1', zipFile: '' },
-      cmpSet
-    );
-  }
+/**
+ * Initialises default mocks for describes & queries and resets all
+ * mocks that were prepared to the default state.
+ *
+ * @param mocks
+ * @returns
+ */
+function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
+  const defaults = {
+    describes: {
+      PermissionSet: 'test/mocks/data/describeResults/PermissionSet.json',
+    },
+    queries: {} as Record<string, string>,
+  };
+  defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
+  defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
+  defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
+  defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
+  mocks.prepareMocks(defaults);
+  mocks.mockUsers('active-user-details');
+  mocks.mockProfiles('profiles');
+  mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
+  mocks.mockProfiles('admin-and-standard-profiles', ['System Administrator', 'Standard User']);
+  mocks.mockProfileResolve('System Administrator', 'admin-profile-with-metadata');
+  mocks.mockProfileResolve('Standard User', 'standard-profile-with-metadata');
+  mocks.mockProfileResolve('Guest User Profile', 'empty');
+  mocks.mockProfileResolve('Custom Profile', 'empty');
+  mocks.mockLoginHistory('empty');
+  // 14 days is option config in "full-valid" user policy
+  mocks.mockLoginHistory('empty', 14);
+  return mocks;
 }
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
@@ -171,16 +168,6 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
     warnings: new Array<RuleComponentMessage>(),
     errors: [],
   };
-}
-
-export function parseFileAsJson<T>(...filePath: string[]): T {
-  const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
-  return JSON.parse(fileContent) as T;
-}
-
-export function parseXmlFile<T>(...filePath: string[]): T {
-  const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
-  return new XMLParser().parse(fileContent) as T;
 }
 
 export function clearAuditReports(workingDir: string): void {
@@ -203,34 +190,4 @@ export function stubMultiStageUx(sandbox: SinonSandbox): AuditRunMultiStageOutpu
  */
 export function buildAuditConfigPath(dirName: string): string {
   return path.join(MOCK_DATA_BASE_PATH, 'audit-configs', dirName);
-}
-
-function createConnectionMocks(): SfConnectionMocks {
-  const defaults = {
-    describes: {
-      PermissionSet: 'test/mocks/data/describeResults/PermissionSet.json',
-    },
-    queries: {} as Record<string, string>,
-  };
-  defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
-  defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
-  defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
-  defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
-  const mocks = new SfConnectionMocks(defaults);
-  mocks.mockUsers('active-user-details');
-  mocks.mockProfiles('profiles');
-  mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
-  mocks.mockProfiles('admin-and-standard-profiles', ['System Administrator', 'Standard User']);
-  mocks.mockProfileResolve('System Administrator', 'admin-profile-with-metadata');
-  mocks.mockProfileResolve('Standard User', 'standard-profile-with-metadata');
-  mocks.mockProfileResolve('Guest User Profile', 'empty');
-  mocks.mockProfileResolve('Custom Profile', 'empty');
-  mocks.mockLoginHistory('empty');
-  // 14 days is option config in "full-valid" user policy
-  mocks.mockLoginHistory('empty', 14);
-  return mocks;
-}
-
-export function buildResultsPath(fileName: string): string {
-  return path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
 }

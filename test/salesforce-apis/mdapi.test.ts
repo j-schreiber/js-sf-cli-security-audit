@@ -2,12 +2,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { expect } from 'chai';
 import { ApexSettings, SecuritySettings } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import AuditTestContext, { MOCK_DATA_BASE_PATH, parseXmlFile, RETRIEVES_BASE } from '../mocks/auditTestContext.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { MDAPI } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
-
-export const MOCKS_BASE_PATH = path.join(MOCK_DATA_BASE_PATH, 'mdapi-retrieve-mocks');
+import { parseXmlFile } from '../mocks/testHelpers.js';
+import { RETRIEVES_BASE } from '../mocks/data/paths.js';
 
 describe('mdapi retriever', () => {
   const $$ = new AuditTestContext();
@@ -65,7 +65,7 @@ describe('mdapi retriever', () => {
   describe('entity resolve', () => {
     it('returns strongly typed content of retrieved permission sets', async () => {
       // Arrange
-      const retrieveStub = $$.stubMetadataRetrieve('default-permsets');
+      const retrieveStub = $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -85,7 +85,7 @@ describe('mdapi retriever', () => {
 
     it('returns strongly typed content of retrieved connected app settings', async () => {
       // Arrange
-      const retrieveStub = $$.stubMetadataRetrieve('security-settings');
+      const retrieveStub = $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -98,7 +98,7 @@ describe('mdapi retriever', () => {
 
     it('caches retrieved permission sets by their full name', async () => {
       // Arrange
-      const retrieveStub = $$.stubMetadataRetrieve('default-permsets');
+      const retrieveStub = $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -116,7 +116,7 @@ describe('mdapi retriever', () => {
 
     it('caches connected app settings by its metadata type', async () => {
       // Arrange
-      const retrieveStub = $$.stubMetadataRetrieve('security-settings');
+      const retrieveStub = $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);

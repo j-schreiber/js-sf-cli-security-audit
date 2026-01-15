@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
-import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mocks/auditTestContext.js';
+import AuditTestContext, { buildAuditConfigPath } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
@@ -11,6 +11,7 @@ import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
 import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
 import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
+import { parseFileAsJson } from '../mocks/testHelpers.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

@@ -191,7 +191,7 @@ describe('settings policy', () => {
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
       // metadata retrieve fails with an error, if the retrieved component set is empty
       // Error (MetadataApiRetrieveError): No components in the package to retrieve.
-      expect($$.retrieveStub?.callCount).to.equal(0);
+      expect($$.mocks.retrieveStub?.callCount).to.equal(0);
     });
 
     it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
@@ -207,7 +207,7 @@ describe('settings policy', () => {
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
       // metadata retrieve fails with an error, if the retrieved component set is empty
       // Error (MetadataApiRetrieveError): No components in the package to retrieve.
-      expect($$.retrieveStub?.callCount).to.equal(0);
+      expect($$.mocks.retrieveStub?.callCount).to.equal(0);
     });
   });
 

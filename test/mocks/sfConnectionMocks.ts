@@ -2,6 +2,9 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { DescribeSObjectResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { AnyJson, isString } from '@salesforce/ts-types';
+import { TestContext } from '@salesforce/core/testSetup';
+import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
+import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import {
   buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
@@ -11,6 +14,7 @@ import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/salesforce/repositories/us
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
+import { SRC_MOCKS_BASE_PATH } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -22,8 +26,20 @@ export const QUERY_RESULTS_BASE = path.join('test', 'mocks', 'data', 'queryResul
 export default class SfConnectionMocks {
   public describes: Record<string, Partial<DescribeSObjectResult>>;
   public queries: Record<string, JsForceRecord[]>;
+  public retrieveStub?: sinon.SinonStub;
 
-  public constructor(config: SfConnectionMockConfig) {
+  public constructor(private context: TestContext) {
+    this.describes = {};
+    this.queries = {};
+    this.context.fakeConnectionRequest = this.fakeConnectionRequest;
+  }
+
+  /**
+   * Prepares mock results for describe and query calls
+   *
+   * @param config
+   */
+  public prepareMocks(config: SfConnectionMockConfig) {
     this.describes = {};
     this.queries = {};
     if (config.describes) {
@@ -36,6 +52,10 @@ export default class SfConnectionMocks {
         this.setQueryMock(queryString, resultsPath);
       }
     }
+  }
+
+  public restoreStubs() {
+    this.context.fakeConnectionRequest = this.fakeConnectionRequest;
   }
 
   /**
@@ -64,40 +84,6 @@ export default class SfConnectionMocks {
   public setDescribeMock(sobjectName: string, resultPath: PathLike): void {
     this.describes[sobjectName] = loadDescribeResult(resultPath);
   }
-
-  /**
-   * Assign this method by reference (without "()") to the `TestContext`
-   * "fakeConnectionRequest" method.
-   *
-   * @param request
-   */
-  public readonly fakeConnectionRequest = (request: AnyJson): Promise<AnyJson> => {
-    // all describe calls
-    if (isString(request) && request.endsWith('/describe')) {
-      const requestUrl = request.split('/');
-      const sobjectName = requestUrl[requestUrl.length - 2];
-      if (this.describes[sobjectName] === undefined) {
-        // the actual error message, if sobject type is not found with little debugging info
-        return Promise.reject({
-          data: { errorCode: 'NOT_FOUND', message: `The requested resource ${sobjectName} does not exist` },
-        });
-      }
-      return Promise.resolve(this.describes[sobjectName] as AnyJson);
-    }
-    // assume its a call to /query? now
-    const url = (request as { url: string }).url;
-    if (url.includes('/query?q=')) {
-      const queryParam = extractDecodedQueryParam(url);
-      if (this.queries[queryParam] === undefined) {
-        return Promise.reject({
-          data: { errorCode: 'UNKNOWN_QUERY', message: `A query was executed that was not mocked: ${queryParam}` },
-        });
-      }
-      const records = this.queries[queryParam];
-      return Promise.resolve({ done: true, totalSize: records.length, records } as AnyJson);
-    }
-    return Promise.reject(new Error(`No mock was defined for: ${JSON.stringify(request)}`));
-  };
 
   /**
    * Mocks a "metadata SOQL" to resolve profile metadata.
@@ -164,6 +150,80 @@ export default class SfConnectionMocks {
   public mockOAuthTokens(resultFile: string): void {
     this.setQueryMock(OAUTH_TOKEN_QUERY, resultFile);
   }
+
+  /**
+   * Stub a component set metadata retrieve. `ComponentSet.retrieve` will return
+   * all contents of the folder.
+   *
+   * @param folderName folder that exists in mocks/data/mdapi-retrieve-mocks
+   * @returns
+   */
+  public stubMetadataRetrieve(folderName: string) {
+    const fullyResolvedPath = path.join(SRC_MOCKS_BASE_PATH, folderName);
+    this.retrieveStub?.restore();
+    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').callsFake((opts) => {
+      // this behavior mimicks the original behavior of metadata retrieve as closely as possible
+      // each retrieve creates a temporary dictionary that contains all files
+      const retrievePath = path.join(opts.output, `metadataPackage_${Date.now()}`);
+      fs.mkdirSync(retrievePath, { recursive: true });
+      copyDir(fullyResolvedPath, retrievePath);
+      return Promise.resolve(new MetadataApiRetrieveMock(retrievePath) as unknown as MetadataApiRetrieve);
+    });
+    return this.retrieveStub;
+  }
+
+  //        PRIVATE ZONE
+
+  /**
+   * Assign this method by reference (without "()") to the `TestContext`
+   * "fakeConnectionRequest" method.
+   *
+   * @param request
+   */
+  private readonly fakeConnectionRequest = (request: AnyJson): Promise<AnyJson> => {
+    // all describe calls
+    if (isString(request) && request.endsWith('/describe')) {
+      const requestUrl = request.split('/');
+      const sobjectName = requestUrl[requestUrl.length - 2];
+      if (this.describes[sobjectName] === undefined) {
+        // the actual error message, if sobject type is not found with little debugging info
+        return Promise.reject({
+          data: { errorCode: 'NOT_FOUND', message: `The requested resource ${sobjectName} does not exist` },
+        });
+      }
+      return Promise.resolve(this.describes[sobjectName] as AnyJson);
+    }
+    // assume its a call to /query? now
+    const url = (request as { url: string }).url;
+    if (url.includes('/query?q=')) {
+      const queryParam = extractDecodedQueryParam(url);
+      if (this.queries[queryParam] === undefined) {
+        return Promise.reject({
+          data: { errorCode: 'UNKNOWN_QUERY', message: `A query was executed that was not mocked: ${queryParam}` },
+        });
+      }
+      const records = this.queries[queryParam];
+      return Promise.resolve({ done: true, totalSize: records.length, records } as AnyJson);
+    }
+    return Promise.reject(new Error(`No mock was defined for: ${JSON.stringify(request)}`));
+  };
+}
+
+class MetadataApiRetrieveMock {
+  public constructor(private readonly dirPath?: string) {}
+
+  public async pollStatus(): Promise<RetrieveResult> {
+    let cmpSet: ComponentSet;
+    if (this.dirPath && this.dirPath !== '') {
+      cmpSet = ComponentSet.fromSource(this.dirPath);
+    } else {
+      cmpSet = new ComponentSet();
+    }
+    return new RetrieveResult(
+      { done: true, status: RequestStatus.Succeeded, success: true, fileProperties: [], id: '1', zipFile: '' },
+      cmpSet
+    );
+  }
 }
 
 function extractDecodedQueryParam(url: string) {
@@ -174,12 +234,12 @@ function extractDecodedQueryParam(url: string) {
   }
 }
 
-export function loadDescribeResult(filePath: PathLike): DescribeSObjectResult {
+function loadDescribeResult(filePath: PathLike): DescribeSObjectResult {
   const content = fs.readFileSync(filePath, 'utf-8');
   return JSON.parse(content) as DescribeSObjectResult;
 }
 
-export function loadRecords(filePath: PathLike): JsForceRecord[] {
+function loadRecords(filePath: PathLike): JsForceRecord[] {
   const content = fs.readFileSync(filePath, 'utf-8');
   return JSON.parse(content) as JsForceRecord[];
 }
