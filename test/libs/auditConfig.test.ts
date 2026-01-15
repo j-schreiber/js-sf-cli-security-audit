@@ -2,16 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
-import AuditTestContext, { buildAuditConfigPath, parseFileAsJson } from '../mocks/auditTestContext.js';
+import AuditTestContext, { buildAuditConfigPath } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import { loadAuditConfig, saveAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
 import { AuditRunConfig, ConfigFile, PermissionsClassificationContent } from '../../src/libs/core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY, PROFILES_QUERY } from '../../src/libs/core/constants.js';
 import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
 import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
 import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
+import { parseFileAsJson } from '../mocks/testHelpers.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -22,7 +22,6 @@ describe('audit config', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
     await $$.init();
   });
 
@@ -77,7 +76,7 @@ describe('audit config', () => {
 
     it('inits partial classifications if org does not return custom perms', async () => {
       // Arrange
-      $$.mocks.setQueryMock(CUSTOM_PERMS_QUERY, 'empty');
+      $$.mocks.mockCustomPermissions('empty');
 
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
@@ -145,7 +144,6 @@ describe('audit config', () => {
       // is the new CanApproveUninstalledApps permission (the corresponding field would have been
       // PermissionsCanApproveUninstalledApps, which does not exist).
       // To remedy that, we parse all profiles and all assigned perms and add any used permissions.
-      $$.mocks.setQueryMock(PROFILES_QUERY, 'profiles-for-resolve');
 
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });

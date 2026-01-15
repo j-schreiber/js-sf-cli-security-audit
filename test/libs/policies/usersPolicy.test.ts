@@ -6,13 +6,8 @@ import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.
 import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
-import { differenceInDays } from '../../../src/libs/core/utils.js';
+import { differenceInDays } from '../../../src/utils.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
-import {
-  ACTIVE_USERS_DETAILS_QUERY,
-  buildLoginHistoryQuery,
-  buildPermsetAssignmentsQuery,
-} from '../../../src/libs/core/salesforce-apis/users/queries.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -43,7 +38,7 @@ describe('users policy', () => {
 
   function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
     const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
-    $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
+    $$.mocks.mockUsers('active-user-details', (record) => ({
       ...record,
       LastLoginDate: new Date(mockLastLogin).toISOString(),
     }));
@@ -51,11 +46,11 @@ describe('users policy', () => {
   }
 
   function mockSingleActiveUser(profileName: string): void {
-    $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'single-active-user', (record) => ({
+    $$.mocks.mockUsers('single-active-user', (record) => ({
       ...record,
       Profile: { Name: profileName },
     }));
-    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(['005000000000000AAA']), 'empty');
+    $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
   }
 
   beforeEach(async () => {
@@ -95,10 +90,7 @@ describe('users policy', () => {
 
     it('ignores users with UNKNOWN role in resolve', async () => {
       // Arrange
-      $$.mocks.setQueryMock(
-        buildPermsetAssignmentsQuery(['005Pl000001p3HqIAI', '0054P00000AaGueQAF']),
-        'test-user-assignments'
-      );
+      $$.mocks.mockPermsetAssignments('test-user-assignments', ['005Pl000001p3HqIAI', '0054P00000AaGueQAF']);
       $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
@@ -130,7 +122,7 @@ describe('users policy', () => {
 
     it('queries full login history if option is not set', async () => {
       // Arrange
-      $$.mocks.setQueryMock(buildLoginHistoryQuery(), 'logins-with-browser-only');
+      $$.mocks.mockLoginHistory('logins-with-browser-only');
 
       // Act
       const config = { ...DEFAULT_CONFIG, rules: { NoInactiveUsers: { enabled: true } } };
@@ -151,8 +143,7 @@ describe('users policy', () => {
 
     it('queries only last N days of login history if option is set', async () => {
       // Arrange
-      const expectedQuery = buildLoginHistoryQuery(30);
-      $$.mocks.setQueryMock(expectedQuery, 'logins-with-browser-only');
+      $$.mocks.mockLoginHistory('logins-with-browser-only', 30);
       const config = {
         enabled: true,
         rules: { NoInactiveUsers: { enabled: true } },
@@ -191,9 +182,9 @@ describe('users policy', () => {
 
       it('reports violation if user has login with "Other Apex API"', async () => {
         // Arrange
-        $$.mocks.setQueryMock(
-          buildLoginHistoryQuery(ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory),
-          'logins-with-other-apex-api'
+        $$.mocks.mockLoginHistory(
+          'logins-with-other-apex-api',
+          ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory
         );
 
         // Act
@@ -216,10 +207,7 @@ describe('users policy', () => {
 
       it('reports no violation if user has no logins with "Other Apex API', async () => {
         // Arrange
-        $$.mocks.setQueryMock(
-          buildLoginHistoryQuery(ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory),
-          'logins-with-browser-only'
-        );
+        $$.mocks.mockLoginHistory('logins-with-browser-only', ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory);
 
         // Act
         const result = await resolveAndRun(ruleEnabledConfig);
@@ -323,7 +311,7 @@ describe('users policy', () => {
 
       it('reports no violation if users last login is within threshold', async () => {
         // Arrange
-        $$.mocks.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, 'active-user-details', (record) => ({
+        $$.mocks.mockUsers('active-user-details', (record) => ({
           ...record,
           LastLoginDate: new Date().toISOString(),
         }));
@@ -348,7 +336,7 @@ describe('users policy', () => {
           EnforcePermissionClassifications: { enabled: true },
         };
         // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
       });
 
       it('reports compliance if user role allows all assigned permissions', async () => {
@@ -442,7 +430,7 @@ describe('users policy', () => {
           EnforcePermissionPresets: { enabled: true },
         };
         // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
         $$.mockPermSetClassifications({

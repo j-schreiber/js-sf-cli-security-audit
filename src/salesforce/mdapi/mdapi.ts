@@ -1,23 +1,28 @@
 import { Connection } from '@salesforce/core';
-import { XMLParser } from 'fast-xml-parser';
-import {
-  ConnectedAppSettings,
-  Metadata,
-  PermissionSet,
-  Profile as ProfileMetadata,
-} from '@jsforce/jsforce-node/lib/api/metadata.js';
-import NamedMetadata from './namedMetadataType.js';
-import SingletonMetadata from './singletonMetadataType.js';
-import NamedMetadataQueryable from './namedMetadataToolingQueryable.js';
+import { Metadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { MdapiRegistry, Registry } from './metadataRegistry.js';
 
 export default class MDAPI {
   private static readonly retrievers = new Map<string, MDAPI>();
   private readonly cache: MetadataCache;
 
-  public constructor(private readonly connection: Connection) {
+  public constructor(private readonly connection: Connection, private readonly registry: MdapiRegistry = Registry) {
     this.cache = new MetadataCache();
   }
 
+  /**
+   * Clear all cached retrievers. Primarily for testing purposes.
+   */
+  public static clearCache(): void {
+    this.retrievers.clear();
+  }
+
+  /**
+   * Create a new MDAPI retriever instance and cache it.
+   *
+   * @param connection
+   * @returns
+   */
   public static create(connection: Connection): MDAPI {
     if (!this.retrievers.has(connection.instanceUrl)) {
       this.retrievers.set(connection.instanceUrl, new MDAPI(connection));
@@ -33,11 +38,11 @@ export default class MDAPI {
    * @param componentNames
    * @returns
    */
-  public async resolve<K extends keyof typeof NamedTypesRegistry>(
+  public async resolve<K extends keyof MdapiRegistry['namedTypes']>(
     typeName: K,
     componentNames: string[]
   ): Promise<NamedReturnTypes[K]> {
-    const retriever = NamedTypesRegistry[typeName];
+    const retriever = this.registry.namedTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached(componentNames);
     if (toRetrieve.length > 0) {
       const retrieveResults = await retriever.resolve(this.connection, toRetrieve);
@@ -57,10 +62,10 @@ export default class MDAPI {
    * @param typeName
    * @returns
    */
-  public async resolveSingleton<K extends keyof typeof SingletonRegistry>(
+  public async resolveSingleton<K extends keyof MdapiRegistry['singletonTypes']>(
     typeName: K
   ): Promise<SingletonReturnTypes[K]> {
-    const retriever = SingletonRegistry[typeName];
+    const retriever = this.registry.singletonTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached([typeName]);
     if (toRetrieve.length > 0) {
       const retrieveResults = await retriever.resolve(this.connection);
@@ -109,57 +114,10 @@ class MetadataCache {
   }
 }
 
-export const NamedTypesRegistry = {
-  PermissionSet: new NamedMetadata<PermissionSetXml, 'PermissionSet'>({
-    retrieveType: 'PermissionSet',
-    rootNodeName: 'PermissionSet',
-    parser: new XMLParser({
-      isArray: (jpath): boolean =>
-        ['userPermissions', 'fieldPermissions', 'customPermissions', 'classAccesses'].includes(jpath),
-    }),
-    parsePostProcessor: (parseResult): PermissionSet => ({
-      ...parseResult,
-      userPermissions: parseResult.userPermissions ?? [],
-      customPermissions: parseResult.customPermissions ?? [],
-      classAccesses: parseResult.classAccesses ?? [],
-    }),
-  }),
-  Profile: new NamedMetadataQueryable<ProfileXml, 'Profile'>({
-    objectName: 'Profile',
-    nameField: 'Name',
-    parsePostProcessor: (parseResult): ProfileMetadata => ({
-      ...parseResult,
-      userPermissions: parseResult.userPermissions ?? [],
-      customPermissions: parseResult.customPermissions ?? [],
-      classAccesses: parseResult.classAccesses ?? [],
-    }),
-  }),
-};
-
-export const SingletonRegistry = {
-  ConnectedAppSettings: new SingletonMetadata<ConnectedAppSettingsXml, 'ConnectedAppSettings'>({
-    rootNodeName: 'ConnectedAppSettings',
-    retrieveName: 'ConnectedApp',
-    retrieveType: 'Settings',
-  }),
-};
-
 type NamedReturnTypes = {
-  [K in keyof typeof NamedTypesRegistry]: Awaited<ReturnType<(typeof NamedTypesRegistry)[K]['resolve']>>;
+  [K in keyof MdapiRegistry['namedTypes']]: Awaited<ReturnType<MdapiRegistry['namedTypes'][K]['resolve']>>;
 };
 
 type SingletonReturnTypes = {
-  [K in keyof typeof SingletonRegistry]: Awaited<ReturnType<(typeof SingletonRegistry)[K]['resolve']>>;
-};
-
-type ProfileXml = {
-  Profile: ProfileMetadata;
-};
-
-type PermissionSetXml = {
-  PermissionSet: PermissionSet;
-};
-
-type ConnectedAppSettingsXml = {
-  ConnectedAppSettings: ConnectedAppSettings;
+  [K in keyof MdapiRegistry['singletonTypes']]: Awaited<ReturnType<MdapiRegistry['singletonTypes'][K]['resolve']>>;
 };

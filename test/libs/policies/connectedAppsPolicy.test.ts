@@ -4,7 +4,6 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import ConnectedAppPolicy from '../../../src/libs/core/policies/connectedAppPolicy.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../../src/libs/core/constants.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -24,6 +23,7 @@ describe('connected apps policy', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
+    $$.mocks.mockConnectedApps('connected-apps');
     await $$.init();
   });
 
@@ -33,8 +33,7 @@ describe('connected apps policy', () => {
 
   it('resolves all apps from ConnectedApplication and OauthToken', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
-    $$.mocks.setQueryMock(OAUTH_TOKEN_QUERY, 'oauth-usage');
+    $$.mocks.mockOAuthTokens('oauth-usage');
 
     // Act
     const pol = new ConnectedAppPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
@@ -59,7 +58,6 @@ describe('connected apps policy', () => {
 
   it('uses result form ApiAccess setting to override self-authorize flag', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;
 
@@ -84,8 +82,7 @@ describe('connected apps policy', () => {
 
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
-    $$.mocks.setQueryMock(CONNECTED_APPS_QUERY, 'connected-apps');
-    $$.stubMetadataRetrieve('api-access-not-available');
+    $$.mocks.stubMetadataRetrieve('api-access-not-available');
     const conf = structuredClone(DEFAULT_CONFIG);
     conf.rules.NoUserCanSelfAuthorize.enabled = true;
 

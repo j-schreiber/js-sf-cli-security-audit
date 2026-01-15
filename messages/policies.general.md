@@ -1,10 +1,18 @@
 # entity-not-found
 
-Entity was not found on the target org.
+Entity was classified, but not found on the target org.
+
+# entity-not-classified
+
+Entity was found on the target org, but not classified.
 
 # profile-invalid-no-metadata
 
 Org did not return valid metadata for the profile. Entity cannot be processed.
+
+# permission-set-invalid-no-metadata
+
+Org did not return valid metadata for the permission set. Entity cannot be processed.
 
 # preset-unknown
 

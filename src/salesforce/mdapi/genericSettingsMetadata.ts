@@ -11,11 +11,11 @@ export type SalesforceSetting = {
 /**
  * A generic loosely-typed retriever for settings metadata
  */
-export default class AnySettingsMetadata {
+export default class GenericSettingsMetadata {
   private parser;
   private retrieveType;
 
-  public constructor(private con: Connection) {
+  public constructor() {
     this.parser = new XMLParser();
     this.retrieveType = 'Settings';
   }
@@ -29,27 +29,27 @@ export default class AnySettingsMetadata {
    * @param settingNames
    * @returns
    */
-  public async resolve(settingNames: string[]): Promise<Map<string, SalesforceSetting>> {
+  public async resolve(con: Connection, settingNames: string[]): Promise<Record<string, SalesforceSetting>> {
     const cmpSet = new ComponentSet();
     if (settingNames.length === 0) {
-      return new Map();
+      return {};
     }
     for (const settingName of settingNames) {
       cmpSet.add({ type: this.retrieveType, fullName: settingName });
     }
-    const retrieveResult = await retrieve(cmpSet, this.con);
+    const retrieveResult = await retrieve(cmpSet, con);
     const result = this.parseSettingsContent(settingNames, retrieveResult.components);
     cleanRetrieveDir(retrieveResult.getFileResponses());
     return result;
   }
 
-  private parseSettingsContent(settingNames: string[], components: ComponentSet): Map<string, SalesforceSetting> {
-    const result = new Map<string, SalesforceSetting>();
+  private parseSettingsContent(settingNames: string[], components: ComponentSet): Record<string, SalesforceSetting> {
+    const result: Record<string, SalesforceSetting> = {};
     for (const settingName of settingNames) {
       const cmps = components.getSourceComponents({ type: this.retrieveType, fullName: settingName }).toArray();
       const settingsContent = this.parseSourceFile(cmps, `${settingName}Settings`);
       if (settingsContent) {
-        result.set(settingName, settingsContent);
+        result[settingName] = settingsContent;
       }
     }
     return result;

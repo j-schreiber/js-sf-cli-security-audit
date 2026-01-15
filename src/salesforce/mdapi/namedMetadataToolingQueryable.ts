@@ -1,6 +1,6 @@
 import { QueryResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { Connection } from '@salesforce/core';
-import { isNullish } from '../utils.js';
+import { isNullish } from '../../utils.js';
 import { NamedMetadataResolver } from './metadataRegistryEntry.js';
 
 export type NamedMetadataQueryableOpts<Type> = {

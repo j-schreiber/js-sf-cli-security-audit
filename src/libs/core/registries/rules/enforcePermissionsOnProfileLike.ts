@@ -1,5 +1,5 @@
 import { PartialPolicyRuleResult, RuleAuditContext } from '../types.js';
-import { isNullish } from '../../utils.js';
+import { isNullish } from '../../../../utils.js';
 import { ResolvedProfileLike, scanPermissions } from '../helpers/permissionsScanning.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 

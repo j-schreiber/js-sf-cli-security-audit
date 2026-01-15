@@ -1,9 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { Connection } from '@salesforce/core';
 import { Profile, PermissionSet as PermissionSetMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
-import { PermissionSet } from '../core/policies/salesforceStandardTypes.js';
+import { PermissionSets, Profiles } from '../../salesforce/index.js';
 import { QuickScanOptions, QuickScanResult } from './types.js';
 
 type ScannedEntities = {
@@ -66,26 +64,27 @@ export default class UserPermissionScanner extends EventEmitter {
   }
 
   private async resolveProfiles(targetOrg: Connection): Promise<Record<string, Profile>> {
-    const profiles = await targetOrg.query<PermissionSet>(PROFILES_QUERY);
-    this.emitProgress({ profiles: { total: profiles.records.length, resolved: 0 } });
-    const mdapi = MDAPI.create(targetOrg);
-    const resolved = await mdapi.resolve(
-      'Profile',
-      profiles.records.map((permsetRecord) => permsetRecord.Profile.Name)
-    );
-    this.emitProgress({ profiles: { resolved: Object.keys(resolved).length } });
-    return resolved;
+    const profilesRepo = new Profiles(targetOrg);
+    const profiles = await profilesRepo.resolve({ withMetadata: true });
+    this.emitProgress({ profiles: { total: profiles.size } });
+    const result: Record<string, Profile> = {};
+    for (const profile of profiles.values()) {
+      result[profile.name] = profile.metadata!;
+    }
+    this.emitProgress({ profiles: { resolved: profiles.size } });
+    return result;
   }
 
   private async resolvePermissionSets(targetOrg: Connection): Promise<Record<string, PermissionSetMetadata>> {
-    const permSets = await targetOrg.query<PermissionSet>(PERMISSION_SETS_QUERY);
-    this.emitProgress({ permissionSets: { total: permSets.records.length, resolved: 0 } });
-    const mdapi = MDAPI.create(targetOrg);
-    const resolved = await mdapi.resolve(
-      'PermissionSet',
-      permSets.records.map((permsetRecord) => permsetRecord.Name)
+    const permsetsRepo = new PermissionSets(targetOrg);
+    permsetsRepo.addListener('entityresolve', (resolveEvt) =>
+      this.emitProgress({ permissionSets: resolveEvt as ScanStatusEvent['permissionSets'] })
     );
-    this.emitProgress({ permissionSets: { resolved: Object.keys(resolved).length } });
+    const permsets = await permsetsRepo.resolve({ withMetadata: true });
+    const resolved: Record<string, PermissionSetMetadata> = {};
+    for (const ps of permsets.values()) {
+      resolved[ps.name] = ps.metadata!;
+    }
     return resolved;
   }
 

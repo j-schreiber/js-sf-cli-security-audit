@@ -1,7 +1,7 @@
 import { Connection } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
-import { isNullish } from '../../utils.js';
-import MDAPI from '../../mdapi/mdapiRetriever.js';
+import { isNullish } from '../../../utils.js';
+import MDAPI from '../../mdapi/mdapi.js';
 import {
   PermissionSetAssignment,
   ResolveUsersOptions,
@@ -12,7 +12,7 @@ import {
 import { ACTIVE_USERS_DETAILS_QUERY, buildLoginHistoryQuery, buildPermsetAssignmentsQuery } from './queries.js';
 
 export default class Users {
-  private readonly mdapiRepo;
+  private readonly mdapiRepo: MDAPI;
 
   public constructor(private readonly connection: Connection) {
     this.mdapiRepo = MDAPI.create(this.connection);

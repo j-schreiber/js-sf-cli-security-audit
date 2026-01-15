@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { AuditRunConfig, UsersClassificationContent, UsersPolicyFileContent } from '../file-mgmt/schema.js';
 import { AuditContext } from '../registries/types.js';
-import { ResolveUsersOptions, User, Users } from '../salesforce-apis/index.js';
+import { ResolveUsersOptions, User, Users } from '../../../salesforce/index.js';
 import { UsersRegistry } from '../registries/users.js';
 import { EntityResolveError } from '../result-types.js';
 import { UserPrivilegeLevel } from '../policy-types.js';

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
 import { ComponentSet, FileResponse, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { Connection } from '@salesforce/core';
-import { RETRIEVE_CACHE } from '../constants.js';
+import { RETRIEVE_CACHE } from './constants.js';
 
 export type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
   /**

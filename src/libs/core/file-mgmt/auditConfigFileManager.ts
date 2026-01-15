@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
 import { Messages } from '@salesforce/core';
-import { isEmpty } from '../utils.js';
+import { isEmpty } from '../../../utils.js';
 import { classificationDefs, ClassificationNames, policyDefs, PolicyNames } from '../policyRegistry.js';
 import {
   AuditRunConfig,

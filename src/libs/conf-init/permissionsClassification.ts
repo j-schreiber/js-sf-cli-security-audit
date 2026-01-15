@@ -5,14 +5,14 @@ import {
   ProfilesClassificationContent,
   UsersClassificationContent,
 } from '../core/file-mgmt/schema.js';
-import { CUSTOM_PERMS_QUERY, PERMISSION_SETS_QUERY, PROFILES_QUERY } from '../core/constants.js';
-import MDAPI from '../core/mdapi/mdapiRetriever.js';
-import { CustomPermission, PermissionSet } from '../core/policies/salesforceStandardTypes.js';
+import { CustomPermission } from '../core/policies/salesforceStandardTypes.js';
 import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
-import { Users } from '../core/salesforce-apis/index.js';
+import { PermissionSets, Profiles, Users } from '../../salesforce/index.js';
 import { UserPrivilegeLevel } from '../core/policy-types.js';
 import { AuditInitPresets, loadPreset } from './presets.js';
 import { UnclassifiedPerm } from './presets/none.js';
+
+export const CUSTOM_PERMS_QUERY = 'SELECT Id,MasterLabel,DeveloperName FROM CustomPermission';
 
 /**
  * Initialises a fresh set of user permissions from target org connection.
@@ -25,7 +25,7 @@ export async function initUserPermissions(
   preset?: AuditInitPresets
 ): Promise<PermissionsClassificationContent> {
   const describePerms = await parsePermsFromDescribe(con);
-  const assignedPerms = await findAssignedPerms(con);
+  const assignedPerms = await getUserPermsFromProfiles(con);
   const allPerms = { ...describePerms, ...assignedPerms };
   const presConfig = loadPreset(preset);
   const perms = presConfig.classifyUserPermissions(Object.values(allPerms));
@@ -76,11 +76,12 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
  * @returns
  */
 export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesClassificationContent> {
-  const profiles = await targetOrgCon.query<PermissionSet>(PROFILES_QUERY);
+  const profilesRepo = new Profiles(targetOrgCon);
+  const profiles = await profilesRepo.resolve();
   const content: ProfilesClassificationContent = { profiles: {} };
-  profiles.records.forEach((permsetRecord) => {
-    content.profiles[permsetRecord.Profile.Name] = { role: UserPrivilegeLevel.UNKNOWN };
-  });
+  for (const profileName of profiles.keys()) {
+    content.profiles[profileName] = { role: UserPrivilegeLevel.UNKNOWN };
+  }
   return content;
 }
 
@@ -91,13 +92,12 @@ export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesCl
  * @returns
  */
 export async function initPermissionSets(targetOrgCon: Connection): Promise<PermissionSetsClassificationContent> {
-  const permSets = await targetOrgCon.query<PermissionSet>(PERMISSION_SETS_QUERY);
+  const permsetsRepo = new PermissionSets(targetOrgCon);
+  const permsets = await permsetsRepo.resolve({ isCustomOnly: true });
   const content: PermissionSetsClassificationContent = { permissionSets: {} };
-  permSets.records
-    .filter((permsetRecord) => permsetRecord.IsCustom)
-    .forEach((permsetRecord) => {
-      content.permissionSets[permsetRecord.Name] = { role: UserPrivilegeLevel.UNKNOWN };
-    });
+  for (const permsetName of permsets.keys()) {
+    content.permissionSets[permsetName] = { role: UserPrivilegeLevel.UNKNOWN };
+  }
   return content;
 }
 
@@ -131,20 +131,16 @@ async function parsePermsFromDescribe(con: Connection): Promise<Record<string, U
   return describeAvailablePerms;
 }
 
-async function findAssignedPerms(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
+async function getUserPermsFromProfiles(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
   const assignedPerms: Record<string, UnclassifiedPerm> = {};
-  const profiles = await con.query<PermissionSet>(PROFILES_QUERY);
-  if (profiles.records?.length > 0) {
-    const mdapi = new MDAPI(con);
-    const resolvedProfiles = await mdapi.resolve(
-      'Profile',
-      profiles.records.map((p) => p.Profile.Name)
-    );
-    Object.values(resolvedProfiles).forEach((profile) => {
-      profile.userPermissions.forEach((userPerm) => {
+  const profilesRepo = new Profiles(con);
+  const profiles = await profilesRepo.resolve({ withMetadata: true });
+  for (const profile of profiles.values()) {
+    if (profile.metadata) {
+      profile.metadata.userPermissions.forEach((userPerm) => {
         assignedPerms[userPerm.name] = { name: userPerm.name };
       });
-    });
+    }
   }
   return assignedPerms;
 }
