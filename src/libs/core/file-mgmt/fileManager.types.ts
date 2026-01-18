@@ -2,6 +2,12 @@ import z from 'zod';
 
 type ConfigSchema = {
   schema: z.ZodType;
+  dependencies?: ConfigFileDependency[];
+};
+
+export type ConfigFileDependency = {
+  errorName: string;
+  path: string[];
 };
 
 type IndexedConfigSchema = Record<string, ConfigSchema>;

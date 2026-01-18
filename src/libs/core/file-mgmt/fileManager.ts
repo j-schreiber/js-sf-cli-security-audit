@@ -1,12 +1,12 @@
 import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
-// import { Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { throwAsSfError } from './schema.js';
-import { AuditConfigSchema, ParsedAuditConfig } from './fileManager.types.js';
+import { AuditConfigSchema, ConfigFileDependency, ParsedAuditConfig } from './fileManager.types.js';
 
-// Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-// const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 /**
  * The file manager streamlines initialisation of an audit config from
@@ -25,16 +25,16 @@ export default class FileManager<ConfShape extends AuditConfigSchema> {
    * @returns
    */
   public parse(dirPath: PathLike): ParsedAuditConfig<ConfShape> {
-    const parseResult = {};
+    const parseResult = {} as ParsedAuditConfig<ConfShape>;
     for (const dirName of typedKeys(this.schema)) {
       // no idea if there is not a better solution than casting to "any"
       // but it works, and tests prove that its somewhat save :).
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
       (parseResult as any)[dirName] = this.parseSubdir(dirName, dirPath);
     }
-    // assertIsMinimalConfig(conf, dirPath);
-    // this.validateDependencies(conf);
-    return parseResult as ParsedAuditConfig<ConfShape>;
+    assertIsMinimalConfig(parseResult, dirPath);
+    this.validateDependencies(parseResult);
+    return parseResult;
   }
 
   private parseSubdir<K extends keyof ConfShape>(
@@ -57,42 +57,47 @@ export default class FileManager<ConfShape extends AuditConfigSchema> {
     return parseResults;
   }
 
-  // private validateDependencies(conf: AuditRunConfig): void {
-  //   Object.keys(conf.policies).forEach((policyName) => {
-  //     const policyDef = this.directoryStructure.policies[policyName as PolicyNames];
-  //     if (policyDef?.dependencies) {
-  //       policyDef.dependencies.forEach((dependency) => {
-  //         if (!dependencyExists(dependency.path, conf)) {
-  //           throw messages.createError(dependency.errorName);
-  //         }
-  //       });
-  //     }
-  //   });
-  // }
+  private validateDependencies(parseResult: ParsedAuditConfig<ConfShape>): void {
+    for (const config of Object.values(this.schema)) {
+      for (const detailShape of Object.values(config)) {
+        if (detailShape.dependencies) {
+          assertDependencies(detailShape.dependencies, parseResult);
+        }
+      }
+    }
+  }
+}
+
+function assertIsMinimalConfig(conf: ParsedAuditConfig<AuditConfigSchema>, dirPath: PathLike): void {
+  if (Object.keys(conf.policies).length === 0) {
+    const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
+    throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
+  }
 }
 
 function typedKeys<T extends object>(obj: T): Array<keyof T> {
   return Object.keys(obj) as Array<keyof T>;
 }
 
-// function dependencyExists(fullPath: string[], rootNode: Record<string, unknown>): boolean {
-//   const dep = traverseDependencyPath(fullPath, rootNode);
-//   return Boolean(dep);
-// }
+function assertDependencies(dependencies: ConfigFileDependency[], parseResult: Record<string, unknown>): void {
+  for (const dep of dependencies) {
+    if (!dependencyExists(dep.path, parseResult)) {
+      throw messages.createError(dep.errorName);
+    }
+  }
+}
 
-// function traverseDependencyPath(remainingPath: string[], rootNode: Record<string, unknown>): unknown {
-//   if (remainingPath.length >= 2) {
-//     return traverseDependencyPath(remainingPath.slice(1), rootNode[remainingPath[0]] as Record<string, unknown>);
-//   } else if (remainingPath.length === 0) {
-//     return undefined;
-//   } else {
-//     return rootNode[remainingPath[0]];
-//   }
-// }
+function dependencyExists(fullPath: string[], rootNode: Record<string, unknown>): boolean {
+  const dep = traverseDependencyPath(fullPath, rootNode);
+  return Boolean(dep);
+}
 
-// function assertIsMinimalConfig(conf: AuditRunConfig, dirPath: PathLike): void {
-//   if (Object.keys(conf.policies).length === 0) {
-//     const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
-//     throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
-//   }
-// }
+function traverseDependencyPath(remainingPath: string[], rootNode: Record<string, unknown>): unknown {
+  if (remainingPath.length >= 2) {
+    return traverseDependencyPath(remainingPath.slice(1), rootNode[remainingPath[0]] as Record<string, unknown>);
+  } else if (remainingPath.length === 0) {
+    return undefined;
+  } else {
+    return rootNode[remainingPath[0]];
+  }
+}
