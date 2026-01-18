@@ -2,28 +2,24 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import PermissionSetPolicy from '../../../src/libs/core/policies/permissionSetPolicy.js';
-import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
 import { parsePermSetFromFile } from '../../mocks/testHelpers.js';
 import { PERMISSION_SETS_QUERY } from '../../../src/salesforce/repositories/perm-sets/queries.js';
+import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import PermissionSetsPolicy from '../../../src/libs/audit-engine/registry/policies/permissionSets.js';
+import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
+import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
+import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/registry/rules/enforcePermissionsOnProfileLike.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-const DEFAULT_PERMSET_CONFIG: BasePolicyFileContent = {
-  enabled: true,
-  rules: {
-    EnforcePermissionClassifications: {
-      enabled: true,
-    },
-  },
-};
+const defaultRegistry = new RuleRegistry(PolicyDefinitions['permissionSets'].rules);
 
 describe('permission sets policy', () => {
   const $$ = new AuditTestContext();
+  let defaultConfig: PolicyConfig;
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
     return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
@@ -32,15 +28,21 @@ describe('permission sets policy', () => {
   beforeEach(async () => {
     $$.mockAuditConfig.classifications = {
       permissionSets: {
-        content: {
-          permissionSets: {
-            Test_Admin_Permission_Set_1: {
-              role: UserPrivilegeLevel.ADMIN,
-            },
-            Test_Power_User_Permission_Set_1: {
-              role: UserPrivilegeLevel.POWER_USER,
-            },
+        permissionSets: {
+          Test_Admin_Permission_Set_1: {
+            role: UserPrivilegeLevel.ADMIN,
           },
+          Test_Power_User_Permission_Set_1: {
+            role: UserPrivilegeLevel.POWER_USER,
+          },
+        },
+      },
+    };
+    defaultConfig = {
+      enabled: true,
+      rules: {
+        EnforcePermissionClassifications: {
+          enabled: true,
         },
       },
     };
@@ -54,7 +56,7 @@ describe('permission sets policy', () => {
 
   it('runs all rules in policy configuration with fully valid config', async () => {
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
+    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
     const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert
@@ -68,7 +70,7 @@ describe('permission sets policy', () => {
     const ruleSpy = stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
 
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
+    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
     const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert
@@ -104,7 +106,7 @@ describe('permission sets policy', () => {
     });
 
     // Act
-    const pol = new PermissionSetPolicy(DEFAULT_PERMSET_CONFIG, $$.mockAuditConfig);
+    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
     const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert

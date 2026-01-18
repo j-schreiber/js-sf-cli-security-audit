@@ -5,3 +5,4 @@ export { default as AuditRun, startAuditRun } from './auditRun.js';
 export type { AuditRunConfig } from './registry/shape/auditConfigShape.js';
 
 export const ConfigFileManager = new FileManager(AuditConfigShape);
+export { PolicyDefinitions } from './registry/definitions.js';

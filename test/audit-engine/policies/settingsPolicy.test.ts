@@ -2,37 +2,36 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { SettingsRegistry } from '../../../src/libs/core/registries/settings.js';
-import EnforceSettings from '../../../src/libs/core/registries/rules/enforceSettings.js';
-import SettingsPolicy from '../../../src/libs/core/policies/settingsPolicy.js';
-import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
+import SettingsPolicy, { SettingsRuleRegistry } from '../../../src/libs/audit-engine/registry/policies/settings.js';
+import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import EnforceSettings from '../../../src/libs/audit-engine/registry/rules/enforceSettings.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 const ruleMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.settings');
 
-const DEFAULT_VALID_CONFIG = {
-  enabled: true,
-  rules: {
-    EnforceSecuritySettings: {
-      enabled: true,
-      options: {
-        enableAdminLoginAsAnyUser: true,
-      },
-    },
-    EnforceApexSettings: {
-      enabled: true,
-      options: {
-        enableApexAccessRightsPref: true,
-      },
-    },
-  },
-} as BasePolicyFileContent;
-
 describe('settings policy', () => {
   const $$ = new AuditTestContext();
+  let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
+    defaultConfig = {
+      enabled: true,
+      rules: {
+        EnforceSecuritySettings: {
+          enabled: true,
+          options: {
+            enableAdminLoginAsAnyUser: true,
+          },
+        },
+        EnforceApexSettings: {
+          enabled: true,
+          options: {
+            enableApexAccessRightsPref: true,
+          },
+        },
+      },
+    };
     await $$.init();
   });
 
@@ -56,7 +55,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = new SettingsRuleRegistry().resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       expect(ruleResolveResult.resolveErrors).to.deep.equal([]);
@@ -69,7 +68,7 @@ describe('settings policy', () => {
           ruleDisplayName: 'EnforceSecuritySettings',
           ruleConfig: {},
           settingName: 'Security',
-          auditContext: $$.mockAuditConfig,
+          auditConfig: $$.mockAuditConfig,
         })
       );
     });
@@ -89,7 +88,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = new SettingsRuleRegistry().resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       expect(ruleResolveResult.skippedRules).to.deep.equal([
@@ -123,14 +122,14 @@ describe('settings policy', () => {
       };
 
       // Act
-      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = new SettingsRuleRegistry().resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       const initialisedRule = ruleResolveResult.enabledRules[0];
       expect(initialisedRule).to.deep.equal(
         new EnforceSettings({
           ruleDisplayName: 'EnforceSecuritySettings',
-          auditContext: $$.mockAuditConfig,
+          auditConfig: $$.mockAuditConfig,
           settingName: 'Security',
           ruleConfig: rules.EnforceSecuritySettings.options,
         })
@@ -141,7 +140,7 @@ describe('settings policy', () => {
   describe('resolve policy', () => {
     it('interprets each valid rule as an entity and resolves them in bulk', async () => {
       // Act
-      const pol = new SettingsPolicy(DEFAULT_VALID_CONFIG, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -151,11 +150,10 @@ describe('settings policy', () => {
 
     it('ignores an invalid rule but does not add it to ignoredEntities', async () => {
       // Arrange
-      const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
-      confWithInvalidRule.rules['SomeInvalidRuleName'] = { enabled: true };
+      defaultConfig.rules['SomeInvalidRuleName'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(confWithInvalidRule, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -165,11 +163,10 @@ describe('settings policy', () => {
 
     it('ignores the entity of a syntactically valid rule that cannot be resolved to a setting', async () => {
       // Arrange
-      const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
-      confWithInvalidRule.rules['EnforceSomeInvalidSettings'] = { enabled: true };
+      defaultConfig.rules['EnforceSomeInvalidSettings'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(confWithInvalidRule, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -211,7 +208,7 @@ describe('settings policy', () => {
   describe('run policy', () => {
     it('resolves settings for valid rules and enforces plain setting options', async () => {
       // Act
-      const pol = new SettingsPolicy(DEFAULT_VALID_CONFIG, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -271,13 +268,12 @@ describe('settings policy', () => {
 
     it('ignores invalid settings keys and logs a warning', async () => {
       // Arrange
-      const confWithInvalidOption = structuredClone(DEFAULT_VALID_CONFIG);
-      confWithInvalidOption.rules.EnforceApexSettings.options = {
+      defaultConfig.rules.EnforceApexSettings.options = {
         anUnknownSettingKey: true,
       };
 
       // Act
-      const pol = new SettingsPolicy(confWithInvalidOption, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -296,15 +292,14 @@ describe('settings policy', () => {
 
     it('reports a rule that does not follow naming conventions as skippedRule', async () => {
       // Arrange
-      const confWithInvalidRule = structuredClone(DEFAULT_VALID_CONFIG);
-      confWithInvalidRule.rules = {
+      defaultConfig.rules = {
         ApexSettings: {
           enabled: true,
         },
       };
 
       // Act
-      const pol = new SettingsPolicy(confWithInvalidRule, $$.mockAuditConfig);
+      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
       const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -315,7 +310,6 @@ describe('settings policy', () => {
     });
 
     it('reports a rule that does not resolve to a valid setting as skipped', async () => {
-      // Arrange
       // Act
       const pol = new SettingsPolicy(
         {

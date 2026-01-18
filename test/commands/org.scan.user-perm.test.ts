@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import OrgUserPermScan from '../../../../src/commands/org/scan/user-perms.js';
-import AuditTestContext from '../../../mocks/auditTestContext.js';
-import UserPermissionScanner from '../../../../src/libs/quick-scan/userPermissionScanner.js';
+import OrgUserPermScan from '../../src/commands/org/scan/user-perms.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
+import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
 
 describe('org scan user-perm', () => {
   const $$ = new AuditTestContext();

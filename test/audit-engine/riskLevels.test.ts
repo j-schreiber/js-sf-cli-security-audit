@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { permissionAllowedInPreset } from '../../src/libs/core/policy-types.js';
+import { permissionAllowedInPreset } from '../../src/libs/audit-engine/registry/helpers/permissionsScanning.js';
 
 describe('is allowed in preset', () => {
   it('allows LOW in STANDARD_USER', () => {

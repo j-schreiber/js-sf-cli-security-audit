@@ -4,19 +4,18 @@ import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import {
-  AuditRunConfig,
-  PermissionSetConfig,
-  PermissionSetsMap,
-  ProfilesMap,
-  UserConfig,
-} from '../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
 import {
   PolicyRuleViolation,
   PolicyRuleViolationMute,
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
+import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
+import {
+  PermissionSetClassifications,
+  ProfileClassifications,
+  UserClassifications,
+} from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';
@@ -80,7 +79,7 @@ export default class AuditTestContext {
    *
    * @param classifications
    */
-  public mockProfileClassifications(classifications: ProfilesMap): void {
+  public mockProfileClassifications(classifications: ProfileClassifications): void {
     this.mockAuditConfig.classifications.profiles = undefined;
     Object.entries(classifications).forEach(([profileName, classification]) => {
       this.mockProfileClassification(profileName, classification);
@@ -92,7 +91,7 @@ export default class AuditTestContext {
    *
    * @param classifications
    */
-  public mockPermSetClassifications(classifications: PermissionSetsMap): void {
+  public mockPermSetClassifications(classifications: PermissionSetClassifications): void {
     this.mockAuditConfig.classifications.permissionSets = undefined;
     Object.entries(classifications).forEach(([permSetName, classification]) => {
       this.mockPermSetClassification(permSetName, classification);
@@ -105,9 +104,9 @@ export default class AuditTestContext {
    * @param profileName
    * @param classification
    */
-  public mockProfileClassification(profileName: string, classification: PermissionSetConfig): void {
-    this.mockAuditConfig.classifications.profiles ??= { content: { profiles: {} } };
-    this.mockAuditConfig.classifications.profiles.content.profiles[profileName] = classification;
+  public mockProfileClassification(profileName: string, classification: ProfileClassifications['string']): void {
+    this.mockAuditConfig.classifications.profiles ??= { profiles: {} };
+    this.mockAuditConfig.classifications.profiles.profiles[profileName] = classification;
   }
 
   /**
@@ -116,14 +115,14 @@ export default class AuditTestContext {
    * @param permSetName
    * @param classification
    */
-  public mockPermSetClassification(permSetName: string, classification: PermissionSetConfig): void {
-    this.mockAuditConfig.classifications.permissionSets ??= { content: { permissionSets: {} } };
-    this.mockAuditConfig.classifications.permissionSets.content.permissionSets[permSetName] = classification;
+  public mockPermSetClassification(permSetName: string, classification: PermissionSetClassifications['string']): void {
+    this.mockAuditConfig.classifications.permissionSets ??= { permissionSets: {} };
+    this.mockAuditConfig.classifications.permissionSets.permissionSets[permSetName] = classification;
   }
 
-  public mockUserClassification(username: string, classification: UserConfig): void {
-    this.mockAuditConfig.classifications.users ??= { content: { users: {} } };
-    this.mockAuditConfig.classifications.users.content.users[username] = classification;
+  public mockUserClassification(username: string, classification: UserClassifications['string']): void {
+    this.mockAuditConfig.classifications.users ??= { users: {} };
+    this.mockAuditConfig.classifications.users.users[username] = classification;
   }
 }
 

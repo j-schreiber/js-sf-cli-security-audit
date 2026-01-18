@@ -1,44 +1,24 @@
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import { ProfilesRegistry } from '../../../src/libs/core/registries/profiles.js';
-import ProfilePolicy from '../../../src/libs/core/policies/profilePolicy.js';
-import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
-import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
-import EnforcePermissionsOnProfileLike from '../../../src/libs/core/registries/rules/enforcePermissionsOnProfileLike.js';
-import { parseProfileFromFile } from '../../mocks/testHelpers.js';
+import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
+import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
+import ProfilesPolicy from '../../../src/libs/audit-engine/registry/policies/profiles.js';
+import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/registry/rules/enforcePermissionsOnProfileLike.js';
+import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 const ruleMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-const DEFAULT_PROFILE_CONFIG: BasePolicyFileContent = {
-  enabled: true,
-  rules: {
-    EnforcePermissionClassifications: {
-      enabled: true,
-    },
-  },
-};
-
-const EXPECTED_RESOLVED_DEFAULT_ENTITIES = {
-  'System Administrator': {
-    role: 'Admin',
-    name: 'System Administrator',
-    metadata: parseProfileFromFile('admin-profile-with-metadata'),
-  },
-  'Standard User': {
-    role: 'Standard User',
-    name: 'Standard User',
-    metadata: parseProfileFromFile('standard-profile-with-metadata'),
-  },
-};
+const defaultRegistry = new RuleRegistry(PolicyDefinitions['profiles'].rules);
 
 describe('profile policy', () => {
   const $$ = new AuditTestContext();
+  let defaultConfig: PolicyConfig;
 
   function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
     return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
@@ -47,18 +27,24 @@ describe('profile policy', () => {
   beforeEach(async () => {
     $$.mockAuditConfig.classifications = {
       profiles: {
-        content: {
-          profiles: {
-            'System Administrator': {
-              role: UserPrivilegeLevel.ADMIN,
-            },
-            'Standard User': {
-              role: UserPrivilegeLevel.STANDARD_USER,
-            },
-            'Custom Profile': {
-              role: UserPrivilegeLevel.POWER_USER,
-            },
+        profiles: {
+          'System Administrator': {
+            role: UserPrivilegeLevel.ADMIN,
           },
+          'Standard User': {
+            role: UserPrivilegeLevel.STANDARD_USER,
+          },
+          'Custom Profile': {
+            role: UserPrivilegeLevel.POWER_USER,
+          },
+        },
+      },
+    };
+    defaultConfig = {
+      enabled: true,
+      rules: {
+        EnforcePermissionClassifications: {
+          enabled: true,
         },
       },
     };
@@ -70,31 +56,13 @@ describe('profile policy', () => {
   });
 
   describe('policy loading', () => {
-    it('initialises all registered rules from policy registry', async () => {
-      // Act
-      const resolveResult = ProfilesRegistry.resolveRules(DEFAULT_PROFILE_CONFIG.rules, $$.mockAuditConfig);
-
-      // Assert
-      expect(resolveResult.enabledRules.length).to.equal(1);
-      expect(resolveResult.skippedRules).to.deep.equal([]);
-      expect(resolveResult.resolveErrors).to.deep.equal([]);
-      const ruleResult = await resolveResult.enabledRules[0].run({
-        targetOrgConnection: $$.targetOrgConnection,
-        resolvedEntities: EXPECTED_RESOLVED_DEFAULT_ENTITIES,
-      });
-      expect(ruleResult.isCompliant).to.be.undefined;
-      expect(ruleResult.violatedEntities).to.be.undefined;
-      expect(ruleResult.compliantEntities).to.be.undefined;
-    });
-
     it('uses custom registry to resolve rules when its passed to the constructor', async () => {
       // Arrange
-      const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-      CONFIG.rules = { TestRule: { enabled: true } };
+      defaultConfig.rules = { TestRule: { enabled: true } };
       const reg = new TestProfilesRegistry();
 
       // Act
-      const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig, reg);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, reg);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -103,7 +71,7 @@ describe('profile policy', () => {
 
     it('runs all rules in policy configuration with fully valid config', async () => {
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -114,11 +82,10 @@ describe('profile policy', () => {
 
     it('ignores configured rules that cannot be resolved by implementation', async () => {
       // Arrange
-      const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-      CONFIG.rules['UnknownRuleDoesNotExist'] = { enabled: true };
+      defaultConfig.rules['UnknownRuleDoesNotExist'] = { enabled: true };
 
       // Act
-      const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -134,7 +101,7 @@ describe('profile policy', () => {
       stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -150,7 +117,7 @@ describe('profile policy', () => {
       $$.mocks.mockProfiles('admin-and-standard-profiles');
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -170,7 +137,7 @@ describe('profile policy', () => {
       $$.mockProfileClassification('Custom Profile', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -192,7 +159,7 @@ describe('profile policy', () => {
       });
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -210,18 +177,15 @@ describe('profile policy', () => {
     describe('EnforcePermissionClassifications', () => {
       it('reports error in custom perms if permission classification does not match preset', async () => {
         // Arrange
-        const CONFIG = structuredClone(DEFAULT_PROFILE_CONFIG);
-        CONFIG.rules = { EnforcePermissionClassifications: { enabled: true } };
+        defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
         $$.mockAuditConfig.classifications.customPermissions = {
-          content: {
-            permissions: {
-              CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
-            },
+          permissions: {
+            CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
           },
         };
 
         // Act
-        const pol = new ProfilePolicy(CONFIG, $$.mockAuditConfig);
+        const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
         const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
         // Assert
@@ -254,7 +218,7 @@ describe('profile policy', () => {
       stubUserClassificationRule(mockResult);
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -274,7 +238,7 @@ describe('profile policy', () => {
       stubUserClassificationRule(mockResult);
 
       // Act
-      const pol = new ProfilePolicy(DEFAULT_PROFILE_CONFIG, $$.mockAuditConfig);
+      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
       const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert

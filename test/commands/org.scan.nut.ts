@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { assert, expect } from 'chai';
-import { OrgUserPermScanResult } from '../../../src/commands/org/scan/user-perms.js';
+import { OrgUserPermScanResult } from '../../src/commands/org/scan/user-perms.js';
 
 const scratchOrgAlias = 'QuickScanNutsOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');

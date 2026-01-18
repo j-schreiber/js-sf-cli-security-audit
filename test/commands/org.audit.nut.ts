@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assert, expect } from 'chai';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
-import { OrgAuditInitResult } from '../../../src/commands/org/audit/init.js';
-import { OrgAuditRunResult } from '../../../src/commands/org/audit/run.js';
-import { DefaultFileManager } from '../../../src/libs/core/file-mgmt/auditConfigFileManager.js';
-import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
+import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
+import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
+import { DefaultFileManager } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
+import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';

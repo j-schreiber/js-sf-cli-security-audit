@@ -31,11 +31,11 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
   }
 
   private resolveProfileRole(profileName: string): UserPrivilegeLevel | undefined {
-    return this.auditConfig.classifications.profiles?.profiles[profileName].role;
+    return this.auditConfig.classifications.profiles?.profiles[profileName]?.role;
   }
 
   private resolvePermissionSetRole(permsetName: string): UserPrivilegeLevel | undefined {
-    return this.auditConfig.classifications.permissionSets?.permissionSets[permsetName].role;
+    return this.auditConfig.classifications.permissionSets?.permissionSets[permsetName]?.role;
   }
 }
 

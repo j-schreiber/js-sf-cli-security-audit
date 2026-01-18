@@ -2,28 +2,31 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
-import ConnectedAppPolicy from '../../../src/libs/core/policies/connectedAppPolicy.js';
+import ConnectedAppsPolicy from '../../../src/libs/audit-engine/registry/policies/connectedApps.js';
+import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
+import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
+import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
-const DEFAULT_CONFIG = {
-  enabled: true,
-  rules: {
-    AllUsedAppsUnderManagement: {
-      enabled: false,
-    },
-    NoUserCanSelfAuthorize: {
-      enabled: false,
-    },
-  },
-} as BasePolicyFileContent;
-
 describe('connected apps policy', () => {
   const $$ = new AuditTestContext();
+  const defaultRegistry = new RuleRegistry(PolicyDefinitions['connectedApps'].rules);
+  let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
     $$.mocks.mockConnectedApps('connected-apps');
+    defaultConfig = {
+      enabled: true,
+      rules: {
+        AllUsedAppsUnderManagement: {
+          enabled: false,
+        },
+        NoUserCanSelfAuthorize: {
+          enabled: false,
+        },
+      },
+    };
     await $$.init();
   });
 
@@ -36,7 +39,7 @@ describe('connected apps policy', () => {
     $$.mocks.mockOAuthTokens('oauth-usage');
 
     // Act
-    const pol = new ConnectedAppPolicy(DEFAULT_CONFIG, $$.mockAuditConfig);
+    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
     const resolveResult = await pol.resolve({ targetOrgConnection: await $$.targetOrg.getConnection() });
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
@@ -58,13 +61,12 @@ describe('connected apps policy', () => {
 
   it('uses result form ApiAccess setting to override self-authorize flag', async () => {
     // Arrange
-    const conf = structuredClone(DEFAULT_CONFIG);
-    conf.rules.NoUserCanSelfAuthorize.enabled = true;
+    defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
-    const pol = new ConnectedAppPolicy(conf, $$.mockAuditConfig);
-    const resolveResult = await pol.resolve({ targetOrgConnection: await $$.targetOrg.getConnection() });
-    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+    const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert
     expect(resolveResult.ignoredEntities).to.deep.equal([]);
@@ -83,13 +85,12 @@ describe('connected apps policy', () => {
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
     $$.mocks.stubMetadataRetrieve('api-access-not-available');
-    const conf = structuredClone(DEFAULT_CONFIG);
-    conf.rules.NoUserCanSelfAuthorize.enabled = true;
+    defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
-    const pol = new ConnectedAppPolicy(conf, $$.mockAuditConfig);
-    const resolveResult = await pol.resolve({ targetOrgConnection: await $$.targetOrg.getConnection() });
-    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+    const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert
     expect(resolveResult.ignoredEntities).to.deep.equal([]);

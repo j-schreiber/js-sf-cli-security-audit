@@ -47,12 +47,6 @@ describe('audit config', () => {
       assert.isDefined(auditConf.policies.permissionSets);
       assert.isDefined(auditConf.policies.connectedApps);
       assert.isDefined(auditConf.policies.users);
-      expect(auditConf.classifications.userPermissions.filePath).to.be.undefined;
-      expect(auditConf.classifications.customPermissions.filePath).to.be.undefined;
-      expect(auditConf.policies.profiles.filePath).to.be.undefined;
-      expect(auditConf.policies.permissionSets.filePath).to.be.undefined;
-      expect(auditConf.policies.connectedApps.filePath).to.be.undefined;
-      expect(auditConf.policies.users.filePath).to.be.undefined;
     });
 
     it('inits full config and saves files to target dir', async () => {

@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
 import { Connection, Messages } from '@salesforce/core';
-import OrgAuditInit from '../../../../src/commands/org/audit/init.js';
-import AuditTestContext from '../../../mocks/auditTestContext.js';
-import AuditConfig from '../../../../src/libs/conf-init/auditConfig.js';
-import { AuditRunConfig } from '../../../../src/libs/audit-engine/index.js';
+import OrgAuditInit from '../../src/commands/org/audit/init.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
+import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
+import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -29,7 +29,7 @@ describe('org audit init', () => {
     $$.reset();
   });
 
-  it('reports created files and statistics for full initialisation', async () => {
+  it('reports initialised audit config and reports summary to terminal', async () => {
     // Arrange
     const initMock = $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
 
@@ -55,6 +55,24 @@ describe('org audit init', () => {
       'Initialised "Profiles" policy with 1 rule(s) at my-test-org/policies/profiles.yml.',
       'Initialised "PermissionSets" policy with 1 rule(s) at my-test-org/policies/permissionSets.yml.',
     ]);
+  });
+
+  it('creates files for initialised audit config at target directory', async () => {
+    // Arrange
+    $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+
+    // Assert
+    for (const classification of Object.values(result.classifications)) {
+      expect(classification.filePath).not.to.be.undefined;
+      expect(fs.existsSync(classification.filePath)).to.be.true;
+    }
+    for (const policy of Object.values(result.policies)) {
+      expect(policy.filePath).not.to.be.undefined;
+      expect(fs.existsSync(policy.filePath)).to.be.true;
+    }
   });
 
   it('reports created files and statistics for partial initialisation', async () => {

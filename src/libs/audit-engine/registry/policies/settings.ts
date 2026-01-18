@@ -14,7 +14,7 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 
 export type SalesforceSetting = Awaited<ReturnType<MdapiRegistry['namedTypes']['Settings']['resolve']>>['string'];
 
-class SettingsRuleRegistry extends RuleRegistry {
+export class SettingsRuleRegistry extends RuleRegistry {
   public constructor() {
     super({});
   }
