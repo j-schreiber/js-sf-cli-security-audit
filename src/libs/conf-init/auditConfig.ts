@@ -1,5 +1,5 @@
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig, ConfigFileManager } from '../audit-engine/index.js';
+import { AuditRunConfig } from '../audit-engine/index.js';
 import {
   initCustomPermissions,
   initPermissionSets,
@@ -14,10 +14,6 @@ import { AuditInitPresets } from './presets.js';
  * Additional options how the config should be initialised.
  */
 export type AuditInitOptions = {
-  /**
-   * When set, config files are created at the target location.
-   */
-  targetDir?: string;
   /**
    * An optional preset to initialise classifications and policies.
    */
@@ -50,10 +46,6 @@ export default class AuditConfig {
     conf.policies.users = initUserPolicy();
     conf.policies.connectedApps = initDefaultPolicy('connectedApps');
     conf.policies.settings = initSettings();
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    if (opts?.targetDir || opts?.targetDir === '') {
-      ConfigFileManager.save(opts.targetDir, conf);
-    }
     return conf;
   }
 }
