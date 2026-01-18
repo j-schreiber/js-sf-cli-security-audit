@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../mocks/auditTestContext.js';
-import { startAuditRun } from '../../src/libs/core/auditRun.js';
+import { startAuditRun } from '../../src/libs/audit-engine/index.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
 const DEFAULT_TEST_OUTPUT_DIR = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
@@ -33,7 +33,7 @@ describe('audit run execution', () => {
     const audit = startAuditRun(dirPath);
 
     // Act
-    const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+    const auditResult = await audit.execute($$.targetOrgConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.true;
@@ -72,7 +72,7 @@ describe('audit run execution', () => {
     // Arrange
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    audit.configs.policies.profiles!.content.enabled = false;
+    audit.configs.policies.profiles!.enabled = false;
 
     // Act
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
@@ -90,7 +90,7 @@ describe('audit run execution', () => {
     // Arrange
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    audit.configs.policies.connectedApps!.content.rules.AllUsedAppsUnderManagement.enabled = false;
+    audit.configs.policies.connectedApps!.rules.AllUsedAppsUnderManagement.enabled = false;
 
     // Act
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
@@ -112,7 +112,7 @@ describe('audit run execution', () => {
   it('exits gracefully if policies exist but all are disabled', async () => {
     // Act
     const audit = startAuditRun(buildPath('minimal'));
-    audit.configs.policies.profiles!.content.enabled = false;
+    audit.configs.policies.profiles!.enabled = false;
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
 
     // Assert

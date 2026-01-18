@@ -2,7 +2,7 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import SettingsRegistry from '../../../src/libs/core/registries/settings.js';
+import { SettingsRegistry } from '../../../src/libs/core/registries/settings.js';
 import EnforceSettings from '../../../src/libs/core/registries/rules/enforceSettings.js';
 import SettingsPolicy from '../../../src/libs/core/policies/settingsPolicy.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
@@ -56,8 +56,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const reg = new SettingsRegistry();
-      const ruleResolveResult = reg.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       expect(ruleResolveResult.resolveErrors).to.deep.equal([]);
@@ -90,8 +89,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const reg = new SettingsRegistry();
-      const ruleResolveResult = reg.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       expect(ruleResolveResult.skippedRules).to.deep.equal([
@@ -125,8 +123,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const reg = new SettingsRegistry();
-      const ruleResolveResult = reg.resolveRules(rules, $$.mockAuditConfig);
+      const ruleResolveResult = SettingsRegistry.resolveRules(rules, $$.mockAuditConfig);
 
       // Assert
       const initialisedRule = ruleResolveResult.enabledRules[0];

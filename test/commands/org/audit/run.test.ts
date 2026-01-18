@@ -6,7 +6,7 @@ import { Messages, SfError } from '@salesforce/core';
 import OrgAuditRun, { MERGE_CHAR } from '../../../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../../../mocks/auditTestContext.js';
 import AuditRun from '../../../../src/libs/core/auditRun.js';
-import { AuditResult } from '../../../../src/libs/core/result-types.js';
+import { AuditResult } from '../../../../src/libs/audit-engine/registry/result.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');

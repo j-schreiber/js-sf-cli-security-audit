@@ -16,7 +16,7 @@ import {
   PolicyRuleViolation,
   PolicyRuleViolationMute,
   RuleComponentMessage,
-} from '../../src/libs/core/result-types.js';
+} from '../../src/libs/audit-engine/registry/result.types.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';

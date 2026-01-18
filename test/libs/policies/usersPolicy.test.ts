@@ -5,7 +5,7 @@ import AuditTestContext from '../../mocks/auditTestContext.js';
 import { UsersPolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
 import UserPolicy from '../../../src/libs/core/policies/userPolicy.js';
 import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
-import { AuditPolicyResult } from '../../../src/libs/core/result-types.js';
+import { AuditPolicyResult } from '../../../src/libs/audit-engine/registry/result.types.js';
 import { differenceInDays } from '../../../src/utils.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 

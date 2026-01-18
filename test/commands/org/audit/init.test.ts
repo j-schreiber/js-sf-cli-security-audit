@@ -5,7 +5,7 @@ import { Connection, Messages } from '@salesforce/core';
 import OrgAuditInit from '../../../../src/commands/org/audit/init.js';
 import AuditTestContext from '../../../mocks/auditTestContext.js';
 import AuditConfig from '../../../../src/libs/conf-init/auditConfig.js';
-import { AuditRunConfig } from '../../../../src/libs/core/file-mgmt/schema.js';
+import { AuditRunConfig } from '../../../../src/libs/audit-engine/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -43,14 +43,17 @@ describe('org audit init', () => {
     const optsParam = initMock.args.flat()[1];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
     expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'strict' });
-    // command result accurately represents the lib result
-    expect(result).to.deep.equal(FULL_AUDIT_INIT_RESULT);
+    // result wraps around the lib-init-result
+    expect(result.classifications.userPermissions.content).to.deep.equal(
+      FULL_AUDIT_INIT_RESULT.classifications.userPermissions
+    );
+    expect(result.policies.profiles.content).to.deep.equal(FULL_AUDIT_INIT_RESULT.policies.profiles);
     // relevant summary is printed to terminal
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      'Initialised 3 userPermissions at tmp/prod/classification/userPermissions.yml.',
-      'Initialised 1 customPermissions at tmp/prod/classification/customPermissions.yml.',
-      'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
-      'Initialised "PermissionSets" policy with 1 rule(s) at tmp/prod/policies/permissionSets.yml.',
+      'Initialised 3 userPermissions at my-test-org/classifications/userPermissions.yml.',
+      'Initialised 1 customPermissions at my-test-org/classifications/customPermissions.yml.',
+      'Initialised "Profiles" policy with 1 rule(s) at my-test-org/policies/profiles.yml.',
+      'Initialised "PermissionSets" policy with 1 rule(s) at my-test-org/policies/permissionSets.yml.',
     ]);
   });
 
@@ -59,14 +62,13 @@ describe('org audit init', () => {
     $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(MINIMAL_AUDIT_INIT_RESULT);
 
     // Act
-    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+    await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
 
     // Assert
-    expect(result).to.deep.equal(MINIMAL_AUDIT_INIT_RESULT);
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      'Initialised 3 userPermissions at tmp/prod/classifications/userPermissions.yml.',
-      'Initialised 3 profiles at tmp/prod/classifications/profiles.yml.',
-      'Initialised "Profiles" policy with 1 rule(s) at tmp/prod/policies/profiles.yml.',
+      'Initialised 3 userPermissions at my-test-org/classifications/userPermissions.yml.',
+      'Initialised 3 profiles at my-test-org/classifications/profiles.yml.',
+      'Initialised "Profiles" policy with 1 rule(s) at my-test-org/policies/profiles.yml.',
     ]);
   });
 

@@ -1,6 +1,5 @@
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig } from '../core/file-mgmt/schema.js';
-import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
+import { AuditRunConfig, ConfigFileManager } from '../audit-engine/index.js';
 import {
   initCustomPermissions,
   initPermissionSets,
@@ -38,32 +37,23 @@ export default class AuditConfig {
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
-    conf.classifications.profiles = { content: await initProfiles(targetCon) };
-    conf.classifications.permissionSets = { content: await initPermissionSets(targetCon) };
-    conf.classifications.users = { content: await initUsers(targetCon) };
-    conf.classifications.userPermissions = { content: await initUserPermissions(targetCon, opts?.preset) };
+    conf.classifications.profiles = await initProfiles(targetCon);
+    conf.classifications.permissionSets = await initPermissionSets(targetCon);
+    conf.classifications.users = await initUsers(targetCon);
+    conf.classifications.userPermissions = await initUserPermissions(targetCon, opts?.preset);
     const customPerms = await initCustomPermissions(targetCon);
     if (customPerms) {
-      conf.classifications.customPermissions = { content: customPerms };
+      conf.classifications.customPermissions = customPerms;
     }
-    conf.policies.profiles = { content: initDefaultPolicy('profiles') };
-    conf.policies.permissionSets = { content: initDefaultPolicy('permissionSets') };
-    conf.policies.users = { content: initUserPolicy() };
-    conf.policies.connectedApps = { content: initDefaultPolicy('connectedApps') };
-    conf.policies.settings = { content: initSettings() };
+    conf.policies.profiles = initDefaultPolicy('profiles');
+    conf.policies.permissionSets = initDefaultPolicy('permissionSets');
+    conf.policies.users = initUserPolicy();
+    conf.policies.connectedApps = initDefaultPolicy('connectedApps');
+    conf.policies.settings = initSettings();
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (opts?.targetDir || opts?.targetDir === '') {
-      DefaultFileManager.save(opts.targetDir, conf);
+      ConfigFileManager.save(opts.targetDir, conf);
     }
     return conf;
-  }
-
-  /**
-   * Loads an existing audit config from a source directory
-   *
-   * @param sourceDir
-   */
-  public static load(sourceDir: string): AuditRunConfig {
-    return DefaultFileManager.parse(sourceDir);
   }
 }

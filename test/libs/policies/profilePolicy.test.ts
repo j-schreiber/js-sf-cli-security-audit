@@ -1,7 +1,7 @@
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import ProfilePolicyRegistry from '../../../src/libs/core/registries/profiles.js';
+import { ProfilesRegistry } from '../../../src/libs/core/registries/profiles.js';
 import ProfilePolicy from '../../../src/libs/core/policies/profilePolicy.js';
 import RuleRegistry from '../../../src/libs/core/registries/ruleRegistry.js';
 import { BasePolicyFileContent } from '../../../src/libs/core/file-mgmt/schema.js';
@@ -72,8 +72,7 @@ describe('profile policy', () => {
   describe('policy loading', () => {
     it('initialises all registered rules from policy registry', async () => {
       // Act
-      const reg = new ProfilePolicyRegistry();
-      const resolveResult = reg.resolveRules(DEFAULT_PROFILE_CONFIG.rules, $$.mockAuditConfig);
+      const resolveResult = ProfilesRegistry.resolveRules(DEFAULT_PROFILE_CONFIG.rules, $$.mockAuditConfig);
 
       // Assert
       expect(resolveResult.enabledRules.length).to.equal(1);
