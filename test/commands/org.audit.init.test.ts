@@ -86,9 +86,9 @@ describe('org audit init', () => {
 
     // Assert
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      'Initialised 3 userPermissions at my-test-org/classifications/userPermissions.yml.',
-      'Initialised 3 profiles at my-test-org/classifications/profiles.yml.',
-      'Initialised "Profiles" policy with 1 rule(s) at my-test-org/policies/profiles.yml.',
+      `Initialised 3 userPermissions at ${path.normalize('my-test-org/classifications/userPermissions.yml')}.`,
+      `Initialised 3 profiles at ${path.normalize('my-test-org/classifications/profiles.yml')}.`,
+      `Initialised "Profiles" policy with 1 rule(s) at ${path.normalize('my-test-org/policies/profiles.yml')}.`,
     ]);
   });
 
