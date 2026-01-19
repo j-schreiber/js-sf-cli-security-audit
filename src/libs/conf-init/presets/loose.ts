@@ -1,5 +1,5 @@
-import { PermissionRiskLevel } from '../../core/classification-types.js';
-import { NamedPermissionClassification } from '../../core/file-mgmt/schema.js';
+import { PermissionRiskLevel } from '../../audit-engine/index.js';
+import { NamedPermissionClassification } from '../init.types.js';
 import NonePreset from './none.js';
 
 export default class LoosePreset extends NonePreset {

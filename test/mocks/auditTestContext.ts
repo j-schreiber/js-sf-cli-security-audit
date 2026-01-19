@@ -4,12 +4,6 @@ import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
 import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
-import { PartialPolicyRuleResult } from '../../src/libs/core/registries/types.js';
-import {
-  PolicyRuleViolation,
-  PolicyRuleViolationMute,
-  RuleComponentMessage,
-} from '../../src/libs/audit-engine/registry/result.types.js';
 import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
@@ -156,16 +150,6 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   // 14 days is option config in "full-valid" user policy
   mocks.mockLoginHistory('empty', 14);
   return mocks;
-}
-
-export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
-  return {
-    ruleName: ruleName ?? 'Mock_Rule',
-    violations: new Array<PolicyRuleViolation>(),
-    mutedViolations: new Array<PolicyRuleViolationMute>(),
-    warnings: new Array<RuleComponentMessage>(),
-    errors: [],
-  };
 }
 
 export function clearAuditReports(workingDir: string): void {

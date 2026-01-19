@@ -1,7 +1,6 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
 import { capitalize } from '../utils.js';
-import { PolicyNames } from '../libs/core/policyRegistry.js';
-import { AuditRun, EntityResolveEvent } from '../libs/audit-engine/index.js';
+import { AuditRun, EntityResolveEvent, Policies } from '../libs/audit-engine/index.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
@@ -111,7 +110,7 @@ export default class AuditRunMultiStageOutput {
     this.mso.goto(EXECUTE_RULES, { currentStatus: 'Executing' });
     Object.entries(runInstance.config.policies).forEach(([policyName, policy]) => {
       if (policy.enabled) {
-        const enabledRules = runInstance.getExecutableRulesCount(policyName as PolicyNames);
+        const enabledRules = runInstance.getExecutableRulesCount(policyName as Policies);
         this.stageSpecificBlocks.push({
           stage: EXECUTE_RULES,
           type: 'message',

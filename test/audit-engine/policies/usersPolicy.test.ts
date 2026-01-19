@@ -2,12 +2,14 @@
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/audit-engine/registry/result.types.js';
 import { differenceInDays } from '../../../src/utils.js';
-import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
 import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
-import { UserPolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import {
+  PermissionRiskLevel,
+  UserPolicyConfig,
+  UserPrivilegeLevel,
+} from '../../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');

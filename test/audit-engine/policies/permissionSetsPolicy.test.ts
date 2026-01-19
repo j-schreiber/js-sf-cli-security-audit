@@ -1,16 +1,15 @@
 /* eslint-disable camelcase */
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
-import AuditTestContext, { newRuleResult } from '../../mocks/auditTestContext.js';
-import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
-import { PartialPolicyRuleResult } from '../../../src/libs/core/registries/types.js';
-import { parsePermSetFromFile } from '../../mocks/testHelpers.js';
+import AuditTestContext from '../../mocks/auditTestContext.js';
+import { newRuleResult, parsePermSetFromFile } from '../../mocks/testHelpers.js';
 import { PERMISSION_SETS_QUERY } from '../../../src/salesforce/repositories/perm-sets/queries.js';
-import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import { PolicyConfig, UserPrivilegeLevel } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import PermissionSetsPolicy from '../../../src/libs/audit-engine/registry/policies/permissionSets.js';
 import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
 import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/registry/rules/enforcePermissionsOnProfileLike.js';
+import { PartialPolicyRuleResult } from '../../../src/libs/audit-engine/registry/context.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
