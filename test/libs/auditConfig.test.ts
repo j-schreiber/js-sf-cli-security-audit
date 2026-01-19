@@ -170,6 +170,7 @@ describe('audit config', () => {
         'test-user-2@example.de',
       ]);
       expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(UserPrivilegeLevel.STANDARD_USER);
+      expect(userPolicy.options.analyseLastNDaysOfLoginHistory).to.equal(30);
     });
 
     it('initialises profiles classification with all profiles from org', async () => {

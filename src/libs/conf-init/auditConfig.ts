@@ -4,12 +4,14 @@ import { Connection } from '@salesforce/core';
 import {
   AuditRunConfig,
   Classifications,
-  initPolicyConfig,
+  RuleRegistry,
   Policies,
+  PolicyConfig,
   PolicyDefinitions,
 } from '../audit-engine/index.js';
 import { AuditInitPresets } from './init.types.js';
 import { ClassificationInitDefinitions } from './defaultClassifications.js';
+import { DefaultPolicyDefinitions } from './defaultPolicies.js';
 
 /**
  * Additional options how the config should be initialised.
@@ -47,4 +49,19 @@ export default class AuditConfig {
     }
     return conf;
   }
+}
+
+export function initPolicyConfig<P extends Policies>(policyName: P): (typeof PolicyDefinitions)[P]['configType'] {
+  const def = PolicyDefinitions[policyName];
+  const registry = new RuleRegistry(def.rules);
+  const content: PolicyConfig = { enabled: true, rules: {} };
+  for (const validRule of registry.registeredRules()) {
+    content.rules[validRule] = {
+      enabled: true,
+    };
+  }
+  if (DefaultPolicyDefinitions[policyName]) {
+    return { ...content, ...DefaultPolicyDefinitions[policyName]() };
+  }
+  return content;
 }

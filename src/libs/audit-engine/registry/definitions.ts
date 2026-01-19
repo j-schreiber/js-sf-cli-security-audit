@@ -12,13 +12,12 @@ import NoInactiveUsers from './rules/noInactiveUsers.js';
 import NoOtherApexApiLogins from './rules/noOtherApexApiLogins.js';
 import NoUserCanSelfAuthorize from './rules/noUserCanSelfAuthorize.js';
 import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
-import { PolicyConfig, UserPolicyConfig, UserPrivilegeLevel } from './shape/schema.js';
+import { PolicyConfig, UserPolicyConfig } from './shape/schema.js';
 
 type PolicyDefinition<T, C extends PolicyConfig = PolicyConfig> = {
   handler: Constructor<T>;
   rules?: RuleHandlerMap;
   configType?: C;
-  initialiser?: () => Partial<PolicyConfig>;
 };
 
 type PolicyDefinitions = {
@@ -50,12 +49,6 @@ export const PolicyDefinitions: PolicyDefinitions = {
       EnforcePermissionClassifications: EnforcePermissionsOnUser,
       EnforcePermissionPresets,
     },
-    initialiser: () => ({
-      options: {
-        analyseLastNDaysOfLoginHistory: 30,
-        defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
-      },
-    }),
   },
   connectedApps: {
     handler: ConnectedAppsPolicy,
@@ -66,33 +59,8 @@ export const PolicyDefinitions: PolicyDefinitions = {
   },
   settings: {
     handler: SettingsPolicy,
-    initialiser: () => ({
-      enabled: true,
-      rules: {
-        EnforceApexSettings: { enabled: true },
-        EnforceSecuritySettings: { enabled: true },
-        EnforceUserInterfaceSettings: { enabled: true },
-        EnforceUserManagementSettings: { enabled: true },
-        EnforceConnectedAppSettings: { enabled: true },
-      },
-    }),
   },
 };
-
-export function initPolicyConfig<P extends Policies>(policyName: P): PolicyDefinitions[P]['configType'] {
-  const def = PolicyDefinitions[policyName];
-  const registry = new RuleRegistry(def.rules);
-  const content: PolicyConfig = { enabled: true, rules: {} };
-  for (const validRule of registry.registeredRules()) {
-    content.rules[validRule] = {
-      enabled: true,
-    };
-  }
-  if (def.initialiser) {
-    return { ...content, ...def.initialiser() };
-  }
-  return content;
-}
 
 export function loadPolicy<P extends Policies>(
   policyName: P,
