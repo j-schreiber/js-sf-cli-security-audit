@@ -1,4 +1,4 @@
-import { PermissionRiskLevel } from '../../core/classification-types.js';
+import { PermissionRiskLevel } from '../../audit-engine/index.js';
 import NonePreset from './none.js';
 
 export default class StrictPreset extends NonePreset {

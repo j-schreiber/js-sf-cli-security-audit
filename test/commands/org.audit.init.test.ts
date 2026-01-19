@@ -1,0 +1,110 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { expect } from 'chai';
+import { Connection, Messages } from '@salesforce/core';
+import OrgAuditInit from '../../src/commands/org/audit/init.js';
+import AuditTestContext from '../mocks/auditTestContext.js';
+import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
+import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+
+const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-lib-results', 'init');
+
+const FULL_AUDIT_INIT_RESULT = parseMockAuditConfig('full.json');
+const MINIMAL_AUDIT_INIT_RESULT = parseMockAuditConfig('minimal.json');
+
+function parseMockAuditConfig(filePath: string): AuditRunConfig {
+  return JSON.parse(fs.readFileSync(path.join(DEFAULT_DATA_PATH, filePath), 'utf-8')) as AuditRunConfig;
+}
+
+describe('org audit init', () => {
+  const $$ = new AuditTestContext();
+
+  beforeEach(async () => {
+    await $$.init();
+  });
+
+  afterEach(async () => {
+    $$.reset();
+  });
+
+  it('reports initialised audit config and reports summary to terminal', async () => {
+    // Arrange
+    const initMock = $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+
+    // Assert
+    // ensure contract - all relevant params are actually passed to lib
+    expect(initMock.callCount).to.equal(1);
+    const conParam = initMock.args.flat()[0] as Connection;
+    const optsParam = initMock.args.flat()[1];
+    expect(conParam.getUsername()).to.equal($$.targetOrg.username);
+    expect(optsParam).to.deep.equal({ preset: 'strict' });
+    // result wraps around the lib-init-result
+    expect(result.classifications.userPermissions.content).to.deep.equal(
+      FULL_AUDIT_INIT_RESULT.classifications.userPermissions
+    );
+    expect(result.policies.profiles.content).to.deep.equal(FULL_AUDIT_INIT_RESULT.policies.profiles);
+    // relevant summary is printed to terminal
+    expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
+      `Initialised 3 userPermissions at ${path.normalize('my-test-org/classifications/userPermissions.yml')}.`,
+      `Initialised 1 customPermissions at ${path.normalize('my-test-org/classifications/customPermissions.yml')}.`,
+      `Initialised "Profiles" policy with 1 rule(s) at ${path.normalize('my-test-org/policies/profiles.yml')}.`,
+      `Initialised "PermissionSets" policy with 1 rule(s) at ${path.normalize(
+        'my-test-org/policies/permissionSets.yml'
+      )}.`,
+    ]);
+  });
+
+  it('creates files for initialised audit config at target directory', async () => {
+    // Arrange
+    $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+
+    // Assert
+    for (const classification of Object.values(result.classifications)) {
+      expect(classification.filePath).not.to.be.undefined;
+      expect(fs.existsSync(classification.filePath)).to.be.true;
+    }
+    for (const policy of Object.values(result.policies)) {
+      expect(policy.filePath).not.to.be.undefined;
+      expect(fs.existsSync(policy.filePath)).to.be.true;
+    }
+  });
+
+  it('reports created files and statistics for partial initialisation', async () => {
+    // Arrange
+    $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(MINIMAL_AUDIT_INIT_RESULT);
+
+    // Act
+    await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
+
+    // Assert
+    expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
+      `Initialised 3 userPermissions at ${path.normalize('my-test-org/classifications/userPermissions.yml')}.`,
+      `Initialised 3 profiles at ${path.normalize('my-test-org/classifications/profiles.yml')}.`,
+      `Initialised "Profiles" policy with 1 rule(s) at ${path.normalize('my-test-org/policies/profiles.yml')}.`,
+    ]);
+  });
+
+  it('passes the preset flag to audit run init', async () => {
+    // Arrange
+    const initMock = $$.context.SANDBOX.stub(AuditConfig, 'init').resolves(FULL_AUDIT_INIT_RESULT);
+
+    // Act
+    await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org', '--preset', 'loose']);
+
+    // Assert
+    // ensure contract - all relevant params are actually passed to lib
+    expect(initMock.callCount).to.equal(1);
+    const conParam = initMock.args.flat()[0] as Connection;
+    const optsParam = initMock.args.flat()[1];
+    expect(conParam.getUsername()).to.equal($$.targetOrg.username);
+    expect(optsParam).to.deep.equal({ preset: 'loose' });
+  });
+});

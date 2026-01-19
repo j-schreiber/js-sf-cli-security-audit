@@ -4,7 +4,23 @@ import { XMLParser } from 'fast-xml-parser';
 import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { PermissionSet, Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
+import { PartialPolicyRuleResult } from '../../src/libs/audit-engine/registry/context.types.js';
+import {
+  PolicyRuleViolation,
+  PolicyRuleViolationMute,
+  RuleComponentMessage,
+} from '../../src/libs/audit-engine/registry/result.types.js';
 import { MOCK_DATA_BASE_PATH, QUERY_RESULTS_BASE, RETRIEVES_BASE } from './data/paths.js';
+
+export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
+  return {
+    ruleName: ruleName ?? 'Mock_Rule',
+    violations: new Array<PolicyRuleViolation>(),
+    mutedViolations: new Array<PolicyRuleViolationMute>(),
+    warnings: new Array<RuleComponentMessage>(),
+    errors: [],
+  };
+}
 
 export function parsePermSetFromFile(permSetName: string): PermissionSet {
   const permsetPath = path.join(RETRIEVES_BASE, 'full-permsets', `${permSetName}.permissionset-meta.xml`);

@@ -1,24 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig } from '../core/file-mgmt/schema.js';
-import { DefaultFileManager } from '../core/file-mgmt/auditConfigFileManager.js';
 import {
-  initCustomPermissions,
-  initPermissionSets,
-  initProfiles,
-  initUserPermissions,
-  initUsers,
-} from './permissionsClassification.js';
-import { initDefaultPolicy, initSettings, initUserPolicy } from './policyConfigs.js';
-import { AuditInitPresets } from './presets.js';
+  AuditRunConfig,
+  Classifications,
+  RuleRegistry,
+  Policies,
+  PolicyConfig,
+  PolicyDefinitions,
+} from '../audit-engine/index.js';
+import { AuditInitPresets } from './init.types.js';
+import { ClassificationInitDefinitions } from './defaultClassifications.js';
+import { DefaultPolicyDefinitions } from './defaultPolicies.js';
 
 /**
  * Additional options how the config should be initialised.
  */
 export type AuditInitOptions = {
-  /**
-   * When set, config files are created at the target location.
-   */
-  targetDir?: string;
   /**
    * An optional preset to initialise classifications and policies.
    */
@@ -38,32 +36,32 @@ export default class AuditConfig {
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
-    conf.classifications.profiles = { content: await initProfiles(targetCon) };
-    conf.classifications.permissionSets = { content: await initPermissionSets(targetCon) };
-    conf.classifications.users = { content: await initUsers(targetCon) };
-    conf.classifications.userPermissions = { content: await initUserPermissions(targetCon, opts?.preset) };
-    const customPerms = await initCustomPermissions(targetCon);
-    if (customPerms) {
-      conf.classifications.customPermissions = { content: customPerms };
+    for (const [className, classInitDef] of Object.entries(ClassificationInitDefinitions)) {
+      // eslint-disable-next-line no-await-in-loop
+      const defaultClassification = await classInitDef.initialiser(targetCon, opts?.preset);
+      if (defaultClassification) {
+        conf.classifications[className as Classifications] = defaultClassification as any;
+      }
     }
-    conf.policies.profiles = { content: initDefaultPolicy('profiles') };
-    conf.policies.permissionSets = { content: initDefaultPolicy('permissionSets') };
-    conf.policies.users = { content: initUserPolicy() };
-    conf.policies.connectedApps = { content: initDefaultPolicy('connectedApps') };
-    conf.policies.settings = { content: initSettings() };
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    if (opts?.targetDir || opts?.targetDir === '') {
-      DefaultFileManager.save(opts.targetDir, conf);
+    for (const policyName of Object.keys(PolicyDefinitions)) {
+      const policy = initPolicyConfig(policyName as Policies);
+      conf.policies[policyName as Policies] = policy as any;
     }
     return conf;
   }
+}
 
-  /**
-   * Loads an existing audit config from a source directory
-   *
-   * @param sourceDir
-   */
-  public static load(sourceDir: string): AuditRunConfig {
-    return DefaultFileManager.parse(sourceDir);
+export function initPolicyConfig<P extends Policies>(policyName: P): (typeof PolicyDefinitions)[P]['configType'] {
+  const def = PolicyDefinitions[policyName];
+  const registry = new RuleRegistry(def.rules);
+  const content: PolicyConfig = { enabled: true, rules: {} };
+  for (const validRule of registry.registeredRules()) {
+    content.rules[validRule] = {
+      enabled: true,
+    };
   }
+  if (DefaultPolicyDefinitions[policyName]) {
+    return { ...content, ...DefaultPolicyDefinitions[policyName]() };
+  }
+  return content;
 }

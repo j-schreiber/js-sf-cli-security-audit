@@ -3,10 +3,14 @@ import path from 'node:path';
 import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
-import { AuditPolicyResult, AuditResult, PolicyRuleExecutionResult } from '../../../libs/core/result-types.js';
-import { startAuditRun } from '../../../libs/core/auditRun.js';
+import {
+  AuditPolicyResult,
+  AuditResult,
+  PolicyRuleExecutionResult,
+} from '../../../libs/audit-engine/registry/result.types.js';
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
+import { startAuditRun } from '../../../libs/audit-engine/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
