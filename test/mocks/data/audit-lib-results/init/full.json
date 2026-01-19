@@ -1,80 +1,68 @@
 {
   "classifications": {
     "userPermissions": {
-      "content": {
-        "permissions": {
-          "CustomizeApplication": {
-            "label": "Customize Application",
-            "classification": "Critical",
-            "reason": "Allows to modify all parts of the app, including security settings."
-          },
-          "InstallPackaging": {
-            "label": "Download AppExchange Packages",
-            "classification": "Critical",
-            "reason": "Allows to create, manage and install packages."
-          },
-          "AuthorApex": {
-            "label": "Author Apex",
-            "classification": "Critical",
-            "reason": "Apex can perform harmful actions, and deployed Apex runs in system mode."
-          }
+      "permissions": {
+        "CustomizeApplication": {
+          "label": "Customize Application",
+          "classification": "Critical",
+          "reason": "Allows to modify all parts of the app, including security settings."
+        },
+        "InstallPackaging": {
+          "label": "Download AppExchange Packages",
+          "classification": "Critical",
+          "reason": "Allows to create, manage and install packages."
+        },
+        "AuthorApex": {
+          "label": "Author Apex",
+          "classification": "Critical",
+          "reason": "Apex can perform harmful actions, and deployed Apex runs in system mode."
         }
-      },
-      "filePath": "tmp/prod/classification/userPermissions.yml"
+      }
     },
     "customPermissions": {
-      "content": {
-        "permissions": {
-          "My_Custom_Permission": {
-            "label": "My Custom Permission",
-            "classification": "Unknown"
-          }
+      "permissions": {
+        "My_Custom_Permission": {
+          "label": "My Custom Permission",
+          "classification": "Unknown"
         }
-      },
-      "filePath": "tmp/prod/classification/customPermissions.yml"
+      }
     }
   },
   "policies": {
     "profiles": {
-      "content": {
-        "enabled": true,
-        "profiles": {
-          "Minimum Access - API Only Integrations": {
-            "preset": "Unknown"
-          },
-          "Standard User": {
-            "preset": "Unknown"
-          },
-          "System Administrator": {
-            "preset": "Unknown"
-          }
+      "enabled": true,
+      "profiles": {
+        "Minimum Access - API Only Integrations": {
+          "preset": "Unknown"
         },
-        "rules": {
-          "EnforcePermissionClassifications": {
-            "enabled": true
-          }
+        "Standard User": {
+          "preset": "Unknown"
+        },
+        "System Administrator": {
+          "preset": "Unknown"
         }
       },
-      "filePath": "tmp/prod/policies/profiles.yml"
+      "rules": {
+        "EnforcePermissionClassifications": {
+          "enabled": true
+        }
+      }
     },
     "permissionSets": {
-      "content": {
-        "enabled": true,
-        "permissionSets": {
-          "Custom_Permission_Set_1": {
-            "preset": "Unknown"
-          },
-          "Custom_Permission_Set_2": {
-            "preset": "Unknown"
-          }
+      "enabled": true,
+      "permissionSets": {
+        "Custom_Permission_Set_1": {
+          "preset": "Unknown"
         },
-        "rules": {
-          "EnforcePermissionClassifications": {
-            "enabled": true
-          }
+        "Custom_Permission_Set_2": {
+          "preset": "Unknown"
         }
       },
-      "filePath": "tmp/prod/policies/permissionSets.yml"
+      "rules": {
+        "EnforcePermissionClassifications": {
+          "enabled": true
+        }
+      }
     }
   }
 }

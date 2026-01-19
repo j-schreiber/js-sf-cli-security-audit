@@ -7,25 +7,19 @@ import AuditRunMultiStageOutput, {
   EXECUTE_RULES,
   RESOLVE_POLICIES,
 } from '../../src/ux/auditRunMultiStage.js';
-import AuditRun from '../../src/libs/core/auditRun.js';
-import { BasePolicyFileContent, ConfigFile } from '../../src/libs/core/file-mgmt/schema.js';
+import { AuditRun, PolicyConfig } from '../../src/libs/audit-engine/index.js';
 
-const PROFILES_CONFIG: ConfigFile<BasePolicyFileContent> = {
-  content: {
-    enabled: true,
-    rules: {
-      Rule1: { enabled: true },
-      Rule2: { enabled: true },
-      Rule3: { enabled: false },
-    },
+const PROFILES_CONFIG: PolicyConfig = {
+  enabled: true,
+  rules: {
+    Rule1: { enabled: true },
+    Rule2: { enabled: true },
+    Rule3: { enabled: false },
   },
 };
-
-const PERMSETS_CONFIG: ConfigFile<BasePolicyFileContent> = {
-  content: {
-    enabled: true,
-    rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
-  },
+const PERMSETS_CONFIG: PolicyConfig = {
+  enabled: true,
+  rules: { Rule1: { enabled: true }, Rule2: { enabled: true } },
 };
 
 describe('audit run multi stage output', () => {
@@ -79,7 +73,7 @@ describe('audit run multi stage output', () => {
   it('does not initialise disabled policies as substage', () => {
     // Act
     const profilesConfig = structuredClone(PROFILES_CONFIG);
-    profilesConfig.content.enabled = false;
+    profilesConfig.enabled = false;
     const auditRun = new AuditRun({
       policies: { profiles: profilesConfig },
       classifications: {},
