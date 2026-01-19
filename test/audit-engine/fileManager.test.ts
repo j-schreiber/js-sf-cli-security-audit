@@ -134,6 +134,22 @@ describe('file manager', () => {
       assert.isDefined(conf.classifications);
       assert.isDefined(conf.classifications.userPermissions);
     });
+
+    it('ignores policy-dependencies if policy is not present', () => {
+      // Arrange
+      TestAuditConfigShape.policies.profiles.dependencies = [
+        { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
+      ];
+      const fm = new FileManager(TestAuditConfigShape);
+
+      // Act
+      const conf = fm.parse(buildPath('no-classifications-2'));
+
+      // Assert
+      assert.isDefined(conf.classifications);
+      assert.isDefined(conf.policies);
+      assert.isDefined(conf.policies.permissionSets);
+    });
   });
 
   describe('saving', () => {

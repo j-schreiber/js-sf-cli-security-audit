@@ -8,9 +8,9 @@ import {
   AuditResult,
   PolicyRuleExecutionResult,
 } from '../../../libs/audit-engine/registry/result.types.js';
-import { startAuditRun } from '../../../libs/core/auditRun.js';
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
+import { startAuditRun } from '../../../libs/audit-engine/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');

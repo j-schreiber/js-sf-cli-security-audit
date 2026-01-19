@@ -97,9 +97,9 @@ export default class FileManager<ConfShape extends AuditConfigFileSchema> {
   }
 
   private validateDependencies(parseResult: ParsedAuditConfig<ConfShape>): void {
-    for (const config of Object.values(this.schema)) {
-      for (const detailShape of Object.values(config)) {
-        if (detailShape.dependencies) {
+    for (const [configType, config] of Object.entries(this.schema)) {
+      for (const [configName, detailShape] of Object.entries(config)) {
+        if (detailShape.dependencies && parseResult[configType][configName]) {
           assertDependencies(detailShape.dependencies, parseResult);
         }
       }
