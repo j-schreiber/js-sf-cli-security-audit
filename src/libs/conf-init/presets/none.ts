@@ -1,16 +1,10 @@
 import { Messages } from '@salesforce/core';
 import { NamedPermissionClassification } from '../../core/file-mgmt/schema.js';
 import { PermissionRiskLevel } from '../../core/classification-types.js';
-import { Optional } from '../../../utils.js';
+import { Preset, UnclassifiedPerm } from '../init.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const descriptions = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
-
-export type UnclassifiedPerm = Optional<NamedPermissionClassification, 'classification'>;
-
-export type Preset = {
-  classifyUserPermissions(rawPerms: UnclassifiedPerm[]): NamedPermissionClassification[];
-};
 
 /**
  * A "blank" preset that is extended by all other presets

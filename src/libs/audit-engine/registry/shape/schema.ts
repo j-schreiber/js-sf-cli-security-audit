@@ -48,7 +48,7 @@ const PermissionClassifications = z.record(z.string(), PermClassification);
 
 const PolicyRuleConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  options: z.unknown().optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
@@ -93,6 +93,7 @@ export const UserClassificationFileSchema = z.object({
 export const PolicyFileSchema = z.object({
   enabled: z.boolean().default(true),
   rules: RuleMapSchema.default({}),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UserPolicyFileSchema = PolicyFileSchema.extend({

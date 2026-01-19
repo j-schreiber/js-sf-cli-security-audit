@@ -6,9 +6,7 @@ import { UserPrivilegeLevel } from '../../../src/libs/core/policy-types.js';
 import { AuditPolicyResult } from '../../../src/libs/audit-engine/registry/result.types.js';
 import { differenceInDays } from '../../../src/utils.js';
 import { PermissionRiskLevel } from '../../../src/libs/core/classification-types.js';
-import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
-import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
-import UsersPolicy from '../../../src/libs/audit-engine/registry/policies/users.js';
+import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
 import { UserPolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -19,15 +17,12 @@ const permScanningMessages = Messages.loadMessages(
   'rules.enforceClassificationPresets'
 );
 
-const defaultRegistry = new RuleRegistry(PolicyDefinitions['users'].rules);
-
 describe('users policy', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: UserPolicyConfig;
 
-  async function resolveAndRun(config: UserPolicyConfig): Promise<AuditPolicyResult> {
-    $$.mockAuditConfig.policies.users = config;
-    const pol = new UsersPolicy(config, $$.mockAuditConfig, defaultRegistry);
+  async function resolveAndRun(): Promise<AuditPolicyResult> {
+    const pol = loadPolicy('users', $$.mockAuditConfig);
     await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
     const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
     return result;
@@ -64,6 +59,7 @@ describe('users policy', () => {
         defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
       },
     };
+    $$.mockAuditConfig.policies.users = defaultConfig;
     await $$.init();
   });
 
@@ -74,7 +70,7 @@ describe('users policy', () => {
   describe('entity resolve', () => {
     it('resolves all users from config with active users on org', async () => {
       // Act
-      const pol = new UsersPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+      const pol = loadPolicy('users', $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -98,7 +94,7 @@ describe('users policy', () => {
       $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
-      const pol = new UsersPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+      const pol = loadPolicy('users', $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -113,7 +109,7 @@ describe('users policy', () => {
     it('reports all users from org as total users', async () => {
       // Act
       const resolveListener = $$.context.SANDBOX.stub();
-      const pol = new UsersPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+      const pol = loadPolicy('users', $$.mockAuditConfig);
       pol.addListener('entityresolve', resolveListener);
       await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
@@ -130,7 +126,7 @@ describe('users policy', () => {
       defaultConfig.rules = { NoInactiveUsers: { enabled: true } };
 
       // Act
-      const pol = new UsersPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+      const pol = loadPolicy('users', $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -148,7 +144,7 @@ describe('users policy', () => {
     it('queries only last N days of login history if option is set', async () => {
       // Arrange
       $$.mocks.mockLoginHistory('logins-with-browser-only', 30);
-      const config = {
+      $$.mockAuditConfig.policies.users = {
         enabled: true,
         rules: { NoInactiveUsers: { enabled: true } },
         options: {
@@ -158,7 +154,7 @@ describe('users policy', () => {
       };
 
       // Act
-      const pol = new UsersPolicy(config, $$.mockAuditConfig, defaultRegistry);
+      const pol = loadPolicy('users', $$.mockAuditConfig);
       const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
 
       // Assert
@@ -189,6 +185,7 @@ describe('users policy', () => {
             analyseLastNDaysOfLoginHistory: 30,
           },
         };
+        $$.mockAuditConfig.policies.users = ruleEnabledConfig;
       });
 
       it('reports violation if user has login with "Other Apex API"', async () => {
@@ -199,7 +196,7 @@ describe('users policy', () => {
         );
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
@@ -221,7 +218,7 @@ describe('users policy', () => {
         $$.mocks.mockLoginHistory('logins-with-browser-only', ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory);
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
@@ -231,10 +228,8 @@ describe('users policy', () => {
     });
 
     describe('NoInactiveUsers', () => {
-      let ruleEnabledConfig: UserPolicyConfig;
-
       beforeEach(() => {
-        ruleEnabledConfig = {
+        $$.mockAuditConfig.policies.users = {
           enabled: true,
           rules: {
             NoInactiveUsers: { enabled: true, options: { daysAfterUserIsInactive: 30 } },
@@ -250,7 +245,7 @@ describe('users policy', () => {
         const mockLastLogin = mockUsersLastLoginDate(31);
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -278,13 +273,13 @@ describe('users policy', () => {
 
       it('parses config object to default options when none is supplied', async () => {
         // Arrange
-        ruleEnabledConfig.rules = {
+        $$.mockAuditConfig.policies.users!.rules = {
           NoInactiveUsers: { enabled: true },
         };
         mockUsersLastLoginDate(31);
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -293,7 +288,7 @@ describe('users policy', () => {
 
       it('bubbles zod error as sf error when parsing fails', async () => {
         // Arrange
-        ruleEnabledConfig.rules = {
+        $$.mockAuditConfig.policies.users!.rules = {
           NoInactiveUsers: { enabled: true, options: { smthInvalid: 10 } },
         };
 
@@ -302,14 +297,12 @@ describe('users policy', () => {
           'users.yml',
           'Unrecognized key: "smthInvalid" in "rules.NoInactiveUsers.options"',
         ]);
-        expect(() => new UsersPolicy(ruleEnabledConfig, $$.mockAuditConfig, defaultRegistry)).to.throw(
-          expectedErrorMsg
-        );
+        expect(() => loadPolicy('users', $$.mockAuditConfig)).to.throw(expectedErrorMsg);
       });
 
       it('reports violation if user has never logged in', async () => {
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -333,7 +326,7 @@ describe('users policy', () => {
         }));
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -343,11 +336,10 @@ describe('users policy', () => {
     });
 
     describe('EnforcePermissionClassifications', () => {
-      let ruleEnabledConfig: UserPolicyConfig;
       const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
 
       beforeEach(() => {
-        ruleEnabledConfig = {
+        $$.mockAuditConfig.policies.users = {
           enabled: true,
           rules: {
             EnforcePermissionClassifications: { enabled: true },
@@ -374,7 +366,7 @@ describe('users policy', () => {
         };
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionClassifications']);
@@ -399,7 +391,7 @@ describe('users policy', () => {
         };
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionClassifications);
@@ -428,7 +420,7 @@ describe('users policy', () => {
         mockSingleActiveUser('Custom Profile');
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionClassifications);
@@ -438,11 +430,10 @@ describe('users policy', () => {
     });
 
     describe('EnforcePermissionPresets', () => {
-      let ruleEnabledConfig: UserPolicyConfig;
       const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
 
       beforeEach(() => {
-        ruleEnabledConfig = {
+        $$.mockAuditConfig.policies.users = {
           enabled: true,
           rules: {
             EnforcePermissionPresets: { enabled: true },
@@ -478,7 +469,7 @@ describe('users policy', () => {
 
       it('reports compliance if user has only permission sets assigned that match their role', async () => {
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionPresets']);
@@ -497,7 +488,7 @@ describe('users policy', () => {
         $$.mockUserClassification('test-user-2@example.de', { role: UserPrivilegeLevel.POWER_USER });
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);
@@ -529,7 +520,7 @@ describe('users policy', () => {
         $$.mockProfileClassification('System Administrator', { role: UserPrivilegeLevel.UNKNOWN });
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);
@@ -557,7 +548,7 @@ describe('users policy', () => {
         });
 
         // Act
-        const result = await resolveAndRun(ruleEnabledConfig);
+        const result = await resolveAndRun();
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);

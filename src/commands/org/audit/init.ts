@@ -1,7 +1,7 @@
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
 import AuditConfig from '../../../libs/conf-init/auditConfig.js';
-import { AuditInitPresets } from '../../../libs/conf-init/presets.js';
+import { AuditInitPresets } from '../../../libs/conf-init/init.types.js';
 import { capitalize } from '../../../utils.js';
 import { ConfigFileManager } from '../../../libs/audit-engine/index.js';
 
@@ -43,7 +43,6 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   public async run(): Promise<OrgAuditInitResult> {
     const { flags } = await this.parse(OrgAuditInit);
     const auditConfig = await AuditConfig.init(flags['target-org'].getConnection(flags['api-version']), {
-      targetDir: flags['output-dir'],
       preset: flags.preset,
     });
     const saveResult = ConfigFileManager.save(flags['output-dir'], auditConfig);

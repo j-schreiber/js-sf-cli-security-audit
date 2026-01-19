@@ -1,36 +1,49 @@
 import { Connection } from '@salesforce/core';
-import {
-  PermissionsClassificationContent,
-  PermissionSetsClassificationContent,
-  ProfilesClassificationContent,
-  UsersClassificationContent,
-} from '../core/file-mgmt/schema.js';
-import { CustomPermission } from '../core/policies/salesforceStandardTypes.js';
-import { classificationSorter, PermissionRiskLevel } from '../core/classification-types.js';
+import { Classifications, PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
 import { PermissionSets, Profiles, Users } from '../../salesforce/index.js';
-import { UserPrivilegeLevel } from '../core/policy-types.js';
-import { AuditInitPresets, loadPreset } from './presets.js';
-import { UnclassifiedPerm } from './presets/none.js';
+import { loadPreset } from './presets.js';
+import {
+  AuditInitPresets,
+  CUSTOM_PERMS_QUERY,
+  NamedPermissionClassification,
+  PermissionClassifications,
+  PermsetClassifications,
+  ProfileClassifications,
+  SfCustomPermission,
+  UnclassifiedPerm,
+  UserClassifications,
+} from './init.types.js';
 
-export const CUSTOM_PERMS_QUERY = 'SELECT Id,MasterLabel,DeveloperName FROM CustomPermission';
+type ClassificationDefinition = {
+  initialiser: (con: Connection, preset?: AuditInitPresets) => unknown;
+};
 
-/**
- * Initialises a fresh set of user permissions from target org connection.
- *
- * @param con
- * @returns
- */
-export async function initUserPermissions(
-  con: Connection,
-  preset?: AuditInitPresets
-): Promise<PermissionsClassificationContent> {
+export const ClassificationInitDefinitions: Record<Classifications, ClassificationDefinition> = {
+  userPermissions: {
+    initialiser: initUserPermissions,
+  },
+  customPermissions: {
+    initialiser: initCustomPermissions,
+  },
+  profiles: {
+    initialiser: initProfiles,
+  },
+  permissionSets: {
+    initialiser: initPermissionSets,
+  },
+  users: {
+    initialiser: initUsers,
+  },
+};
+
+async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
   const describePerms = await parsePermsFromDescribe(con);
   const assignedPerms = await getUserPermsFromProfiles(con);
   const allPerms = { ...describePerms, ...assignedPerms };
   const presConfig = loadPreset(preset);
   const perms = presConfig.classifyUserPermissions(Object.values(allPerms));
   perms.sort(classificationSorter);
-  const result: PermissionsClassificationContent = { permissions: {} };
+  const result: PermissionClassifications = { permissions: {} };
   perms.forEach(
     (perm) =>
       (result.permissions[perm.name] = {
@@ -42,15 +55,9 @@ export async function initUserPermissions(
   return result;
 }
 
-/**
- * Initialises a fresh set of custom permissions from the target org
- *
- * @param con
- * @returns
- */
-export async function initCustomPermissions(con: Connection): Promise<PermissionsClassificationContent | undefined> {
-  const result: PermissionsClassificationContent = { permissions: {} };
-  const customPerms = await con.query<CustomPermission>(CUSTOM_PERMS_QUERY);
+async function initCustomPermissions(con: Connection): Promise<PermissionClassifications | undefined> {
+  const result: PermissionClassifications = { permissions: {} };
+  const customPerms = await con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
   if (customPerms.records.length === 0) {
     return undefined;
   }
@@ -69,52 +76,42 @@ export async function initCustomPermissions(con: Connection): Promise<Permission
   return result;
 }
 
-/**
- * Initialises a profiles classification with all profiles from the org.
- *
- * @param targetOrgCon
- * @returns
- */
-export async function initProfiles(targetOrgCon: Connection): Promise<ProfilesClassificationContent> {
+async function initProfiles(targetOrgCon: Connection): Promise<ProfileClassifications> {
   const profilesRepo = new Profiles(targetOrgCon);
   const profiles = await profilesRepo.resolve();
-  const content: ProfilesClassificationContent = { profiles: {} };
+  const content: ProfileClassifications = { profiles: {} };
   for (const profileName of profiles.keys()) {
     content.profiles[profileName] = { role: UserPrivilegeLevel.UNKNOWN };
   }
   return content;
 }
 
-/**
- * Initialises permission set classification with all perm sets
- *
- * @param targetOrgCon
- * @returns
- */
-export async function initPermissionSets(targetOrgCon: Connection): Promise<PermissionSetsClassificationContent> {
+async function initPermissionSets(targetOrgCon: Connection): Promise<PermsetClassifications> {
   const permsetsRepo = new PermissionSets(targetOrgCon);
   const permsets = await permsetsRepo.resolve({ isCustomOnly: true });
-  const content: PermissionSetsClassificationContent = { permissionSets: {} };
+  const content: PermsetClassifications = { permissionSets: {} };
   for (const permsetName of permsets.keys()) {
     content.permissionSets[permsetName] = { role: UserPrivilegeLevel.UNKNOWN };
   }
   return content;
 }
 
-/**
- * Initialises users classification with all users classified as standard users.
- *
- * @param targetOrgCon
- */
-export async function initUsers(targetOrgCon: Connection): Promise<UsersClassificationContent> {
+async function initUsers(targetOrgCon: Connection): Promise<UserClassifications> {
   const usersRepo = new Users(targetOrgCon);
   const users = await usersRepo.resolve();
-  const content: UsersClassificationContent = {
+  const content: UserClassifications = {
     users: {},
   };
   for (const username of users.keys()) content.users[username] = { role: UserPrivilegeLevel.STANDARD_USER };
   return content;
 }
+
+function resolveRiskLevelOrdinalValue(value: string): number {
+  return Object.keys(PermissionRiskLevel).indexOf(value.toUpperCase());
+}
+
+const classificationSorter = (a: NamedPermissionClassification, b: NamedPermissionClassification): number =>
+  resolveRiskLevelOrdinalValue(a.classification) - resolveRiskLevelOrdinalValue(b.classification);
 
 async function parsePermsFromDescribe(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
   const permSet = await con.describe('PermissionSet');

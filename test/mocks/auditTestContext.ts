@@ -18,7 +18,6 @@ import {
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/permissionsClassification.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
@@ -140,11 +139,11 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
     },
     queries: {} as Record<string, string>,
   };
-  defaults.queries[CUSTOM_PERMS_QUERY] = 'custom-permissions';
   defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
   mocks.prepareMocks(defaults);
+  mocks.mockCustomPermissions('custom-permissions');
   mocks.mockUsers('active-user-details');
   mocks.mockProfiles('profiles');
   mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);

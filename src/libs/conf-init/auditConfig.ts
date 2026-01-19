@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Connection } from '@salesforce/core';
-import { AuditRunConfig } from '../audit-engine/index.js';
 import {
-  initCustomPermissions,
-  initPermissionSets,
-  initProfiles,
-  initUserPermissions,
-  initUsers,
-} from './permissionsClassification.js';
-import { initDefaultPolicy, initSettings, initUserPolicy } from './policyConfigs.js';
-import { AuditInitPresets } from './presets.js';
+  AuditRunConfig,
+  Classifications,
+  initPolicyConfig,
+  Policies,
+  PolicyDefinitions,
+} from '../audit-engine/index.js';
+import { AuditInitPresets } from './init.types.js';
+import { ClassificationInitDefinitions } from './defaultClassifications.js';
 
 /**
  * Additional options how the config should be initialised.
@@ -33,19 +34,17 @@ export default class AuditConfig {
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
     const conf: AuditRunConfig = { classifications: {}, policies: {} };
-    conf.classifications.profiles = await initProfiles(targetCon);
-    conf.classifications.permissionSets = await initPermissionSets(targetCon);
-    conf.classifications.users = await initUsers(targetCon);
-    conf.classifications.userPermissions = await initUserPermissions(targetCon, opts?.preset);
-    const customPerms = await initCustomPermissions(targetCon);
-    if (customPerms) {
-      conf.classifications.customPermissions = customPerms;
+    for (const [className, classInitDef] of Object.entries(ClassificationInitDefinitions)) {
+      // eslint-disable-next-line no-await-in-loop
+      const defaultClassification = await classInitDef.initialiser(targetCon, opts?.preset);
+      if (defaultClassification) {
+        conf.classifications[className as Classifications] = defaultClassification as any;
+      }
     }
-    conf.policies.profiles = initDefaultPolicy('profiles');
-    conf.policies.permissionSets = initDefaultPolicy('permissionSets');
-    conf.policies.users = initUserPolicy();
-    conf.policies.connectedApps = initDefaultPolicy('connectedApps');
-    conf.policies.settings = initSettings();
+    for (const policyName of Object.keys(PolicyDefinitions)) {
+      const policy = initPolicyConfig(policyName as Policies);
+      conf.policies[policyName as Policies] = policy as any;
+    }
     return conf;
   }
 }

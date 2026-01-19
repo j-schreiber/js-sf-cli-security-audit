@@ -2,16 +2,13 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import ConnectedAppsPolicy from '../../../src/libs/audit-engine/registry/policies/connectedApps.js';
-import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
-import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
+import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
 describe('connected apps policy', () => {
   const $$ = new AuditTestContext();
-  const defaultRegistry = new RuleRegistry(PolicyDefinitions['connectedApps'].rules);
   let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
@@ -27,6 +24,7 @@ describe('connected apps policy', () => {
         },
       },
     };
+    $$.mockAuditConfig.policies.connectedApps = defaultConfig;
     await $$.init();
   });
 
@@ -39,7 +37,7 @@ describe('connected apps policy', () => {
     $$.mocks.mockOAuthTokens('oauth-usage');
 
     // Act
-    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
     const resolveResult = await pol.resolve({ targetOrgConnection: await $$.targetOrg.getConnection() });
     const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
 
@@ -64,7 +62,7 @@ describe('connected apps policy', () => {
     defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
-    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
     const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
     const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
@@ -88,7 +86,7 @@ describe('connected apps policy', () => {
     defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
-    const pol = new ConnectedAppsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
+    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
     const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
     const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 

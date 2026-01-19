@@ -72,7 +72,7 @@ describe('audit run execution', () => {
     // Arrange
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    audit.configs.policies.profiles!.enabled = false;
+    audit.config.policies.profiles!.enabled = false;
 
     // Act
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
@@ -90,7 +90,7 @@ describe('audit run execution', () => {
     // Arrange
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    audit.configs.policies.connectedApps!.rules.AllUsedAppsUnderManagement.enabled = false;
+    audit.config.policies.connectedApps!.rules.AllUsedAppsUnderManagement.enabled = false;
 
     // Act
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
@@ -112,7 +112,7 @@ describe('audit run execution', () => {
   it('exits gracefully if policies exist but all are disabled', async () => {
     // Act
     const audit = startAuditRun(buildPath('minimal'));
-    audit.configs.policies.profiles!.enabled = false;
+    audit.config.policies.profiles!.enabled = false;
     const auditResult = await audit.execute(await $$.targetOrg.getConnection());
 
     // Assert

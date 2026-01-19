@@ -42,7 +42,7 @@ describe('org audit init', () => {
     const conParam = initMock.args.flat()[0] as Connection;
     const optsParam = initMock.args.flat()[1];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
-    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'strict' });
+    expect(optsParam).to.deep.equal({ preset: 'strict' });
     // result wraps around the lib-init-result
     expect(result.classifications.userPermissions.content).to.deep.equal(
       FULL_AUDIT_INIT_RESULT.classifications.userPermissions
@@ -103,6 +103,6 @@ describe('org audit init', () => {
     const conParam = initMock.args.flat()[0] as Connection;
     const optsParam = initMock.args.flat()[1];
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
-    expect(optsParam).to.deep.equal({ targetDir: 'my-test-org', preset: 'loose' });
+    expect(optsParam).to.deep.equal({ preset: 'loose' });
   });
 });

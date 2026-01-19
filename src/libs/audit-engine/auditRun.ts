@@ -4,8 +4,7 @@ import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.
 import { AuditConfigShape, AuditRunConfig, Policies } from './registry/shape/auditConfigShape.js';
 import FileManager from './file-manager/fileManager.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
-import { PolicyDefinitions } from './registry/definitions.js';
-import RuleRegistry from './registry/ruleRegistry.js';
+import { loadPolicy } from './registry/definitions.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PolicyMap = Record<string, Policy<unknown>>;
@@ -28,7 +27,7 @@ export type EntityResolveEvent = {
 export default class AuditRun extends EventEmitter {
   private executablePolicies?: PolicyMap;
 
-  public constructor(public configs: AuditRunConfig) {
+  public constructor(public config: AuditRunConfig) {
     super();
   }
 
@@ -48,7 +47,7 @@ export default class AuditRun extends EventEmitter {
     if (this.executablePolicies) {
       return this.executablePolicies;
     }
-    this.executablePolicies = this.loadPolicies(this.configs);
+    this.executablePolicies = this.loadPolicies();
     const resolveResultPromises: Array<Promise<ResolveEntityResult<unknown>>> = [];
     Object.values(this.executablePolicies).forEach((executable) => {
       resolveResultPromises.push(executable.resolve({ targetOrgConnection }));
@@ -74,12 +73,11 @@ export default class AuditRun extends EventEmitter {
     };
   }
 
-  private loadPolicies(config: AuditRunConfig): PolicyMap {
+  private loadPolicies(): PolicyMap {
     const pols: PolicyMap = {};
-    for (const [policyName, policyConfig] of Object.entries(config.policies)) {
-      const definition = PolicyDefinitions[policyName];
-      if (definition) {
-        const policy = new definition.handler(policyConfig, config, new RuleRegistry(definition.rules));
+    for (const policyName of Object.keys(this.config.policies)) {
+      const policy = loadPolicy(policyName as Policies, this.config);
+      if (policy) {
         policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
           this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
         });

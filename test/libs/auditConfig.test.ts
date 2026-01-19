@@ -4,18 +4,20 @@ import { Messages } from '@salesforce/core';
 import { expect, assert } from 'chai';
 import AuditTestContext, { buildAuditConfigPath } from '../mocks/auditTestContext.js';
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
-import { loadAuditConfig } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
-import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
-import { AuditInitPresets } from '../../src/libs/conf-init/presets.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
-import { PermissionRiskLevel } from '../../src/libs/core/classification-types.js';
 import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
-import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
+import { AuditRunConfig, ConfigFileManager } from '../../src/libs/audit-engine/index.js';
+import { PermissionRiskLevel, UserPrivilegeLevel } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { AuditInitPresets } from '../../src/libs/conf-init/init.types.js';
 
 const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config');
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 const auditRunMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
+
+function loadAuditConfig(dirPath: string): AuditRunConfig {
+  return ConfigFileManager.parse(dirPath);
+}
 
 describe('audit config', () => {
   const $$ = new AuditTestContext();
@@ -153,7 +155,7 @@ describe('audit config', () => {
       });
     });
 
-    it('initialises user policy with active users from org', async () => {
+    it('initialises user classification with active users from org', async () => {
       // Act
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
@@ -168,6 +170,23 @@ describe('audit config', () => {
         'test-user-2@example.de',
       ]);
       expect(userPolicy.options.defaultRoleForMissingUsers).to.equal(UserPrivilegeLevel.STANDARD_USER);
+    });
+
+    it('initialises profiles classification with all profiles from org', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+
+      // Assert
+      assert.isDefined(auditConf.classifications.profiles);
+      assert.isDefined(auditConf.policies.profiles);
+      const classification = auditConf.classifications.profiles;
+      const policy = auditConf.policies.profiles;
+      expect(Object.keys(classification.profiles)).to.deep.equal([
+        'Custom Profile',
+        'System Administrator',
+        'Standard User',
+      ]);
+      expect(policy.enabled).to.be.true;
     });
   });
 
@@ -199,8 +218,6 @@ describe('audit config', () => {
       expect(auditConf.classifications.customPermissions).to.be.undefined;
       expect(auditConf.policies.permissionSets).to.be.undefined;
       expect(auditConf.policies.connectedApps).to.be.undefined;
-      expect(auditConf.classifications.userPermissions.filePath).not.to.be.undefined;
-      expect(auditConf.policies.profiles.filePath).not.to.be.undefined;
     });
 
     it('bubbles zod parse exceptions as formatted SfError', async () => {
