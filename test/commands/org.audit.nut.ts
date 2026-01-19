@@ -4,8 +4,7 @@ import { assert, expect } from 'chai';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
-import { DefaultFileManager } from '../../src/libs/core/file-mgmt/auditConfigFileManager.js';
-import { UserPrivilegeLevel } from '../../src/libs/core/policy-types.js';
+import { ConfigFileManager, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';
@@ -26,20 +25,20 @@ describe('org audit NUTs', () => {
 
   function activateClassifications(dirPath: string, role: UserPrivilegeLevel) {
     const configDirPath = resolveTestDirFilePath(dirPath);
-    const conf = DefaultFileManager.parse(configDirPath);
-    if (conf.classifications.profiles?.content.profiles) {
-      for (const profile of Object.values(conf.classifications.profiles.content.profiles)) {
+    const conf = ConfigFileManager.parse(configDirPath);
+    if (conf.classifications.profiles?.profiles) {
+      for (const profile of Object.values(conf.classifications.profiles.profiles)) {
         // eslint-disable-next-line no-param-reassign
         profile.role = role;
       }
     }
-    if (conf.classifications.permissionSets?.content.permissionSets) {
-      for (const profile of Object.values(conf.classifications.permissionSets.content.permissionSets)) {
+    if (conf.classifications.permissionSets?.permissionSets) {
+      for (const profile of Object.values(conf.classifications.permissionSets.permissionSets)) {
         // eslint-disable-next-line no-param-reassign
         profile.role = role;
       }
     }
-    DefaultFileManager.save(configDirPath, conf);
+    ConfigFileManager.save(configDirPath, conf);
   }
 
   before(async () => {
