@@ -2,10 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { Messages, SfError } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import OrgAuditRun, { MERGE_CHAR } from '../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../mocks/auditTestContext.js';
 import { AuditResult, AuditRun } from '../../src/libs/audit-engine/index.js';
+import { assertSfError } from '../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -50,7 +51,7 @@ describe('org audit run', () => {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertError(error, 'NoAuditConfigFound', 'The target directory <root-dir> is empty');
+        assertSfError(error, 'NoAuditConfigFound', 'The target directory <root-dir> is empty');
       }
     });
 
@@ -61,7 +62,7 @@ describe('org audit run', () => {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', sourceDirPath]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertError(error, 'NoAuditConfigFound', `The target directory ${sourceDirPath} is empty`);
+        assertSfError(error, 'NoAuditConfigFound', `The target directory ${sourceDirPath} is empty`);
       }
     });
 
@@ -76,7 +77,7 @@ describe('org audit run', () => {
         ]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertError(error, 'UserPermClassificationRequiredForProfiles');
+        assertSfError(error, 'UserPermClassificationRequiredForProfiles');
       }
     });
 
@@ -91,7 +92,7 @@ describe('org audit run', () => {
         ]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertError(error, 'UserPermClassificationRequiredForPermSets');
+        assertSfError(error, 'UserPermClassificationRequiredForPermSets');
       }
     });
   });
@@ -304,14 +305,3 @@ describe('org audit run', () => {
     });
   });
 });
-
-function assertError(err: unknown, expectedName: string, expectedMsg?: string) {
-  if (err instanceof SfError) {
-    expect(err.name).to.equal(expectedName + 'Error');
-    if (expectedMsg) {
-      expect(err.message).to.contain(expectedMsg);
-    }
-  } else {
-    expect.fail('Expected SfError, but got: ' + JSON.stringify(err));
-  }
-}

@@ -6,7 +6,7 @@ import AuditTestContext from '../mocks/auditTestContext.js';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { MDAPI } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
-import { parseXmlFile } from '../mocks/testHelpers.js';
+import { assertSfError, parseXmlFile } from '../mocks/testHelpers.js';
 import { RETRIEVES_BASE } from '../mocks/data/paths.js';
 
 describe('mdapi retriever', () => {
@@ -65,7 +65,7 @@ describe('mdapi retriever', () => {
   describe('entity resolve', () => {
     it('returns strongly typed content of retrieved permission sets', async () => {
       // Arrange
-      const retrieveStub = $$.mocks.stubMetadataRetrieve('default-permsets');
+      const retrieveStub = await $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -85,7 +85,7 @@ describe('mdapi retriever', () => {
 
     it('returns strongly typed content of retrieved connected app settings', async () => {
       // Arrange
-      const retrieveStub = $$.mocks.stubMetadataRetrieve('security-settings');
+      const retrieveStub = await $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -98,7 +98,7 @@ describe('mdapi retriever', () => {
 
     it('caches retrieved permission sets by their full name', async () => {
       // Arrange
-      const retrieveStub = $$.mocks.stubMetadataRetrieve('default-permsets');
+      const retrieveStub = await $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -116,7 +116,7 @@ describe('mdapi retriever', () => {
 
     it('caches connected app settings by its metadata type', async () => {
       // Arrange
-      const retrieveStub = $$.mocks.stubMetadataRetrieve('security-settings');
+      const retrieveStub = await $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -166,6 +166,26 @@ describe('mdapi retriever', () => {
       expect(dirEntries.length).to.equal(0);
     });
 
+    it('gracefully reports error when singleton retrieve fails', async () => {
+      // Arrange
+      // this mocks the situation, where the retrieve comes back empty
+      await $$.mocks.stubMetadataRetrieve('empty');
+
+      // Act
+      const mdapi = new MDAPI($$.targetOrgConnection);
+      try {
+        await mdapi.resolveSingleton('ConnectedAppSettings');
+        expect.fail('Expected error, but succeeded');
+      } catch (error) {
+        assertSfError(error, 'FailedToRetrieveComponent');
+      }
+
+      // Assert
+      expect(fs.existsSync(RETRIEVE_CACHE)).to.be.true;
+      const dirEntries = fs.readdirSync(RETRIEVE_CACHE);
+      expect(dirEntries.length).to.equal(0);
+    });
+
     it('retrieves a list of valid settings and resolves their contents by name', async () => {
       // Act
       const mdapi = new MDAPI($$.targetOrgConnection);
@@ -179,7 +199,7 @@ describe('mdapi retriever', () => {
         'mdapi-retrieve-mocks',
         'full',
         'settings',
-        'Apex.settings-meta.xml'
+        'Apex.settings'
       ).ApexSettings;
       expect(apexSetting).not.to.be.undefined;
       expect(apexSetting).to.deep.equal(expectedApexSetting);
@@ -188,7 +208,7 @@ describe('mdapi retriever', () => {
         'mdapi-retrieve-mocks',
         'full',
         'settings',
-        'Security.settings-meta.xml'
+        'Security.settings'
       ).SecuritySettings;
       expect(securitySetting).not.to.be.undefined;
       expect(securitySetting).to.deep.equal(expectedSecuritySetting);

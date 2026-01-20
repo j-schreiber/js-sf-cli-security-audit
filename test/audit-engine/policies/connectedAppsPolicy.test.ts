@@ -59,6 +59,7 @@ describe('connected apps policy', () => {
 
   it('uses result form ApiAccess setting to override self-authorize flag', async () => {
     // Arrange
+    await $$.mocks.stubMetadataRetrieve('security-settings');
     defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
@@ -82,7 +83,7 @@ describe('connected apps policy', () => {
 
   it('gracefully handles if ApiAccess setting is not available on org', async () => {
     // Arrange
-    $$.mocks.stubMetadataRetrieve('api-access-not-available');
+    await $$.mocks.stubMetadataRetrieve('api-access-not-available');
     defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act

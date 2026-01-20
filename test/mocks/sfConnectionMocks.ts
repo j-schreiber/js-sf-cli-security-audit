@@ -158,13 +158,14 @@ export default class SfConnectionMocks {
    * @param folderName folder that exists in mocks/data/mdapi-retrieve-mocks
    * @returns
    */
-  public stubMetadataRetrieve(folderName: string) {
+  public async stubMetadataRetrieve(folderName: string) {
     const fullyResolvedPath = path.join(SRC_MOCKS_BASE_PATH, folderName);
     this.retrieveStub?.restore();
-    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').callsFake((opts) => {
+    this.retrieveStub = this.context.SANDBOX.stub(ComponentSet.prototype, 'retrieve').callsFake(async (opts) => {
       // this behavior mimicks the original behavior of metadata retrieve as closely as possible
       // each retrieve creates a temporary dictionary that contains all files
-      const retrievePath = path.join(opts.output, `metadataPackage_${Date.now()}`);
+      const retrieveDirName = opts.zipFileName ? opts.zipFileName.split('.')[0] : `metadataPackage_${Date.now()}`;
+      const retrievePath = path.join(opts.output, retrieveDirName);
       fs.mkdirSync(retrievePath, { recursive: true });
       copyDir(fullyResolvedPath, retrievePath);
       return Promise.resolve(new MetadataApiRetrieveMock(retrievePath) as unknown as MetadataApiRetrieve);
@@ -209,7 +210,7 @@ export default class SfConnectionMocks {
   };
 }
 
-class MetadataApiRetrieveMock {
+export class MetadataApiRetrieveMock {
   public constructor(private readonly dirPath?: string) {}
 
   public async pollStatus(): Promise<RetrieveResult> {

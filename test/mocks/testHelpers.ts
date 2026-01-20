@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { expect } from 'chai';
 import { XMLParser } from 'fast-xml-parser';
 import { Record as JsForceRecord } from '@jsforce/jsforce-node';
 import { PermissionSet, Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { SfError } from '@salesforce/core';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { PartialPolicyRuleResult } from '../../src/libs/audit-engine/registry/context.types.js';
 import {
@@ -40,4 +42,15 @@ export function parseFileAsJson<T>(...filePath: string[]): T {
 export function parseXmlFile<T>(...filePath: string[]): T {
   const fileContent = fs.readFileSync(path.join(MOCK_DATA_BASE_PATH, ...filePath), 'utf-8');
   return new XMLParser().parse(fileContent) as T;
+}
+
+export function assertSfError(err: unknown, expectedName: string, expectedMsg?: string) {
+  if (err instanceof SfError) {
+    expect(err.name).to.equal(expectedName + 'Error');
+    if (expectedMsg) {
+      expect(err.message).to.contain(expectedMsg);
+    }
+  } else {
+    expect.fail('Expected SfError, but got: ' + JSON.stringify(err));
+  }
 }

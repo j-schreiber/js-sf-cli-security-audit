@@ -58,7 +58,7 @@ describe('org audit NUTs', () => {
         {
           alias: professionalOrgAlias,
           config: path.join('config', 'prof-edition-scratch-def.json'),
-          setDefault: true,
+          setDefault: false,
           duration: 1,
         },
       ],
@@ -148,7 +148,7 @@ describe('org audit NUTs', () => {
     ]);
     for (const [policyName, policy] of Object.entries(result.policies)) {
       // every policy should have at least one audited entity
-      expect(policy.auditedEntities, policyName).not.deep.equal([]);
+      expect(policy.auditedEntities, 'audited entities for: ' + policyName).not.deep.equal([]);
     }
   });
 
@@ -198,5 +198,25 @@ describe('org audit NUTs', () => {
 
     // Assert
     assert.isDefined(runResult);
+  });
+
+  it('successfully executes audit with problematic .forceignore', () => {
+    // Arrange
+    // https://github.com/j-schreiber/js-sf-cli-security-audit/issues/12
+    // when a .forceignore file is present (content does not matter), source
+    // retrieve with ComponentSet failed. Even though MDAPI still returned
+    // the files, they were not successfully converted (getSourceComponents).
+    // the only workaround I found was to retrieve metadata files, and handle
+    // the file content parsing myself, without conversion to "source" format.
+    fs.writeFileSync(resolveTestDirFilePath('.forceignore'), 'package.xml');
+
+    // Act
+    const cmdResult = execCmd<OrgAuditRunResult>(`org:audit:run --target-org ${enterpriseOrgAlias} --json`, {
+      ensureExitCode: 0,
+    });
+
+    // Assert
+    // we already ensureExitCode 0, so this is ok
+    expect(cmdResult).to.be.ok;
   });
 });

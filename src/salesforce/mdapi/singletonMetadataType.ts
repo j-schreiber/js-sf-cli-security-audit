@@ -1,10 +1,13 @@
-import { Connection } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
 import MetadataRegistryEntry, {
-  cleanRetrieveDir,
+  ComponentRetrieveResult,
   MetadataRegistryEntryOpts,
   retrieve,
 } from './metadataRegistryEntry.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'metadataretrieve');
 
 /**
  * The entry is a type that only has one single instance on the org, such as
@@ -28,17 +31,15 @@ export default class SingletonMetadata<Type, Key extends keyof Type> extends Met
    */
   public async resolve(con: Connection): Promise<Type[Key]> {
     const cmpSet = new ComponentSet([{ type: this.retrieveType, fullName: this.retrieveName }]);
-    const retrieveResult = await retrieve(cmpSet, con);
-    const resolvedCmp = this.parseSourceFile(retrieveResult.components);
-    cleanRetrieveDir(retrieveResult.getFileResponses());
-    return resolvedCmp;
+    const result = await retrieve(cmpSet, con);
+    return this.returnRetrieveType(result.retrievedComponents);
   }
 
-  private parseSourceFile(componentSet: ComponentSet): Type[Key] {
-    const cmps = componentSet.getSourceComponents({ type: this.retrieveType, fullName: this.retrieveName }).toArray();
-    if (cmps.length > 0 && cmps[0].xml) {
-      return this.parse(cmps[0].xml);
+  private returnRetrieveType(components: ComponentRetrieveResult['retrievedComponents']): Type[Key] {
+    if (components.length > 0) {
+      const rawFileContent = components[0].fileContent;
+      return this.extract(rawFileContent);
     }
-    throw new Error('Failed to resolve settings for: ' + this.retrieveName);
+    throw messages.createError('error.FailedToRetrieveComponent', [`${this.retrieveName}.${this.retrieveType}`]);
   }
 }
