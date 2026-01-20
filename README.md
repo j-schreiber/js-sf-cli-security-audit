@@ -166,3 +166,9 @@ Generate a new command (initialises messages, tests, etc)
 ```bash
 sf dev generate command -n my:command:name
 ```
+
+To use the local build, run using the local `./bin/dev` or `./bin/dev.cmd` file.
+
+```bash
+./bin/dev.js org audit run -o MyTargetOrg -d test/mocks/data/audit-configs/full-valid
+```
