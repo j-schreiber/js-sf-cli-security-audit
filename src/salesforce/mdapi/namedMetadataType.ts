@@ -1,7 +1,7 @@
 import { Connection } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
 import MetadataRegistryEntry, {
-  cleanRetrieveDir,
+  ComponentRetrieveResult,
   MetadataRegistryEntryOpts,
   retrieve,
 } from './metadataRegistryEntry.js';
@@ -26,20 +26,21 @@ export default class NamedMetadata<Type, Key extends keyof Type> extends Metadat
   public async resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
     const cmpSet = new ComponentSet(componentNames.map((cname) => ({ type: this.retrieveType, fullName: cname })));
     const retrieveResult = await retrieve(cmpSet, con);
-    const resolvedFiles = this.parseSourceFiles(retrieveResult.components, componentNames);
-    cleanRetrieveDir(retrieveResult.getFileResponses());
+    const resolvedFiles = this.parseSourceFiles(retrieveResult.retrievedComponents, componentNames);
     return resolvedFiles;
   }
 
-  private parseSourceFiles(componentSet: ComponentSet, retrievedNames: string[]): Record<string, Type[Key]> {
-    const cmps = componentSet.getSourceComponents().toArray();
+  private parseSourceFiles(
+    components: ComponentRetrieveResult['retrievedComponents'],
+    retrievedNames: string[]
+  ): Record<string, Type[Key]> {
     const result: Record<string, Type[Key]> = {};
-    cmps.forEach((sourceComponent) => {
-      if (sourceComponent.xml && retrievedNames.includes(sourceComponent.name)) {
+    components.forEach((sourceComponent) => {
+      if (sourceComponent.filePath && retrievedNames.includes(sourceComponent.identifier)) {
         // the available method parseXmlSync on source component does not
         // resolve the "rootNodeProblem" from XML. Therefore, we implement
         // our own method to parse and return the "inner xml".
-        result[sourceComponent.name] = this.parse(sourceComponent.xml);
+        result[sourceComponent.identifier] = this.extract(sourceComponent.fileContent);
       }
     });
     return result;

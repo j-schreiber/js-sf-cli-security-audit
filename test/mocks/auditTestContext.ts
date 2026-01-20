@@ -52,7 +52,7 @@ export default class AuditTestContext {
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
-    this.mocks.stubMetadataRetrieve('full');
+    await this.mocks.stubMetadataRetrieve('full');
     this.mocks.restoreStubs();
   }
 

@@ -1,22 +1,22 @@
-import { readFileSync } from 'node:fs';
-import { Connection } from '@salesforce/core';
-import { ComponentSet, SourceComponent } from '@salesforce/source-deploy-retrieve';
 import { XMLParser } from 'fast-xml-parser';
-import { cleanRetrieveDir, retrieve } from './metadataRegistryEntry.js';
+import { Connection } from '@salesforce/core';
+import { ComponentSet } from '@salesforce/source-deploy-retrieve';
+import { ComponentRetrieveResult, retrieve } from './metadataRegistryEntry.js';
 
 export type SalesforceSetting = {
   [settingsKey: string]: unknown;
 };
 
+type ComponentList = ComponentRetrieveResult['retrievedComponents'];
+
 /**
  * A generic loosely-typed retriever for settings metadata
  */
 export default class GenericSettingsMetadata {
-  private parser;
   private retrieveType;
+  private readonly parser = new XMLParser();
 
   public constructor() {
-    this.parser = new XMLParser();
     this.retrieveType = 'Settings';
   }
 
@@ -38,29 +38,26 @@ export default class GenericSettingsMetadata {
       cmpSet.add({ type: this.retrieveType, fullName: settingName });
     }
     const retrieveResult = await retrieve(cmpSet, con);
-    const result = this.parseSettingsContent(settingNames, retrieveResult.components);
-    cleanRetrieveDir(retrieveResult.getFileResponses());
+    const result = this.parseSettingsContent(retrieveResult.retrievedComponents, settingNames);
     return result;
   }
 
-  private parseSettingsContent(settingNames: string[], components: ComponentSet): Record<string, SalesforceSetting> {
+  private parseSettingsContent(settings: ComponentList, settingNames: string[]): Record<string, SalesforceSetting> {
     const result: Record<string, SalesforceSetting> = {};
-    for (const settingName of settingNames) {
-      const cmps = components.getSourceComponents({ type: this.retrieveType, fullName: settingName }).toArray();
-      const settingsContent = this.parseSourceFile(cmps, `${settingName}Settings`);
+    for (const setting of settings) {
+      if (!settingNames.includes(setting.identifier)) {
+        continue;
+      }
+      const settingsContent = this.extractContent(setting.fileContent, `${setting.identifier}Settings`);
       if (settingsContent) {
-        result[settingName] = settingsContent;
+        result[setting.identifier] = settingsContent;
       }
     }
     return result;
   }
 
-  private parseSourceFile(cmps: SourceComponent[], rootNodeName: string): Record<string, unknown> | null {
-    if (cmps.length > 0 && cmps[0].xml) {
-      const fileContent = readFileSync(cmps[0].xml, 'utf-8');
-      const rawFileContent = this.parser.parse(fileContent) as Record<string, unknown>;
-      return rawFileContent[rootNodeName] as Record<string, unknown>;
-    }
-    return null;
+  private extractContent(content: string, rootNodeName: string): Record<string, unknown> | null | undefined {
+    const parsedContent = this.parser.parse(content) as Record<string, unknown>;
+    return parsedContent[rootNodeName] as Record<string, unknown>;
   }
 }

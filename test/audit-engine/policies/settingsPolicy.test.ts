@@ -145,7 +145,7 @@ describe('settings policy', () => {
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
-      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
+      expect(Object.keys(result.resolvedEntities)).to.have.members(['Security', 'Apex']);
     });
 
     it('ignores an invalid rule but does not add it to ignoredEntities', async () => {
@@ -158,7 +158,7 @@ describe('settings policy', () => {
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
-      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
+      expect(Object.keys(result.resolvedEntities)).to.have.members(['Security', 'Apex']);
     });
 
     it('ignores the entity of a syntactically valid rule that cannot be resolved to a setting', async () => {
@@ -173,7 +173,7 @@ describe('settings policy', () => {
       expect(result.ignoredEntities).to.deep.equal([
         { message: messages.getMessage('resolve-error.failed-to-resolve-setting'), name: 'SomeInvalid' },
       ]);
-      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security', 'Apex']);
+      expect(Object.keys(result.resolvedEntities)).to.have.members(['Security', 'Apex']);
     });
 
     it('gracefully skips policy metadata retrieve if it has no rules', async () => {

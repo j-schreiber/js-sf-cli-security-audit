@@ -1,7 +1,7 @@
-import { PathLike, readFileSync, rmSync } from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
-import { ComponentSet, FileResponse, RetrieveResult } from '@salesforce/source-deploy-retrieve';
+import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { Connection } from '@salesforce/core';
 import { RETRIEVE_CACHE } from './constants.js';
 
@@ -33,6 +33,28 @@ export type NamedMetadataResolver<Type> = {
   resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type>>;
 };
 
+export type ComponentRetrieveResult = {
+  packageName: string;
+  retrievePath: string;
+  mdapiRetrieveResult: RetrieveResult;
+  retrievedComponents: MdapiComponent[];
+};
+
+type MdapiComponent = {
+  /**
+   * Original path to the temporary file
+   */
+  filePath: string;
+  /**
+   * Raw file content as string, directly from mdapi retrieve
+   */
+  fileContent: string;
+  /**
+   * Unique identifier of the retrieved metadata type
+   */
+  identifier: string;
+};
+
 export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type> {
   public parser: XMLParser;
   public retrieveType: string;
@@ -44,9 +66,13 @@ export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type
     this.rootNodeName = this.opts.rootNodeName;
   }
 
-  public parse(fullFilePath: PathLike): Type[Key] {
-    const fileContent = readFileSync(fullFilePath, 'utf-8');
-    const parsedContent = this.parser.parse(fileContent) as Type;
+  public parse(filePath: string): Type[Key] {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    return this.extract(fileContent);
+  }
+
+  public extract(rawFileContent: string): Type[Key] {
+    const parsedContent = this.parser.parse(rawFileContent) as Type;
     if (this.opts.parsePostProcessor) {
       return this.opts.parsePostProcessor(parsedContent[this.rootNodeName]);
     }
@@ -54,25 +80,49 @@ export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type
   }
 }
 
-export async function retrieve(compSet: ComponentSet, con: Connection): Promise<RetrieveResult> {
+export async function retrieve(compSet: ComponentSet, con: Connection): Promise<ComponentRetrieveResult> {
+  const packageName = `metadataPackage_${Date.now()}`;
+  fs.mkdirSync(RETRIEVE_CACHE, { recursive: true });
+  const retrievePath = path.join(RETRIEVE_CACHE, packageName);
   const retrieveRequest = await compSet.retrieve({
     usernameOrConnection: con,
+    format: 'metadata',
+    unzip: true,
+    singlePackage: true,
+    zipFileName: `${packageName}.zip`,
     output: RETRIEVE_CACHE,
   });
-  const retrieveResult = await retrieveRequest.pollStatus();
-  return retrieveResult;
+  const mdapiRetrieveResult = await retrieveRequest.pollStatus();
+  const retrievedComponents = await parseRetrievedComponents(retrievePath);
+  cleanRetrieveCache(packageName);
+  return {
+    mdapiRetrieveResult,
+    retrievedComponents,
+    packageName,
+    retrievePath,
+  };
 }
 
-export function cleanRetrieveDir(files: FileResponse[]): void {
-  const dirNames = new Set<string>();
-  files.forEach((file) => {
-    if (file.filePath) {
-      const dirName = path.dirname(path.normalize(file.filePath));
-      const parts = dirName.split(path.sep).filter((dirPart) => dirPart.startsWith('metadataPackage_'));
-      parts.forEach((mdPart) => dirNames.add(mdPart));
-    }
-  });
-  dirNames.forEach((dir) => {
-    rmSync(path.join(RETRIEVE_CACHE, dir), { recursive: true });
-  });
+export async function parseRetrievedComponents(retrievePath: string): Promise<MdapiComponent[]> {
+  const cmpSet = await ComponentSet.fromManifest(path.join(retrievePath, 'package.xml'));
+  const parsedComponents: MdapiComponent[] = [];
+  for (const mdcmp of cmpSet.toArray()) {
+    const filePath = path.join(
+      retrievePath,
+      mdcmp.type.directoryName,
+      mdcmp.type.suffix ? `${mdcmp.fullName}.${mdcmp.type.suffix}` : mdcmp.fullName
+    );
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    parsedComponents.push({
+      filePath,
+      identifier: mdcmp.fullName,
+      fileContent,
+    });
+  }
+  return parsedComponents;
+}
+
+function cleanRetrieveCache(packageName: string): void {
+  fs.rmSync(path.join(RETRIEVE_CACHE, packageName), { recursive: true });
+  fs.rmSync(path.join(RETRIEVE_CACHE, `${packageName}.zip`), { force: true });
 }
