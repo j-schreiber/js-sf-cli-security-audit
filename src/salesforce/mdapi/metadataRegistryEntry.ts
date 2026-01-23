@@ -112,12 +112,14 @@ export async function parseRetrievedComponents(retrievePath: string): Promise<Md
       mdcmp.type.directoryName,
       mdcmp.type.suffix ? `${mdcmp.fullName}.${mdcmp.type.suffix}` : mdcmp.fullName
     );
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    parsedComponents.push({
-      filePath,
-      identifier: mdcmp.fullName,
-      fileContent,
-    });
+    if (fs.existsSync(filePath)) {
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      parsedComponents.push({
+        filePath,
+        identifier: mdcmp.fullName,
+        fileContent,
+      });
+    }
   }
   return parsedComponents;
 }
