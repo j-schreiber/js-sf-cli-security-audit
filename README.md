@@ -79,7 +79,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.11.3/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.12.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -87,12 +87,13 @@ Audit your org with an existing config.
 
 ```
 USAGE
-  $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>]
+  $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>] [--verbose]
 
 FLAGS
   -d, --source-dir=<value>   Source directory of the audit config to run.
   -o, --target-org=<value>   (required) The org that is audited.
       --api-version=<value>  Override the api version used for api requests made by this command
+      --verbose              Don't truncate rule violation tables.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -108,9 +109,22 @@ EXAMPLES
   Audit the org MyTargetOrg with the config in configs/prod
 
     $ sf org audit run -o MyTargetOrg -d configs/prod
+
+FLAG DESCRIPTIONS
+  -d, --source-dir=<value>  Source directory of the audit config to run.
+
+    Loads all classifications and policies from the directory and uses them to audit the org. Only policies that are
+    enabled and that exist in the directory are executed.
+
+  --verbose  Don't truncate rule violation tables.
+
+    The default behavior truncates result tables of rule violations in terminal output, when they exceed a certain
+    length. The default maximum length is 30 rows and can be configured in the environment variable
+    `SAE_MAX_RESULT_VIOLATION_ROWS`. If this flag is present, the full violations table is printed. The JSON report is
+    never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.11.3/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.12.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -149,7 +163,7 @@ FLAG DESCRIPTIONS
     retun 0 results).
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.11.3/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.12.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
