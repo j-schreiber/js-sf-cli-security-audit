@@ -15,6 +15,7 @@ import { MDAPI } from '../../src/salesforce/index.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
+import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 
@@ -65,6 +66,7 @@ export default class AuditTestContext {
     this.mockAuditConfig = { policies: {}, classifications: {} };
     MDAPI.clearCache();
     initDefaultMocks(this.mocks);
+    resetAllEnvironmentVars();
   }
 
   /**
@@ -150,6 +152,13 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   // 14 days is option config in "full-valid" user policy
   mocks.mockLoginHistory('empty', 14);
   return mocks;
+}
+
+function resetAllEnvironmentVars() {
+  const allVars = Object.keys(SUPPORTED_ENV_VARS);
+  for (const envVar of allVars) {
+    delete process.env[envVar];
+  }
 }
 
 export function clearAuditReports(workingDir: string): void {

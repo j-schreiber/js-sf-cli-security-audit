@@ -26,7 +26,7 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
 
 export function parsePermSetFromFile(permSetName: string): PermissionSet {
   const permsetPath = path.join(RETRIEVES_BASE, 'full-permsets', `${permSetName}.permissionset-meta.xml`);
-  return Registry.namedTypes.PermissionSet.parse(permsetPath);
+  return Registry.namedTypes.PermissionSet.parse(permsetPath)!;
 }
 
 export function parseProfileFromFile(fileName: string): Profile {
