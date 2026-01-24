@@ -1,0 +1,224 @@
+{
+  "isCompliant": false,
+  "auditDate": "2025-10-12T12:58:00.000Z",
+  "policies": {
+    "permissionSets": {
+      "isCompliant": false,
+      "enabled": true,
+      "auditedEntities": ["Standard_User_Permission_Set_1"],
+      "executedRules": {
+        "EnforcePermissionClassifications": {
+          "ruleName": "EnforcePermissionClassifications",
+          "isCompliant": false,
+          "violations": [
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission1"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission2"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission3"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission4"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission5"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission6"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission7"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission8"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission9"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission10"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission11"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission12"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission13"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission14"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission15"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission16"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission17"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission18"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission19"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission20"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission21"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission22"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission23"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission24"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission25"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission26"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission27"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission28"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission29"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission30"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission31"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission32"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission33"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission34"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission35"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission36"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission37"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission38"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission39"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission40"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission41"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission42"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission43"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission44"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission45"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission46"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission47"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission48"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission49"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "Permission50"],
+              "message": "Permission is classified as High but preset is Standard User"
+            }
+          ],
+          "violatedEntities": ["Standard_User_Permission_Set_1"],
+          "mutedViolations": [],
+          "warnings": [],
+          "errors": []
+        }
+      },
+      "skippedRules": []
+    }
+  }
+}

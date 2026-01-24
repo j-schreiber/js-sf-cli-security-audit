@@ -276,6 +276,53 @@ describe('org audit run', () => {
         ],
       });
     });
+
+    it('truncates violation tables to default max length without --verbose flag', async () => {
+      // Arrange
+      const mr = parseMockAuditConfig('large-violations-list.json');
+      mockResult(mr);
+
+      // Act
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+      // Assert
+      expect($$.sfCommandStubs.table.callCount).to.equal(3);
+      const violationsTable = $$.sfCommandStubs.table.args.flat()[2];
+      expect(violationsTable.data.length).to.equal(30);
+      const expectedMsg = messages.getMessage('info.RemovedViolationRows', [30, 50]);
+      expect($$.sfCommandStubs.info.args.flat()).to.deep.include.members([expectedMsg]);
+    });
+
+    it('does not truncate exceeding violations table with --verbose flag', async () => {
+      // Arrange
+      const mr = parseMockAuditConfig('large-violations-list.json');
+      mockResult(mr);
+
+      // Act
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR, '--verbose']);
+
+      // Assert
+      expect($$.sfCommandStubs.table.callCount).to.equal(3);
+      const violationsTable = $$.sfCommandStubs.table.args.flat()[2];
+      expect(violationsTable.data.length).to.equal(50);
+      expect($$.sfCommandStubs.info.args.flat()).to.deep.include.members([]);
+    });
+
+    it('does not truncate violations table when max-length is increased', async () => {
+      // Arrange
+      process.env.SAE_MAX_RESULT_VIOLATION_ROWS = '100';
+      const mr = parseMockAuditConfig('large-violations-list.json');
+      mockResult(mr);
+
+      // Act
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR, '--verbose']);
+
+      // Assert
+      expect($$.sfCommandStubs.table.callCount).to.equal(3);
+      const violationsTable = $$.sfCommandStubs.table.args.flat()[2];
+      expect(violationsTable.data.length).to.equal(50);
+      expect($$.sfCommandStubs.info.args.flat()).to.deep.include.members([]);
+    });
   });
 
   describe('report file creation', () => {

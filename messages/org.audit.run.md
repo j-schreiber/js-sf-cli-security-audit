@@ -18,6 +18,14 @@ Source directory of the audit config to run.
 
 Loads all classifications and policies from the directory and uses them to audit the org. Only policies that are enabled and that exist in the directory are executed.
 
+# flags.verbose.summary
+
+Don't truncate rule violation tables.
+
+# flags.verbose.description
+
+The default behavior truncates result tables of rule violations in terminal output, when they exceed a certain length. The default maximum length is 30 rows and can be configured in the environment variable `SAE_MAX_RESULT_VIOLATION_ROWS`. If this flag is present, the full violations table is printed. The JSON report is never truncated.
+
 # examples
 
 - Audit the org MyTargetOrg with the config in configs/prod
@@ -59,3 +67,7 @@ Failed to parse %s: %s.
 # error.InvalidConfigFileSchema.actions
 
 Verify that your config matches the expected schema.
+
+# info.RemovedViolationRows
+
+%s out of %s violations shown. See report for full results or use --verbose flag.

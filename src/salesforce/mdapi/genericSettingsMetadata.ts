@@ -42,8 +42,9 @@ export default class GenericSettingsMetadata {
     return result;
   }
 
-  private parseSettingsContent(settings: ComponentList, settingNames: string[]): Record<string, SalesforceSetting> {
+  private parseSettingsContent(cmps: ComponentList, settingNames: string[]): Record<string, SalesforceSetting> {
     const result: Record<string, SalesforceSetting> = {};
+    const settings = cmps[this.retrieveType] ? Object.values(cmps[this.retrieveType]) : [];
     for (const setting of settings) {
       if (!settingNames.includes(setting.identifier)) {
         continue;

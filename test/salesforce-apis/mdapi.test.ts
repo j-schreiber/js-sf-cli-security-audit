@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { ApexSettings, SecuritySettings } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
@@ -31,6 +31,7 @@ describe('mdapi retriever', () => {
       const parsedPermset = Registry.namedTypes.PermissionSet.parse(permsetPath);
 
       // Assert
+      assert.isDefined(parsedPermset);
       expect(parsedPermset.label).to.equal('Test_Admin_Permission_Set_1');
     });
 
@@ -44,6 +45,7 @@ describe('mdapi retriever', () => {
       const parsedPermset = Registry.namedTypes.PermissionSet.parse(permsetPath);
 
       // Assert
+      assert.isDefined(parsedPermset);
       expect(parsedPermset.userPermissions).to.deep.equal([]);
       expect(parsedPermset.customPermissions).to.deep.equal([]);
     });
@@ -58,17 +60,62 @@ describe('mdapi retriever', () => {
       const parsedSetting = Registry.singletonTypes.ConnectedAppSettings.parse(filePath);
 
       // Assert
+      assert.isDefined(parsedSetting);
       expect(parsedSetting.enableAdminApprovedAppsOnly).to.be.true;
     });
   });
 
   describe('entity resolve', () => {
+    let mdapi: MDAPI;
+
+    beforeEach(() => {
+      mdapi = new MDAPI($$.targetOrgConnection);
+    });
+
+    it('ignores named entity when retrieved file from MDAPI is empty', async () => {
+      // Arrange
+      // file is in package.xml and exists, but it is empty
+      await $$.mocks.stubMetadataRetrieve('empty-file');
+
+      // Act
+      const permsets = await mdapi.resolve('PermissionSet', ['Test_Admin_Permission_Set_1']);
+
+      // Assert
+      expect(Object.keys(permsets)).to.deep.equal([]);
+    });
+
+    it('ignores named entity when retrieved file is missing', async () => {
+      // Arrange
+      // file is in package.xml, but not in metadata
+      await $$.mocks.stubMetadataRetrieve('missing-file');
+
+      // Act
+      const permsets = await mdapi.resolve('PermissionSet', [
+        'Test_Admin_Permission_Set_1',
+        'Test_Admin_Permission_Set_2',
+      ]);
+
+      // Assert
+      expect(Object.keys(permsets)).to.deep.equal(['Test_Admin_Permission_Set_1']);
+    });
+
+    it('ignores named entity when retrieved file is corrupted (no valid XML)', async () => {
+      // Arrange
+      // file is in package.xml, but not in metadata
+      await $$.mocks.stubMetadataRetrieve('corrupted-file');
+
+      // Act
+      const permsets = await mdapi.resolve('PermissionSet', ['Test_Admin_Permission_Set_1']);
+
+      // Assert
+      expect(Object.keys(permsets)).to.deep.equal([]);
+    });
+
     it('returns strongly typed content of retrieved permission sets', async () => {
       // Arrange
       const retrieveStub = await $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const permSetNames = ['Test_Admin_Permission_Set_1', 'Test_Standard_User_Permission_Set_1'];
       const permsets = await mdapi.resolve('PermissionSet', permSetNames);
 
@@ -88,7 +135,6 @@ describe('mdapi retriever', () => {
       const retrieveStub = await $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const settings = await mdapi.resolveSingleton('ConnectedAppSettings');
 
       // Assert
@@ -101,7 +147,6 @@ describe('mdapi retriever', () => {
       const retrieveStub = await $$.mocks.stubMetadataRetrieve('default-permsets');
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const permSetNames = ['Test_Admin_Permission_Set_1', 'Test_Standard_User_Permission_Set_1'];
       const permsets = await mdapi.resolve('PermissionSet', permSetNames);
       const permsets2 = await mdapi.resolve('PermissionSet', ['Test_Admin_Permission_Set_1']);
@@ -119,7 +164,6 @@ describe('mdapi retriever', () => {
       const retrieveStub = await $$.mocks.stubMetadataRetrieve('security-settings');
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const settings = await mdapi.resolveSingleton('ConnectedAppSettings');
       const settings2 = await mdapi.resolveSingleton('ConnectedAppSettings');
 
@@ -131,7 +175,6 @@ describe('mdapi retriever', () => {
 
     it('resolves valid profile entities from tooling API by name', async () => {
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const profiles = await mdapi.resolve('Profile', ['System Administrator', 'Standard User']);
 
       // Assert
@@ -148,7 +191,6 @@ describe('mdapi retriever', () => {
       );
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const profiles = await mdapi.resolve('Profile', ['Custom Profile']);
 
       // Assert
@@ -157,7 +199,6 @@ describe('mdapi retriever', () => {
 
     it('cleans up temporary retrieve files after doing the deed', async () => {
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       await mdapi.resolveSingleton('ConnectedAppSettings');
 
       // Assert
@@ -172,7 +213,6 @@ describe('mdapi retriever', () => {
       await $$.mocks.stubMetadataRetrieve('empty');
 
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       try {
         await mdapi.resolveSingleton('ConnectedAppSettings');
         expect.fail('Expected error, but succeeded');
@@ -188,7 +228,6 @@ describe('mdapi retriever', () => {
 
     it('retrieves a list of valid settings and resolves their contents by name', async () => {
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const settings = await mdapi.resolve('Settings', ['Apex', 'Security', 'UserInterface']);
 
       // Assert
@@ -216,7 +255,6 @@ describe('mdapi retriever', () => {
 
     it('ignores invalid setting names and does not throw an error', async () => {
       // Act
-      const mdapi = new MDAPI($$.targetOrgConnection);
       const settings = await mdapi.resolve('Settings', ['Apex', 'SomethingUnknown', 'AgentforceBot']);
 
       // Assert

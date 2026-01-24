@@ -36,9 +36,12 @@ export default class SingletonMetadata<Type, Key extends keyof Type> extends Met
   }
 
   private returnRetrieveType(components: ComponentRetrieveResult['retrievedComponents']): Type[Key] {
-    if (components.length > 0) {
-      const rawFileContent = components[0].fileContent;
-      return this.extract(rawFileContent);
+    const retrievedComponent = components[this.retrieveType]?.[this.retrieveName];
+    if (retrievedComponent) {
+      const contents = this.extract(retrievedComponent.fileContent);
+      if (contents) {
+        return contents;
+      }
     }
     throw messages.createError('error.FailedToRetrieveComponent', [`${this.retrieveName}.${this.retrieveType}`]);
   }

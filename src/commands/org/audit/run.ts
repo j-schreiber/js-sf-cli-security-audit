@@ -11,6 +11,7 @@ import {
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
 import { startAuditRun } from '../../../libs/audit-engine/index.js';
+import { envVars } from '../../../ux/environment.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -38,9 +39,14 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       required: false,
       char: 'd',
       summary: messages.getMessage('flags.source-dir.summary'),
+      description: messages.getMessage('flags.source-dir.description'),
       default: '',
     }),
     'api-version': Flags.orgApiVersion(),
+    verbose: Flags.boolean({
+      summary: messages.getMessage('flags.verbose.summary'),
+      description: messages.getMessage('flags.verbose.description'),
+    }),
   };
 
   public async run(): Promise<OrgAuditRunResult> {
@@ -58,16 +64,16 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
     stageOutput.finish();
-    this.printResults(result);
+    this.printResults(result, flags['verbose']);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };
   }
 
-  private printResults(result: AuditResult): void {
+  private printResults(result: AuditResult, isVerbose: boolean): void {
     this.printPoliciesSummary(result);
     for (const [policyName, policyDetails] of Object.entries(result.policies)) {
       this.printExecutedRulesSummary(policyName, policyDetails);
-      this.printRuleViolations(policyDetails.executedRules);
+      this.printRuleViolations(policyDetails.executedRules, isVerbose);
     }
   }
 
@@ -97,18 +103,24 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     }
   }
 
-  private printRuleViolations(executedRules: Record<string, PolicyRuleExecutionResult>): void {
+  private printRuleViolations(executedRules: Record<string, PolicyRuleExecutionResult>, isVerbose: boolean): void {
+    const maxLength = envVars.resolve('SAE_MAX_RESULT_VIOLATION_ROWS')!;
     for (const uncompliantRule of Object.values(executedRules).filter((ruleDetails) => !ruleDetails.isCompliant)) {
+      const data = uncompliantRule.violations.map((viol) => ({
+        ...viol,
+        identifier:
+          typeof viol.identifier === 'string'
+            ? formatToLocale(viol.identifier)
+            : viol.identifier.map((id) => formatToLocale(id)).join(MERGE_CHAR),
+      }));
       this.table({
-        data: uncompliantRule.violations.map((viol) => ({
-          ...viol,
-          identifier:
-            typeof viol.identifier === 'string'
-              ? formatToLocale(viol.identifier)
-              : viol.identifier.map((id) => formatToLocale(id)).join(MERGE_CHAR),
-        })),
+        data: isVerbose ? data : data.slice(0, maxLength),
         title: `Violations for ${uncompliantRule.ruleName}`,
       });
+      if (data.length > maxLength && !isVerbose) {
+        this.info(messages.getMessage('info.RemovedViolationRows', [maxLength, data.length]));
+        this.info('');
+      }
     }
   }
 
