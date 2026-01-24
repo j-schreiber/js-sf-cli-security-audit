@@ -3,6 +3,7 @@ import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
 import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { Connection } from '@salesforce/core';
+import { isNullish } from '../../utils.js';
 import { RETRIEVE_CACHE } from './constants.js';
 
 export type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
@@ -37,8 +38,10 @@ export type ComponentRetrieveResult = {
   packageName: string;
   retrievePath: string;
   mdapiRetrieveResult: RetrieveResult;
-  retrievedComponents: MdapiComponent[];
+  retrievedComponents: MdapiComponentDictionary;
 };
+
+type MdapiComponentDictionary = Record<string, Record<string, MdapiComponent>>;
 
 type MdapiComponent = {
   /**
@@ -53,6 +56,10 @@ type MdapiComponent = {
    * Unique identifier of the retrieved metadata type
    */
   identifier: string;
+  /**
+   * Type of the metadata, identical to "retrieveType"
+   */
+  metadataType: string;
 };
 
 export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type> {
@@ -66,17 +73,21 @@ export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type
     this.rootNodeName = this.opts.rootNodeName;
   }
 
-  public parse(filePath: string): Type[Key] {
+  public parse(filePath: string): Type[Key] | undefined {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     return this.extract(fileContent);
   }
 
-  public extract(rawFileContent: string): Type[Key] {
+  public extract(rawFileContent: string): Type[Key] | undefined {
     const parsedContent = this.parser.parse(rawFileContent) as Type;
-    if (this.opts.parsePostProcessor) {
-      return this.opts.parsePostProcessor(parsedContent[this.rootNodeName]);
+    const metadataBody = parsedContent[this.rootNodeName];
+    if (isNullish(metadataBody)) {
+      return;
     }
-    return parsedContent[this.rootNodeName];
+    if (this.opts.parsePostProcessor) {
+      return this.opts.parsePostProcessor(metadataBody);
+    }
+    return metadataBody;
   }
 }
 
@@ -103,10 +114,13 @@ export async function retrieve(compSet: ComponentSet, con: Connection): Promise<
   };
 }
 
-export async function parseRetrievedComponents(retrievePath: string): Promise<MdapiComponent[]> {
+async function parseRetrievedComponents(retrievePath: string): Promise<MdapiComponentDictionary> {
   const cmpSet = await ComponentSet.fromManifest(path.join(retrievePath, 'package.xml'));
-  const parsedComponents: MdapiComponent[] = [];
+  const parsedComponents: MdapiComponentDictionary = {};
   for (const mdcmp of cmpSet.toArray()) {
+    if (!parsedComponents[mdcmp.type.name]) {
+      parsedComponents[mdcmp.type.name] = {};
+    }
     const filePath = path.join(
       retrievePath,
       mdcmp.type.directoryName,
@@ -114,11 +128,14 @@ export async function parseRetrievedComponents(retrievePath: string): Promise<Md
     );
     if (fs.existsSync(filePath)) {
       const fileContent = fs.readFileSync(filePath, 'utf-8');
-      parsedComponents.push({
-        filePath,
-        identifier: mdcmp.fullName,
-        fileContent,
-      });
+      if (fileContent && fileContent.length > 1) {
+        parsedComponents[mdcmp.type.name][mdcmp.fullName] = {
+          metadataType: mdcmp.type.name,
+          filePath,
+          identifier: mdcmp.fullName,
+          fileContent,
+        };
+      }
     }
   }
   return parsedComponents;

@@ -32,17 +32,21 @@ export default class NamedMetadata<Type, Key extends keyof Type> extends Metadat
 
   private parseSourceFiles(
     components: ComponentRetrieveResult['retrievedComponents'],
-    retrievedNames: string[]
+    requestedNames: string[]
   ): Record<string, Type[Key]> {
     const result: Record<string, Type[Key]> = {};
-    components.forEach((sourceComponent) => {
-      if (sourceComponent.filePath && retrievedNames.includes(sourceComponent.identifier)) {
+    for (const requestedName of requestedNames) {
+      const retrievedType = components[this.retrieveType]?.[requestedName];
+      if (retrievedType?.filePath) {
         // the available method parseXmlSync on source component does not
         // resolve the "rootNodeProblem" from XML. Therefore, we implement
         // our own method to parse and return the "inner xml".
-        result[sourceComponent.identifier] = this.extract(sourceComponent.fileContent);
+        const contents = this.extract(retrievedType.fileContent);
+        if (contents) {
+          result[retrievedType.identifier] = contents;
+        }
       }
-    });
+    }
     return result;
   }
 }
