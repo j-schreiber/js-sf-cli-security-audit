@@ -2,6 +2,7 @@ import path from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { assert, expect } from 'chai';
 import { OrgUserPermScanResult } from '../../src/commands/org/scan/user-perms.js';
+import { fixDevHubAuth } from '../mocks/authHelper.js';
 
 const scratchOrgAlias = 'QuickScanNutsOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
@@ -10,6 +11,9 @@ describe('org quick-scan NUTs', () => {
   let session: TestSession;
 
   before(async () => {
+    if (process.env.TESTKIT_JWT_CLIENT_ID) {
+      fixDevHubAuth();
+    }
     session = await TestSession.create({
       project: {
         name: 'orgQuickScanNuts',
@@ -25,6 +29,7 @@ describe('org quick-scan NUTs', () => {
         },
       ],
     });
+    assert.isDefined(session.hubOrg.username);
   });
 
   after(async () => {
