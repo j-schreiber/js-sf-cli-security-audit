@@ -375,5 +375,17 @@ describe('settings policy', () => {
         },
       ]);
     });
+
+    it('reports correct ignored entity message for skipped rule', async () => {
+      // Act
+      defaultConfig.rules.EnforceApexSettings.enabled = false;
+      const result = await run(defaultConfig);
+
+      // Assert
+      expect(result.ignoredEntities).to.deep.equal([
+        { name: 'Apex', message: messages.getMessage('skip-reason.rule-not-enabled') },
+      ]);
+      expect(result.auditedEntities).to.deep.equal(['Security']);
+    });
   });
 });

@@ -49,6 +49,10 @@ export class SettingsRuleRegistry extends RuleRegistry {
   }
 }
 
+/**
+ * Settings policy derives its entities from the rules it has configured. Rules and
+ * entities directly correlate. If a rule is skipped, the corresponding entity is ignored.
+ */
 export default class SettingsPolicy extends Policy<SalesforceSetting> {
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig) {
     super(config, auditConfig, new SettingsRuleRegistry());
@@ -111,6 +115,10 @@ function findIgnoredEntities(
   for (const ruleName of Object.keys(rules)) {
     const maybeName = findSettingsName(ruleName);
     if (!maybeName) {
+      continue;
+    }
+    if (!rules[ruleName].enabled) {
+      result.push({ name: maybeName, message: messages.getMessage('skip-reason.rule-not-enabled') });
       continue;
     }
     if (!settingsMap[maybeName]) {
