@@ -1,20 +1,33 @@
 import fs from 'node:fs';
 import { assert } from 'chai';
-import { execCmd } from '@salesforce/cli-plugins-testkit';
+import { AuthFields, AuthInfo } from '@salesforce/core';
 
 /**
- * Attempt to fix the recurring, non-deterministic failure of NamedOrgNotFoundError
- * in NUTs: For some reason, the NUTs tests occasionally fail. Instead of building
- * my own pipeline, I'll try to manually set auth in test before hooks.
+ * This shouldn't be needed, but apparently it is. Occasionally, NUT tests
+ * fail in CI context (preferrably on Sundays, need to investigate if this
+ * is somehow related).
+ *
+ * Manually creates auth files for the DevHub from JWT env-params, before
+ * the TestSession.create() is executed.
  */
-export function fixDevHubAuth(): void {
+export async function fixDevHubAuthFromJWT(): Promise<AuthFields> {
   assert.isDefined(process.env.TESTKIT_JWT_KEY);
   assert.isDefined(process.env.TESTKIT_JWT_CLIENT_ID);
   assert.isDefined(process.env.TESTKIT_HUB_USERNAME);
+  assert.isDefined(process.env.TESTKIT_HUB_INSTANCE);
   const keyFile = './server.key';
   fs.writeFileSync(keyFile, process.env.TESTKIT_JWT_KEY);
-  execCmd(
-    `org login jwt --client-id ${process.env.TESTKIT_JWT_CLIENT_ID} --jwt-key-file ${keyFile} --username ${process.env.TESTKIT_HUB_USERNAME} --set-default-dev-hub`,
-    { ensureExitCode: 0 }
-  ).jsonOutput?.result;
+  const oauthOptions = {
+    clientId: process.env.TESTKIT_JWT_CLIENT_ID,
+    privateKeyFile: keyFile,
+    loginUrl: process.env.TESTKIT_HUB_INSTANCE,
+    username: process.env.TESTKIT_HUB_USERNAME,
+  };
+  const authInfo = await AuthInfo.create(oauthOptions);
+  await authInfo.save();
+  await authInfo.handleAliasAndDefaultSettings({
+    setDefault: false,
+    setDefaultDevHub: true,
+  });
+  return authInfo.getFields(true);
 }

@@ -5,6 +5,7 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
 import { ConfigFileManager, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
+import { fixDevHubAuthFromJWT } from '../mocks/authHelper.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';
@@ -42,6 +43,10 @@ describe('org audit NUTs', () => {
   }
 
   before(async () => {
+    if (process.env.TESTKIT_JWT_CLIENT_ID) {
+      const authFields = await fixDevHubAuthFromJWT();
+      assert.isDefined(authFields.username);
+    }
     session = await TestSession.create({
       project: {
         name: 'orgAuditNuts',

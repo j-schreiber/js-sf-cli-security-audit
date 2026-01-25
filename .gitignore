@@ -54,6 +54,9 @@ oclif.lock
 .wireit
 node_modules
 
+# sensitive data
+server.key
+
 # --
 # put files here you don't want cleaned with sf-clean
 
