@@ -138,10 +138,14 @@ describe('settings policy', () => {
   });
 
   describe('resolve policy', () => {
+    function resolve(conf: PolicyConfig): ReturnType<SettingsPolicy['resolve']> {
+      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
+      return pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+    }
+
     it('interprets each valid rule as an entity and resolves them in bulk', async () => {
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -153,8 +157,7 @@ describe('settings policy', () => {
       defaultConfig.rules['SomeInvalidRuleName'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -166,8 +169,7 @@ describe('settings policy', () => {
       defaultConfig.rules['EnforceSomeInvalidSettings'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([
@@ -178,8 +180,7 @@ describe('settings policy', () => {
 
     it('gracefully skips policy metadata retrieve if it has no rules', async () => {
       // Act
-      const pol = new SettingsPolicy({ enabled: true, rules: {} }, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve({ enabled: true, rules: {} });
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
@@ -191,11 +192,7 @@ describe('settings policy', () => {
     it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
       // Act
       // valid name would be EnforceApexSettings (mind the trailing "s")
-      const pol = new SettingsPolicy(
-        { enabled: true, rules: { EnforceApexSetting: { enabled: true } } },
-        $$.mockAuditConfig
-      );
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve({ enabled: true, rules: { EnforceApexSetting: { enabled: true } } });
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
