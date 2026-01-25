@@ -90,7 +90,7 @@
     "prepack": "sf-prepack",
     "test": "wireit",
     "test:nuts": "nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --parallel",
-    "debug:nuts": "yarn build && nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --inspect",
+    "debug:nuts": "yarn build && nyc mocha \"**/*.nut.ts\" --slow 4500 --timeout 600000 --inspect-brk",
     "test:only": "wireit",
     "readme": "wireit",
     "prepare": "husky",

@@ -32,6 +32,7 @@ describe('settings policy', () => {
         },
       },
     };
+    $$.mockAuditConfig.policies.settings = defaultConfig;
     await $$.init();
   });
 
@@ -138,10 +139,21 @@ describe('settings policy', () => {
   });
 
   describe('resolve policy', () => {
+    let resolveListener: ReturnType<(typeof $$)['context']['SANDBOX']['stub']>;
+
+    beforeEach(() => {
+      resolveListener = $$.context.SANDBOX.stub();
+    });
+
+    function resolve(conf: PolicyConfig): ReturnType<SettingsPolicy['resolve']> {
+      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
+      pol.addListener('entityresolve', resolveListener);
+      return pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+    }
+
     it('interprets each valid rule as an entity and resolves them in bulk', async () => {
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -153,8 +165,7 @@ describe('settings policy', () => {
       defaultConfig.rules['SomeInvalidRuleName'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -166,8 +177,7 @@ describe('settings policy', () => {
       defaultConfig.rules['EnforceSomeInvalidSettings'] = { enabled: true };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve(defaultConfig);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([
@@ -178,24 +188,32 @@ describe('settings policy', () => {
 
     it('gracefully skips policy metadata retrieve if it has no rules', async () => {
       // Act
-      const pol = new SettingsPolicy({ enabled: true, rules: {} }, $$.mockAuditConfig);
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve({ enabled: true, rules: {} });
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
       // metadata retrieve fails with an error, if the retrieved component set is empty
       // Error (MetadataApiRetrieveError): No components in the package to retrieve.
       expect($$.mocks.retrieveStub?.callCount).to.equal(0);
+    });
+
+    it('skips metadata retrieve of a valid setting if the rule is disabled', async () => {
+      // Act
+      defaultConfig.rules.EnforceApexSettings.enabled = false;
+      const result = await resolve(defaultConfig);
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security']);
+      expect(resolveListener.args.flat()).to.deep.equal([
+        { resolved: 0, total: 1 },
+        { resolved: 1, total: 1 },
+      ]);
     });
 
     it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
       // Act
       // valid name would be EnforceApexSettings (mind the trailing "s")
-      const pol = new SettingsPolicy(
-        { enabled: true, rules: { EnforceApexSetting: { enabled: true } } },
-        $$.mockAuditConfig
-      );
-      const result = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await resolve({ enabled: true, rules: { EnforceApexSetting: { enabled: true } } });
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
@@ -203,13 +221,39 @@ describe('settings policy', () => {
       // Error (MetadataApiRetrieveError): No components in the package to retrieve.
       expect($$.mocks.retrieveStub?.callCount).to.equal(0);
     });
+
+    it('correctly reports resolve status for unknown settings on org', async () => {
+      // Arrange
+      // this stub only returns "ConnectedApp" settings
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+
+      // Act
+      // config now has three enabled rules
+      defaultConfig.rules['EnforceConnectedAppSettings'] = { enabled: true };
+      const result = await resolve(defaultConfig);
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['ConnectedApp']);
+      expect(result.ignoredEntities).to.have.deep.members([
+        { name: 'Security', message: messages.getMessage('resolve-error.failed-to-resolve-setting') },
+        { name: 'Apex', message: messages.getMessage('resolve-error.failed-to-resolve-setting') },
+      ]);
+      expect(resolveListener.args.flat()).to.deep.equal([
+        { resolved: 0, total: 3 },
+        { resolved: 1, total: 3 },
+      ]);
+    });
   });
 
   describe('run policy', () => {
+    function run(conf: PolicyConfig): ReturnType<SettingsPolicy['run']> {
+      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
+      return pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    }
+
     it('resolves settings for valid rules and enforces plain setting options', async () => {
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       expect(Object.keys(result.executedRules)).to.deep.equal(['EnforceSecuritySettings', 'EnforceApexSettings']);
@@ -244,8 +288,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(config, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(config);
 
       // Assert
       const secResult = result.executedRules.EnforceSecuritySettings;
@@ -273,8 +316,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       const apexResult = result.executedRules.EnforceApexSettings;
@@ -299,8 +341,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       expect(result.skippedRules).to.deep.equal([
@@ -311,18 +352,14 @@ describe('settings policy', () => {
 
     it('reports a rule that does not resolve to a valid setting as skipped', async () => {
       // Act
-      const pol = new SettingsPolicy(
-        {
-          enabled: true,
-          rules: {
-            EnforceInvalidSettings: { enabled: true },
-            EnforceApexSettings: { enabled: true },
-            EnforceOtherInvalidSettings: { enabled: true },
-          },
+      const result = await run({
+        enabled: true,
+        rules: {
+          EnforceInvalidSettings: { enabled: true },
+          EnforceApexSettings: { enabled: true },
+          EnforceOtherInvalidSettings: { enabled: true },
         },
-        $$.mockAuditConfig
-      );
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      });
 
       // Assert
       expect(result.auditedEntities).to.deep.equal(['Apex']);
@@ -337,6 +374,18 @@ describe('settings policy', () => {
           skipReason: messages.getMessage('skip-reason.failed-to-resolve-setting', ['OtherInvalid']),
         },
       ]);
+    });
+
+    it('reports correct ignored entity message for skipped rule', async () => {
+      // Act
+      defaultConfig.rules.EnforceApexSettings.enabled = false;
+      const result = await run(defaultConfig);
+
+      // Assert
+      expect(result.ignoredEntities).to.deep.equal([
+        { name: 'Apex', message: messages.getMessage('skip-reason.rule-not-enabled') },
+      ]);
+      expect(result.auditedEntities).to.deep.equal(['Security']);
     });
   });
 });

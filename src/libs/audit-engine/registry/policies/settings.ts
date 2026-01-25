@@ -49,24 +49,27 @@ export class SettingsRuleRegistry extends RuleRegistry {
   }
 }
 
+/**
+ * Settings policy derives its entities from the rules it has configured. Rules and
+ * entities directly correlate. If a rule is skipped, the corresponding entity is ignored.
+ */
 export default class SettingsPolicy extends Policy<SalesforceSetting> {
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig) {
     super(config, auditConfig, new SettingsRuleRegistry());
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<SalesforceSetting>> {
-    const numberOfRules = Object.keys(this.config.rules).length;
+    const legitSettings = getSettingsFromEnabledRules(this.config.rules);
     this.emit('entityresolve', {
-      total: numberOfRules,
+      total: legitSettings.length,
       resolved: 0,
     });
-    const settingNames = extractSettingNames(this.config.rules);
     const settingsRetriever = MDAPI.create(context.targetOrgConnection);
-    const actuallyResolvedSettings = await settingsRetriever.resolve('Settings', settingNames);
+    const actuallyResolvedSettings = await settingsRetriever.resolve('Settings', legitSettings);
     this.removeInvalidSettingsFromResolvedRules(actuallyResolvedSettings);
     this.emit('entityresolve', {
-      total: numberOfRules,
-      resolved: actuallyResolvedSettings.size,
+      total: legitSettings.length,
+      resolved: Object.keys(actuallyResolvedSettings).length,
     });
     return {
       resolvedEntities: actuallyResolvedSettings,
@@ -89,6 +92,17 @@ export default class SettingsPolicy extends Policy<SalesforceSetting> {
   }
 }
 
+function getSettingsFromEnabledRules(rules: PolicyConfig['rules']): string[] {
+  const settings = [];
+  for (const [ruleName, ruleConfig] of Object.entries(rules)) {
+    const maybeSettingName = findSettingsName(ruleName);
+    if (maybeSettingName && ruleConfig.enabled) {
+      settings.push(maybeSettingName);
+    }
+  }
+  return settings;
+}
+
 function isEnforceSettingsRule(cls: unknown): cls is EnforceSettings {
   return (cls as EnforceSettings).ruleDisplayName !== undefined;
 }
@@ -103,22 +117,15 @@ function findIgnoredEntities(
     if (!maybeName) {
       continue;
     }
+    if (!rules[ruleName].enabled) {
+      result.push({ name: maybeName, message: messages.getMessage('skip-reason.rule-not-enabled') });
+      continue;
+    }
     if (!settingsMap[maybeName]) {
       result.push({ name: maybeName, message: messages.getMessage('resolve-error.failed-to-resolve-setting') });
     }
   }
   return result;
-}
-
-function extractSettingNames(rules: PolicyConfig['rules']): string[] {
-  const names = [];
-  for (const ruleName of Object.keys(rules)) {
-    const maybeName = findSettingsName(ruleName);
-    if (maybeName) {
-      names.push(maybeName);
-    }
-  }
-  return names;
 }
 
 function findSettingsName(ruleName: string): string | null {
