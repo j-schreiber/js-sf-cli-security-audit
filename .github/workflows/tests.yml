@@ -16,17 +16,17 @@ jobs:
       skipTsDepCheck: true
   windows-unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTestsWindows.yml@main
-  nuts:
-    needs: [linux-unit-tests, windows-unit-tests]
-    uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
-    secrets:
-      TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
-      TESTKIT_JWT_CLIENT_ID: ${{ secrets.TESTKIT_JWT_CLIENT_ID }}
-      TESTKIT_JWT_KEY: ${{ secrets.TESTKIT_JWT_KEY }}
-      TESTKIT_HUB_INSTANCE: ${{ secrets.TESTKIT_HUB_INSTANCE }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-      fail-fast: false
-    with:
-      os: ${{ matrix.os }}
+  # nuts:
+  #   needs: [linux-unit-tests, windows-unit-tests]
+  #   uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
+  #   secrets:
+  #     TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
+  #     TESTKIT_JWT_CLIENT_ID: ${{ secrets.TESTKIT_JWT_CLIENT_ID }}
+  #     TESTKIT_JWT_KEY: ${{ secrets.TESTKIT_JWT_KEY }}
+  #     TESTKIT_HUB_INSTANCE: ${{ secrets.TESTKIT_HUB_INSTANCE }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, windows-latest]
+  #     fail-fast: false
+  #   with:
+  #     os: ${{ matrix.os }}

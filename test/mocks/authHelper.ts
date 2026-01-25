@@ -31,6 +31,7 @@ export async function fixDevHubAuthFromJWT(): Promise<AuthFields> {
     setDefault: false,
     setDefaultDevHub: true,
   });
+  fs.rmSync(privateKeyFile, { force: true });
   return authInfo.getFields(true);
 }
 
