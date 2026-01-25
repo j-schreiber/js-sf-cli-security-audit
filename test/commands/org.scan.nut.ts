@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { AuthFields } from '@salesforce/core';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { assert, expect } from 'chai';
 import { OrgUserPermScanResult } from '../../src/commands/org/scan/user-perms.js';
@@ -9,10 +10,11 @@ const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 
 describe('org quick-scan NUTs', () => {
   let session: TestSession;
+  let authFields: AuthFields;
 
   before(async () => {
     if (process.env.TESTKIT_JWT_CLIENT_ID) {
-      const authFields = await fixDevHubAuthFromJWT();
+      authFields = await fixDevHubAuthFromJWT();
       assert.isDefined(authFields.username);
     }
     session = await TestSession.create({
@@ -20,7 +22,7 @@ describe('org quick-scan NUTs', () => {
         name: 'orgQuickScanNuts',
         sourceDir: testingWorkingDir,
       },
-      devhubAuthStrategy: 'AUTO',
+      ...(authFields ? { hubOrg: authFields } : { devhubAuthStrategy: 'AUTO' }),
       scratchOrgs: [
         {
           alias: scratchOrgAlias,
