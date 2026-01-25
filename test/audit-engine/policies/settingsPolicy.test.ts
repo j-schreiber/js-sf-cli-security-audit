@@ -32,6 +32,7 @@ describe('settings policy', () => {
         },
       },
     };
+    $$.mockAuditConfig.policies.settings = defaultConfig;
     await $$.init();
   });
 
@@ -138,8 +139,15 @@ describe('settings policy', () => {
   });
 
   describe('resolve policy', () => {
+    let resolveListener: ReturnType<(typeof $$)['context']['SANDBOX']['stub']>;
+
+    beforeEach(() => {
+      resolveListener = $$.context.SANDBOX.stub();
+    });
+
     function resolve(conf: PolicyConfig): ReturnType<SettingsPolicy['resolve']> {
       const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
+      pol.addListener('entityresolve', resolveListener);
       return pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
     }
 
@@ -189,6 +197,19 @@ describe('settings policy', () => {
       expect($$.mocks.retrieveStub?.callCount).to.equal(0);
     });
 
+    it('skips metadata retrieve of a valid setting if the rule is disabled', async () => {
+      // Act
+      defaultConfig.rules.EnforceApexSettings.enabled = false;
+      const result = await resolve(defaultConfig);
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security']);
+      expect(resolveListener.args.flat()).to.deep.equal([
+        { resolved: 0, total: 1 },
+        { resolved: 1, total: 1 },
+      ]);
+    });
+
     it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
       // Act
       // valid name would be EnforceApexSettings (mind the trailing "s")
@@ -199,6 +220,28 @@ describe('settings policy', () => {
       // metadata retrieve fails with an error, if the retrieved component set is empty
       // Error (MetadataApiRetrieveError): No components in the package to retrieve.
       expect($$.mocks.retrieveStub?.callCount).to.equal(0);
+    });
+
+    it('correctly reports resolve status for unknown settings on org', async () => {
+      // Arrange
+      // this stub only returns "ConnectedApp" settings
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+
+      // Act
+      // config now has three enabled rules
+      defaultConfig.rules['EnforceConnectedAppSettings'] = { enabled: true };
+      const result = await resolve(defaultConfig);
+
+      // Assert
+      expect(Object.keys(result.resolvedEntities)).to.deep.equal(['ConnectedApp']);
+      expect(result.ignoredEntities).to.have.deep.members([
+        { name: 'Security', message: messages.getMessage('resolve-error.failed-to-resolve-setting') },
+        { name: 'Apex', message: messages.getMessage('resolve-error.failed-to-resolve-setting') },
+      ]);
+      expect(resolveListener.args.flat()).to.deep.equal([
+        { resolved: 0, total: 3 },
+        { resolved: 1, total: 3 },
+      ]);
     });
   });
 
