@@ -57,6 +57,7 @@
     "sfdx",
     "sfdx-plugin"
   ],
+  "license": "SEE LICENSE IN LICENSE.md",
   "oclif": {
     "commands": "./lib/commands",
     "bin": "sf",
