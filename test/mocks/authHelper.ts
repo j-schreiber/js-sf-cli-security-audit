@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { assert } from 'chai';
 import { AuthFields, AuthInfo } from '@salesforce/core';
 
@@ -15,15 +14,15 @@ export async function fixDevHubAuthFromJWT(): Promise<AuthFields> {
   assert.isDefined(process.env.TESTKIT_JWT_CLIENT_ID);
   assert.isDefined(process.env.TESTKIT_HUB_USERNAME);
   assert.isDefined(process.env.TESTKIT_HUB_INSTANCE);
-  const keyFile = './server.key';
-  fs.writeFileSync(keyFile, process.env.TESTKIT_JWT_KEY);
-  const oauthOptions = {
-    clientId: process.env.TESTKIT_JWT_CLIENT_ID,
-    privateKeyFile: keyFile,
-    loginUrl: process.env.TESTKIT_HUB_INSTANCE,
+  const authInfo = await AuthInfo.create({
     username: process.env.TESTKIT_HUB_USERNAME,
-  };
-  const authInfo = await AuthInfo.create(oauthOptions);
+    isDevHub: true,
+    oauth2Options: {
+      clientId: process.env.TESTKIT_JWT_CLIENT_ID,
+      privateKey: process.env.TESTKIT_JWT_KEY,
+      loginUrl: process.env.TESTKIT_HUB_INSTANCE,
+    },
+  });
   await authInfo.save();
   await authInfo.handleAliasAndDefaultSettings({
     setDefault: false,
