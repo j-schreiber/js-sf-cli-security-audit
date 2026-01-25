@@ -57,7 +57,6 @@
     "sfdx",
     "sfdx-plugin"
   ],
-  "license": "BSD-3-Clause",
   "oclif": {
     "commands": "./lib/commands",
     "bin": "sf",
