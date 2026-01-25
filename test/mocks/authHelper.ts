@@ -14,7 +14,7 @@ export function fixDevHubAuth(): void {
   const keyFile = './server.key';
   fs.writeFileSync(keyFile, process.env.TESTKIT_JWT_KEY);
   execCmd(
-    `sf org login jwt --client-id ${process.env.TESTKIT_JWT_CLIENT_ID} --jwt-key-file ${keyFile} --username ${process.env.TESTKIT_HUB_USERNAME} --set-default-dev-hub`,
+    `org login jwt --client-id ${process.env.TESTKIT_JWT_CLIENT_ID} --jwt-key-file ${keyFile} --username ${process.env.TESTKIT_HUB_USERNAME} --set-default-dev-hub`,
     { ensureExitCode: 0 }
   ).jsonOutput?.result;
 }
