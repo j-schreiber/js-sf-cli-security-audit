@@ -246,10 +246,14 @@ describe('settings policy', () => {
   });
 
   describe('run policy', () => {
+    function run(conf: PolicyConfig): ReturnType<SettingsPolicy['run']> {
+      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
+      return pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    }
+
     it('resolves settings for valid rules and enforces plain setting options', async () => {
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       expect(Object.keys(result.executedRules)).to.deep.equal(['EnforceSecuritySettings', 'EnforceApexSettings']);
@@ -284,8 +288,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(config, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(config);
 
       // Assert
       const secResult = result.executedRules.EnforceSecuritySettings;
@@ -313,8 +316,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       const apexResult = result.executedRules.EnforceApexSettings;
@@ -339,8 +341,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const pol = new SettingsPolicy(defaultConfig, $$.mockAuditConfig);
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      const result = await run(defaultConfig);
 
       // Assert
       expect(result.skippedRules).to.deep.equal([
@@ -351,18 +352,14 @@ describe('settings policy', () => {
 
     it('reports a rule that does not resolve to a valid setting as skipped', async () => {
       // Act
-      const pol = new SettingsPolicy(
-        {
-          enabled: true,
-          rules: {
-            EnforceInvalidSettings: { enabled: true },
-            EnforceApexSettings: { enabled: true },
-            EnforceOtherInvalidSettings: { enabled: true },
-          },
+      const result = await run({
+        enabled: true,
+        rules: {
+          EnforceInvalidSettings: { enabled: true },
+          EnforceApexSettings: { enabled: true },
+          EnforceOtherInvalidSettings: { enabled: true },
         },
-        $$.mockAuditConfig
-      );
-      const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+      });
 
       // Assert
       expect(result.auditedEntities).to.deep.equal(['Apex']);
