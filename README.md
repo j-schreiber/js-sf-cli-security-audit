@@ -1,5 +1,10 @@
 # @j-schreiber/sf-cli-security-audit
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/@j-schreiber/sf-cli-security-audit"><img src="https://img.shields.io/npm/v/@j-schreiber/sf-cli-security-audit.svg?logo=npm" alt="NPM version"/></a>
+  <a href="https://github.com/j-schreiber/js-sf-cli-security-audit/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-blue" alt="License"></a>
+</p>
+
 > This plugin is still in beta and under active development. Command signatures and directory structures can change.
 
 To go beyond command signatures and learn about the concepts, design decisions, and a variety of use cases [see the official docs](https://securityauditengine.org/docs).
