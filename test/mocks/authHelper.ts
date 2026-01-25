@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { assert } from 'chai';
-import { AuthFields, AuthInfo } from '@salesforce/core';
+import { AuthFields, AuthInfo, AuthRemover, SfError } from '@salesforce/core';
 
 /**
  * This shouldn't be needed, but apparently it is. Occasionally, NUT tests
@@ -17,7 +17,7 @@ export async function fixDevHubAuthFromJWT(): Promise<AuthFields> {
   assert.isDefined(process.env.TESTKIT_HUB_INSTANCE);
   const privateKeyFile = './server.key';
   fs.writeFileSync(privateKeyFile, process.env.TESTKIT_JWT_KEY);
-  const authInfo = await AuthInfo.create({
+  const authInfo = await createOrOverwriteAuthInfo({
     username: process.env.TESTKIT_HUB_USERNAME,
     isDevHub: true,
     oauth2Options: {
@@ -32,4 +32,21 @@ export async function fixDevHubAuthFromJWT(): Promise<AuthFields> {
     setDefaultDevHub: true,
   });
   return authInfo.getFields(true);
+}
+
+async function createOrOverwriteAuthInfo(opts: AuthInfo.Options): Promise<AuthInfo> {
+  let authInfo: AuthInfo;
+  try {
+    authInfo = await AuthInfo.create(opts);
+  } catch (error) {
+    const err = error as SfError;
+    if (err.name === 'AuthInfoOverwriteError') {
+      const remover = await AuthRemover.create();
+      await remover.removeAuth(opts.username!);
+      authInfo = await AuthInfo.create(opts);
+    } else {
+      throw err;
+    }
+  }
+  return authInfo;
 }
