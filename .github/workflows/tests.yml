@@ -9,6 +9,9 @@ on:
     branches-ignore: [main]
   workflow_dispatch:
 
+env:
+  DEBUG: '*'
+
 jobs:
   linux-unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTestsLinux.yml@main
@@ -30,4 +33,3 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
-      env: DEBUG:*
