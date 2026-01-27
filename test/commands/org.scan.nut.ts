@@ -12,7 +12,6 @@ describe('org quick-scan NUTs', () => {
   before(async () => {
     session = await TestSession.create({
       project: {
-        name: 'orgQuickScanNuts',
         sourceDir: testingWorkingDir,
       },
       devhubAuthStrategy: 'AUTO',

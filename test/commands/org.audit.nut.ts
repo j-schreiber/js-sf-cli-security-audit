@@ -44,7 +44,6 @@ describe('org audit NUTs', () => {
   before(async () => {
     session = await TestSession.create({
       project: {
-        name: 'orgAuditNuts',
         sourceDir: testingWorkingDir,
       },
       devhubAuthStrategy: 'AUTO',
