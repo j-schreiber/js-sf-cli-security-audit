@@ -19,9 +19,9 @@ jobs:
       skipTsDepCheck: true
   windows-unit-tests:
     uses: salesforcecli/github-workflows/.github/workflows/unitTestsWindows.yml@main
-  nuts:
+  e2e:
     needs: [linux-unit-tests, windows-unit-tests]
-    uses: salesforcecli/github-workflows/.github/workflows/nut.yml@main
+    uses: j-schreiber/js-sf-cli-devops-tools/.github/workflows/e2e.yml@main
     secrets:
       TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
       TESTKIT_JWT_CLIENT_ID: ${{ secrets.TESTKIT_JWT_CLIENT_ID }}
@@ -33,3 +33,4 @@ jobs:
       fail-fast: false
     with:
       os: ${{ matrix.os }}
+      cli_release_tag: 2.119.8
