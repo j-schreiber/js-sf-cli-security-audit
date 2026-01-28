@@ -5,6 +5,7 @@ import SettingsPolicy from './policies/settings.js';
 import UsersPolicy from './policies/users.js';
 import RuleRegistry, { RuleHandlerMap, Constructor } from './ruleRegistry.js';
 import AllUsedAppsUnderManagement from './rules/allUsedAppsUnderManagement.js';
+import EnforceLoginIpRanges from './rules/enforceLoginIpRanges.js';
 import EnforcePermissionPresets from './rules/enforcePermissionPresets.js';
 import EnforcePermissionsOnProfileLike from './rules/enforcePermissionsOnProfileLike.js';
 import EnforcePermissionsOnUser from './rules/enforcePermissionsOnUser.js';
@@ -39,6 +40,7 @@ export const PolicyDefinitions: PolicyDefinitions = {
     handler: ProfilesPolicy,
     rules: {
       EnforcePermissionClassifications: EnforcePermissionsOnProfileLike,
+      EnforceLoginIpRanges,
     },
   },
   users: {

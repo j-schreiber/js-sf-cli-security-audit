@@ -1,5 +1,7 @@
 import z from 'zod';
 
+const IP4RegExp = /^(((?!25?[6-9])[12]\d|[1-9])?\d\.?\b){4}$/;
+
 /**
  * Enum to classify user and custom permissions.
  */
@@ -53,13 +55,17 @@ const PolicyRuleConfigSchema = z.object({
 
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
 
-const PermSetConfig = z.object({
+const PermSetConfig = z.strictObject({
   role: z.enum(UserPrivilegeLevel),
+});
+
+const ProfileConfig = PermSetConfig.extend({
+  allowedLoginIps: z.array(z.object({ from: z.string().regex(IP4RegExp), to: z.string().regex(IP4RegExp) })).optional(),
 });
 
 const PermSetMap = z.record(z.string(), PermSetConfig);
 
-const ProfilesMap = z.record(z.string(), PermSetConfig);
+const ProfilesMap = z.record(z.string(), ProfileConfig);
 
 const UserConfig = z.object({ role: z.enum(UserPrivilegeLevel) });
 
