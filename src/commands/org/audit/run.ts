@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Interfaces } from '@oclif/core';
 import { SfCommand, Flags, StandardColors } from '@salesforce/sf-plugins-core';
 import { Messages } from '@salesforce/core';
+import { omit } from '@salesforce/kit';
 import {
   AuditPolicyResult,
   AuditResult,
@@ -107,7 +108,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     const maxLength = envVars.resolve('SAE_MAX_RESULT_VIOLATION_ROWS')!;
     for (const uncompliantRule of Object.values(executedRules).filter((ruleDetails) => !ruleDetails.isCompliant)) {
       const data = uncompliantRule.violations.map((viol) => ({
-        ...viol,
+        ...omit(viol, 'details'),
         identifier:
           typeof viol.identifier === 'string'
             ? formatToLocale(viol.identifier)

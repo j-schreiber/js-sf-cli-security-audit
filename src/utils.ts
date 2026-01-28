@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { isDate } from 'node:util/types';
 
 export function isEmpty(anything?: unknown): boolean {
@@ -47,6 +48,12 @@ export function formatToLocale(value: unknown): string {
     default:
       return '';
   }
+}
+
+export function createDigest(data: string, length: number = 8): string {
+  const hash = createHash('sha256');
+  hash.update(data);
+  return hash.digest('hex').slice(0, length);
 }
 
 /**

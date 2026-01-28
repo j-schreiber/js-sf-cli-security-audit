@@ -53,6 +53,10 @@ export type RuleComponentMessage = {
    * Descriptive message of the error, warning or violation.
    */
   message: string;
+  /**
+   * Additional details that complement the message
+   */
+  details?: string[];
 };
 
 /**
