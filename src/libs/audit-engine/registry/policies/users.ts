@@ -20,7 +20,7 @@ export default class UsersPolicy extends Policy<ResolvedUser> {
   private readonly resolveOptions: Partial<ResolveUsersOptions>;
 
   public constructor(public config: UserPolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
-    super(config, auditConfig, registry);
+    super('users', config, auditConfig, registry);
     this.classifications = this.auditConfig.classifications.users?.users ?? {};
     this.totalEntities = Object.keys(this.classifications).length;
     this.resolveOptions = buildResolveOptions(this.config);
@@ -77,6 +77,10 @@ function buildResolveOptions(policyConfig: UserPolicyConfig): Partial<ResolveUse
     opts.withPermissions = true;
   }
   if (policyConfig.rules['EnforcePermissionClassifications']) {
+    opts.withPermissions = true;
+    opts.withPermissionsMetadata = true;
+  }
+  if (policyConfig.rules['NoStandardProfilesOnActiveUsers']) {
     opts.withPermissions = true;
     opts.withPermissionsMetadata = true;
   }

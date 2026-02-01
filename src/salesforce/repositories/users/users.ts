@@ -34,6 +34,7 @@ export default class Users {
         userId: user.Id!,
         username: user.Username,
         lastLogin: user.LastLoginDate ? Date.parse(user.LastLoginDate) : undefined,
+        isActive: Boolean(user.IsActive),
         createdDate: Date.parse(user.CreatedDate),
         profileName: user.Profile.Name,
       };
@@ -155,6 +156,7 @@ type SfUser = Record & {
   LastLoginDate?: string;
   CreatedDate: string;
   Profile: SfProfile;
+  IsActive: boolean;
 };
 
 type SfProfile = Record & {

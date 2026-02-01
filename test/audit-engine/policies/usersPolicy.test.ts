@@ -18,11 +18,18 @@ const permScanningMessages = Messages.loadMessages(
   '@j-schreiber/sf-cli-security-audit',
   'rules.enforceClassificationPresets'
 );
+const riskMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'acceptedRisks');
 
 describe('users policy', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: UserPolicyConfig;
 
+  /**
+   * Runs user policy with the mocked audit config. Add policy config
+   * classifications to mock context before calling this.
+   *
+   * @returns Policy result
+   */
   async function resolveAndRun(): Promise<AuditPolicyResult> {
     const pol = loadPolicy('users', $$.mockAuditConfig);
     await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
@@ -39,9 +46,16 @@ describe('users policy', () => {
     return mockLastLogin;
   }
 
-  function mockSingleActiveUser(profileName: string): void {
+  /**
+   * Mocks result for the policy resolve that returns the
+   * users to be evaluated and sets the profile for this user.
+   *
+   * @param profileName
+   */
+  function mockSingleUser(profileName: string, isActive: boolean = true): void {
     $$.mocks.mockUsers('single-active-user', (record) => ({
       ...record,
+      IsActive: isActive,
       Profile: { Name: profileName },
     }));
     $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
@@ -419,7 +433,7 @@ describe('users policy', () => {
 
       it('skips users with a profile that cannot be resolved to metadata', async () => {
         // Arrange
-        mockSingleActiveUser('Custom Profile');
+        mockSingleUser('Custom Profile');
 
         // Act
         const result = await resolveAndRun();
@@ -560,6 +574,104 @@ describe('users policy', () => {
           {
             message: messages.getMessage('violations.entity-not-classified-but-used', ['Profile', 'profile']),
             identifier: ['test-user-2@example.de', 'System Administrator'],
+          },
+        ]);
+      });
+    });
+
+    describe('NoStandardProfilesOnActiveUsers', () => {
+      let ruleConfig: UserPolicyConfig;
+
+      beforeEach(() => {
+        ruleConfig = {
+          enabled: true,
+          rules: {
+            NoStandardProfilesOnActiveUsers: {
+              enabled: true,
+            },
+          },
+          options: {
+            defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
+          },
+        };
+        $$.mockAuditConfig.policies.users = ruleConfig;
+      });
+
+      it('reports violation for an active user that has a standard profile', async () => {
+        // Arrange
+        mockSingleUser('System Administrator');
+
+        // Act
+        const result = await resolveAndRun();
+
+        // Assert
+        const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-1@example.de', 'System Administrator'],
+            message: messages.getMessage('violations.active-user-has-standard-profile'),
+          },
+        ]);
+      });
+
+      it('reports no violation when an active user has a custom profile', async () => {
+        // Arrange
+        mockSingleUser('Custom Profile');
+
+        // Act
+        const result = await resolveAndRun();
+
+        // Assert
+        const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('reports no violation when an inactive user has a standard profile', async () => {
+        // Arrange
+        // at the moment, the users policy only processes active users
+        // to be upwards compatible when this may change in the future,
+        // this rule explicitly skips users that are not active
+        mockSingleUser('Standard User', false);
+
+        // Act
+        const result = await resolveAndRun();
+
+        // Assert
+        const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('reports no violation when violating user is on internal blacklist', async () => {
+        // Arrange
+        // Salesforce creates and manages a few users that come out as "standard users" but
+        // are not accessible by admins. We cannot modify the user or change the profile.
+        // there is no need to report a violation for these users.
+        const profileName = 'Sales Insights Integration User';
+        const username = `insightsintegration@${$$.targetOrg.orgId}.ext`;
+        $$.mocks.mockProfileResolve(profileName, 'sales-insights-integration-user');
+        $$.mocks.mockUsers('single-active-user', (record) => ({
+          ...record,
+          IsActive: true,
+          Username: username,
+          Profile: { Name: profileName },
+        }));
+        $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
+
+        // Act
+        const result = await resolveAndRun();
+
+        // Assert
+        const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([]);
+        expect(ruleResult.mutedViolations).to.deep.equal([
+          {
+            identifier: [username, 'Sales Insights Integration User'],
+            message: messages.getMessage('violations.active-user-has-standard-profile'),
+            reason: riskMessages.getMessage('user-skipped-cannot-manage'),
           },
         ]);
       });

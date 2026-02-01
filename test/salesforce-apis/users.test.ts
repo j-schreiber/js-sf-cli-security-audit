@@ -46,6 +46,7 @@ describe('users resolve', () => {
       profileName: 'Standard User',
       userId: '005Pl000001p3HqIAI',
       username: 'test-user-1@example.de',
+      isActive: true,
     });
     expect(users.has('test-user-2@example.de')).to.be.true;
     for (const user of users.values()) {

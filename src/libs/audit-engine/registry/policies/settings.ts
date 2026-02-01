@@ -55,7 +55,7 @@ export class SettingsRuleRegistry extends RuleRegistry {
  */
 export default class SettingsPolicy extends Policy<SalesforceSetting> {
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig) {
-    super(config, auditConfig, new SettingsRuleRegistry());
+    super('settings', config, auditConfig, new SettingsRuleRegistry());
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<SalesforceSetting>> {
