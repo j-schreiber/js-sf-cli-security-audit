@@ -18,6 +18,7 @@ const permScanningMessages = Messages.loadMessages(
   '@j-schreiber/sf-cli-security-audit',
   'rules.enforceClassificationPresets'
 );
+const riskMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'acceptedRisks');
 
 describe('users policy', () => {
   const $$ = new AuditTestContext();
@@ -641,6 +642,38 @@ describe('users policy', () => {
         const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
         assert.isDefined(ruleResult);
         expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('reports no violation when violating user is on internal blacklist', async () => {
+        // Arrange
+        // Salesforce creates and manages a few users that come out as "standard users" but
+        // are not accessible by admins. We cannot modify the user or change the profile.
+        // there is no need to report a violation for these users.
+        const profileName = 'Sales Insights Integration User';
+        const username = `insightsintegration@${$$.targetOrg.orgId}.ext`;
+        $$.mocks.mockProfileResolve(profileName, 'sales-insights-integration-user');
+        $$.mocks.mockUsers('single-active-user', (record) => ({
+          ...record,
+          IsActive: true,
+          Username: username,
+          Profile: { Name: profileName },
+        }));
+        $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
+
+        // Act
+        const result = await resolveAndRun();
+
+        // Assert
+        const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([]);
+        expect(ruleResult.mutedViolations).to.deep.equal([
+          {
+            identifier: [username, 'Sales Insights Integration User'],
+            message: messages.getMessage('violations.active-user-has-standard-profile'),
+            reason: riskMessages.getMessage('user-skipped-cannot-manage'),
+          },
+        ]);
       });
     });
   });

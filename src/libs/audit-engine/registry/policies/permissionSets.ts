@@ -19,7 +19,7 @@ export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet
   private readonly classifications: PermissionSetClassifications;
 
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
-    super(config, auditConfig, registry);
+    super('permissionSets', config, auditConfig, registry);
     this.classifications = this.auditConfig.classifications.permissionSets?.permissionSets ?? {};
     this.totalEntities = Object.keys(this.classifications).length;
   }

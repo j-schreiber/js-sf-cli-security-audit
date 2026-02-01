@@ -1,0 +1,293 @@
+[
+  {
+    "attributes": {
+      "type": "Profile",
+      "url": "/services/data/v65.0/tooling/sobjects/Profile/00ePl000002dNziIAE"
+    },
+    "Name": "Sales Insights Integration User",
+    "Metadata": {
+      "agentAccesses": [],
+      "applicationVisibilities": [],
+      "categoryGroupVisibilities": null,
+      "classAccesses": [],
+      "custom": false,
+      "customMetadataTypeAccesses": [],
+      "customPermissions": [],
+      "customSettingAccesses": [],
+      "description": null,
+      "externalDataSourceAccesses": [],
+      "fieldPermissions": [],
+      "flowAccesses": [],
+      "loginFlows": null,
+      "loginHours": null,
+      "loginIpRanges": [],
+      "objectPermissions": [],
+      "pageAccesses": [],
+      "profileActionOverrides": null,
+      "recordTypeVisibilities": [],
+      "servicePresenceStatusAccesses": [],
+      "tabVisibilities": [
+        {
+          "tab": "standard-Account",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ActionHub",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ActionPlan",
+          "visibility": "DefaultOff"
+        },
+        {
+          "tab": "standard-ActionPlanTemplate",
+          "visibility": "DefaultOff"
+        },
+        {
+          "tab": "standard-ApprovalSubmission",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ApprovalSubmissionDetail",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ApprovalWorkItem",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ApprovalsHome",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-CapabilityDetail",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Chatter",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-CollaborationGroup",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Contact",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Dashboard",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-DataMgmtPolicy",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Document",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-File",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-FlowOrchestration",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-FlowRecord",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-JourneyHome",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-JourneyMap",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-LicenseUtilization",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-MobileHome",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Monitor",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-OtherUserProfile",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ProfilePlatformFeed",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ProfilePlatformOverview",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-ProfileSkill",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-Recognition",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesCoachHome",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesforceContract",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesforceInvoice",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesforceJourney",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesforceProductCatalog",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SalesforceQuote",
+          "visibility": "Hidden"
+        },
+        {
+          "tab": "standard-SemanticModel",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-SharingRecordCollection",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-UserDefinedLabel",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-UserProfile",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-WorkBadge",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-WorkBadgeDefinition",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-home",
+          "visibility": "DefaultOn"
+        },
+        {
+          "tab": "standard-report",
+          "visibility": "DefaultOn"
+        }
+      ],
+      "urls": null,
+      "userLicense": "Sales Insights Integration User",
+      "userPermissions": [
+        {
+          "enabled": true,
+          "name": "ActivitiesAccess"
+        },
+        {
+          "enabled": true,
+          "name": "AddDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "ApexRestServices"
+        },
+        {
+          "enabled": true,
+          "name": "ApiEnabled"
+        },
+        {
+          "enabled": true,
+          "name": "ApiUserOnly"
+        },
+        {
+          "enabled": true,
+          "name": "CampaignInfluence2"
+        },
+        {
+          "enabled": true,
+          "name": "EnableCommunityAppLauncher"
+        },
+        {
+          "enabled": true,
+          "name": "PasswordNeverExpires"
+        },
+        {
+          "enabled": true,
+          "name": "RemoveDirectMessageMembers"
+        },
+        {
+          "enabled": true,
+          "name": "ShowCompanyNameAsUserBadge"
+        },
+        {
+          "enabled": true,
+          "name": "UseWebLink"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllData"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllForecasts"
+        },
+        {
+          "enabled": true,
+          "name": "ViewAllUsers"
+        },
+        {
+          "enabled": true,
+          "name": "ViewDeveloperName"
+        },
+        {
+          "enabled": true,
+          "name": "ViewEventLogFiles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewLicenseUtilization"
+        },
+        {
+          "enabled": true,
+          "name": "ViewPublicDashboards"
+        },
+        {
+          "enabled": true,
+          "name": "ViewPublicReports"
+        },
+        {
+          "enabled": true,
+          "name": "ViewRoles"
+        },
+        {
+          "enabled": true,
+          "name": "ViewSetup"
+        },
+        {
+          "enabled": true,
+          "name": "ViewUserPII"
+        }
+      ]
+    }
+  }
+]

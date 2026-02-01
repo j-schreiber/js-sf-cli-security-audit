@@ -11,7 +11,7 @@ export type PolicyRuleViolation = RuleComponentMessage & {
 };
 
 /**
- * A muted violation with additional information why it was muted
+ * Violation that was muted by an documented accepted risk.
  */
 export type PolicyRuleViolationMute = PolicyRuleViolation & {
   /**
@@ -48,7 +48,7 @@ export type RuleComponentMessage = {
    * Path to a component. This can be a developer name of a connected app,
    * permission set name or the permission within a profile.
    */
-  identifier: string | string[];
+  identifier: string[];
   /**
    * Descriptive message of the error, warning or violation.
    */

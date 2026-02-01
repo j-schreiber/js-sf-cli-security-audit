@@ -22,7 +22,7 @@ export default class ProfilesPolicy extends Policy<ResolvedProfile> {
   private readonly classifications: ProfileClassifications;
 
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
-    super(config, auditConfig, registry);
+    super('profiles', config, auditConfig, registry);
     this.classifications = this.auditConfig.classifications.profiles?.profiles ?? {};
     this.updateResolveState({ total: Object.keys(this.classifications).length });
   }

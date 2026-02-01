@@ -1,9 +1,10 @@
 import EventEmitter from 'node:events';
+import AcceptedRisks from '../accepted-risks/acceptedRisks.js';
 import RuleRegistry, { RegistryRuleResolveResult } from './ruleRegistry.js';
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from './result.types.js';
 import { AuditContext, IPolicy, PartialPolicyRuleResult, RowLevelPolicyRule } from './context.types.js';
 import { PolicyConfig } from './shape/schema.js';
-import { AuditRunConfig } from './shape/auditConfigShape.js';
+import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
 
 export type ResolveEntityResult<T> = {
   resolvedEntities: Record<string, T>;
@@ -13,14 +14,17 @@ export type ResolveEntityResult<T> = {
 export default abstract class Policy<T> extends EventEmitter implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
   protected entities?: ResolveEntityResult<T>;
+  protected riskManager: AcceptedRisks;
 
   public constructor(
+    protected policyName: Policies,
     public config: PolicyConfig,
     public auditConfig: AuditRunConfig,
     protected registry: RuleRegistry
   ) {
     super();
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
+    this.riskManager = new AcceptedRisks();
   }
 
   public getExecutableRules(): Array<RowLevelPolicyRule<T>> {
@@ -66,11 +70,13 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     const ruleResults = await Promise.all(ruleResultPromises);
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
     for (const ruleResult of ruleResults) {
+      // scrub violations from accepted risks before evaluating entities
+      const scrubbedResult = this.riskManager.scrub(this.policyName, ruleResult);
       // only fill compliant & violated entities, if they have not been set already
-      const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(ruleResult, resolveResult);
-      executedRules[ruleResult.ruleName] = {
-        ...ruleResult,
-        isCompliant: ruleResult.violations.length === 0,
+      const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(scrubbedResult, resolveResult);
+      executedRules[scrubbedResult.ruleName] = {
+        ...scrubbedResult,
+        isCompliant: scrubbedResult.violations.length === 0,
         compliantEntities,
         violatedEntities,
       };
