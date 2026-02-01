@@ -1,8 +1,9 @@
 import { Messages } from '@salesforce/core';
+import { merge } from '@salesforce/kit';
 import { PartialPolicyRuleResult } from '../registry/context.types.js';
 import { PolicyRuleViolation, PolicyRuleViolationMute } from '../registry/result.types.js';
 import { Policies } from '../registry/shape/auditConfigShape.js';
-import { AcceptedRisksConfig, AcceptedRuleRisks } from './acceptedRisks.types.js';
+import { LeafNode, RiskTree, TreeNode } from './acceptedRisks.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'acceptedRisks');
@@ -18,37 +19,51 @@ type ViolationsScrubResult = {
  * and mutes them.
  */
 export default class AcceptedRisks {
-  private readonly config: AcceptedRisksConfig;
+  private readonly config: RiskTree;
 
-  public constructor() {
+  public constructor(risks?: Partial<RiskTree>) {
     this.config = {
       users: {
-        NoStandardProfilesOnActiveUsers: [
-          {
-            identifierMatcher: ['*', 'Sales Insights Integration User'],
-            reason: messages.getMessage('user-skipped-cannot-manage'),
+        NoStandardProfilesOnActiveUsers: {
+          '*': {
+            'Sales Insights Integration User': {
+              reason: messages.getMessage('user-skipped-cannot-manage'),
+            },
           },
-        ],
+        },
       },
       profiles: {},
       permissionSets: {},
       connectedApps: {},
       settings: {},
     };
+    merge(this.config, risks);
   }
 
   /**
-   * Scrubs a policy result from all accepted risks
+   * Traverses the tree of risks and returns the accepted risks for the
+   * riskNodes path. Risks nodes path starts from policy > rules > identifiers.
+   *
+   * @param policyName
+   * @param path
+   */
+  public matchRisk(...path: string[]): LeafNode | undefined {
+    return findLeaf(this.config, ...path);
+  }
+
+  /**
+   * Scrubs all accepted risks from the violations of a policy result.
+   * The "muted" violations are augmented with the documented reason.
    *
    * @param policyName
    * @param ruleResult
    */
   public scrub(policyName: Policies, ruleResult: PartialPolicyRuleResult): PartialPolicyRuleResult {
-    const ruleConfig = this.config[policyName][ruleResult.ruleName];
-    if (!ruleConfig || ruleConfig.length === 0) {
+    const risks = traverseRisks(this.config, policyName, ruleResult.ruleName);
+    if (!risks) {
       return ruleResult;
     }
-    const { violations, mutedViolations } = scrubViolations(ruleResult.violations, ruleConfig);
+    const { violations, mutedViolations } = scrubViolations(ruleResult.violations, risks);
     return {
       ...ruleResult,
       violations,
@@ -57,23 +72,52 @@ export default class AcceptedRisks {
   }
 }
 
-function scrubViolations(violations: PolicyRuleViolation[], acceptedRisks: AcceptedRuleRisks[]): ViolationsScrubResult {
+function isLeaf(node: TreeNode): node is LeafNode {
+  return 'reason' in node;
+}
+
+/**
+ * Traverses the node path and returns the leaf-node or undefined
+ * if no LeafNode exists
+ *
+ * @param node
+ * @param path
+ * @returns
+ */
+function traverseRisks(node: TreeNode, ...path: string[]): TreeNode | undefined {
+  let current = node;
+  for (const key of path) {
+    if (isLeaf(current)) {
+      // iteration is already one key ahead, so when key = lastElement
+      // the current is actually from the second-to-last
+      return key === path.at(-2) ? current : undefined;
+    }
+    if (current[key] && typeof current[key] === 'object') {
+      current = current[key];
+    } else if (current['*']) {
+      current = current['*'];
+    }
+  }
+  return current;
+}
+
+function findLeaf(node: TreeNode, ...path: string[]): LeafNode | undefined {
+  const maybeLeaf = traverseRisks(node, ...path);
+  return maybeLeaf && isLeaf(maybeLeaf) ? maybeLeaf : undefined;
+}
+
+function scrubViolations(violations: PolicyRuleViolation[], acceptedRuleRisks: TreeNode): ViolationsScrubResult {
   const mutedViolations: PolicyRuleViolationMute[] = [];
-  for (const risk of acceptedRisks) {
+  for (const [index, violation] of violations.entries()) {
     // can we truly iterate all violations per each risk?
     // this is quadratic runtime (O(n2))
     // need to find a smart algorithm that hashes identifiers and only
     // iterates wildcards - linear runtime is MUST
-    violations.forEach((violation, index) => {
-      if (matches(violation.identifier, risk.identifierMatcher)) {
-        mutedViolations.push({ ...violation, reason: risk.reason });
-        violations.splice(index, 1);
-      }
-    });
+    const riskOrNothing = findLeaf(acceptedRuleRisks, ...violation.identifier);
+    if (riskOrNothing) {
+      mutedViolations.push({ ...violation, reason: riskOrNothing.reason });
+      violations.splice(index, 1);
+    }
   }
   return { violations, mutedViolations };
-}
-
-function matches(identifier: string[], identifierMatcher: string[]): boolean {
-  return identifier.length === 2 && identifier[1] === identifierMatcher[1];
 }
