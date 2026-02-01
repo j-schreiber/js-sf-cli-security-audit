@@ -29,7 +29,8 @@
         "url": "/services/data/v65.0/sobjects/Profile/00ePl000002dNziIAE"
       },
       "Name": "Standard User"
-    }
+    },
+    "IsActive": true
   },
   {
     "attributes": {
@@ -45,6 +46,7 @@
         "url": "/services/data/v65.0/sobjects/Profile/00e4P000001jNhqQAE"
       },
       "Name": "System Administrator"
-    }
+    },
+    "IsActive": true
   }
 ]

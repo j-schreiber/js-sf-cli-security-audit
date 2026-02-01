@@ -12,7 +12,7 @@ import {
   PolicyRuleViolationMute,
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
-import { MOCK_DATA_BASE_PATH, QUERY_RESULTS_BASE, RETRIEVES_BASE } from './data/paths.js';
+import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
   return {
@@ -30,7 +30,7 @@ export function parsePermSetFromFile(permSetName: string): PermissionSet {
 }
 
 export function parseProfileFromFile(fileName: string): Profile {
-  const profilePath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
+  const profilePath = path.join(MOCK_DATA_BASE_PATH, 'profiles-metadata', `${fileName}.json`);
   return (JSON.parse(fs.readFileSync(profilePath, 'utf-8')) as JsForceRecord[])[0]['Metadata'] as Profile;
 }
 

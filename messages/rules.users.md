@@ -21,3 +21,11 @@ User was created %s (%s days ago), but never logged in.
 # violations.entity-not-allowed-for-user-role
 
 User has the role "%s", but %s is classified as "%s". This is not allowed.
+
+# violations.active-user-has-standard-profile
+
+Active user has a standard profile assigned.
+
+# violations.inactive-user-has-standard-profile
+
+User has standard profile assigned, but is inactive.

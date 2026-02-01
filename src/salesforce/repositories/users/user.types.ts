@@ -6,6 +6,7 @@ export type User = {
   username: string;
   profileName: string;
   createdDate: number;
+  isActive: boolean;
   lastLogin?: number;
   logins?: UserLogins[];
   assignments?: PermissionSetAssignment[];

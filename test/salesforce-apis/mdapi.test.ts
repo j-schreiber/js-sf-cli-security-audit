@@ -185,7 +185,7 @@ describe('mdapi retriever', () => {
 
     it('ignores entities that do not return valid metadata', async () => {
       // Arrange
-      $$.mocks.setQueryMock(
+      $$.mocks.mockProfileResolve(
         "SELECT Name,Metadata FROM Profile WHERE Name = 'Custom Profile'",
         'profile-with-null-metadata'
       );

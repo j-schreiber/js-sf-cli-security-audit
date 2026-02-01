@@ -11,6 +11,7 @@ import EnforcePermissionsOnProfileLike from './rules/enforcePermissionsOnProfile
 import EnforcePermissionsOnUser from './rules/enforcePermissionsOnUser.js';
 import NoInactiveUsers from './rules/noInactiveUsers.js';
 import NoOtherApexApiLogins from './rules/noOtherApexApiLogins.js';
+import NoStandardProfilesOnActiveUsers from './rules/noStandardProfilesOnActiveUsers.js';
 import NoUserCanSelfAuthorize from './rules/noUserCanSelfAuthorize.js';
 import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
 import { PolicyConfig, UserPolicyConfig } from './shape/schema.js';
@@ -50,6 +51,7 @@ export const PolicyDefinitions: PolicyDefinitions = {
       NoInactiveUsers,
       EnforcePermissionClassifications: EnforcePermissionsOnUser,
       EnforcePermissionPresets,
+      NoStandardProfilesOnActiveUsers,
     },
   },
   connectedApps: {

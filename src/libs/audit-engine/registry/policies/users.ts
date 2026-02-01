@@ -80,5 +80,9 @@ function buildResolveOptions(policyConfig: UserPolicyConfig): Partial<ResolveUse
     opts.withPermissions = true;
     opts.withPermissionsMetadata = true;
   }
+  if (policyConfig.rules['NoStandardProfilesOnActiveUsers']) {
+    opts.withPermissions = true;
+    opts.withPermissionsMetadata = true;
+  }
   return opts;
 }

@@ -8,13 +8,13 @@ import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import {
   buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
+  ACTIVE_USERS_DETAILS_QUERY,
 } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/init.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
-import { ACTIVE_USERS_DETAILS_QUERY } from '../../src/salesforce/repositories/users/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
-import { SRC_MOCKS_BASE_PATH } from './data/paths.js';
+import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -28,7 +28,7 @@ export default class SfConnectionMocks {
   public queries: Record<string, JsForceRecord[]>;
   public retrieveStub?: sinon.SinonStub;
 
-  public constructor(private context: TestContext) {
+  public constructor(private readonly context: TestContext) {
     this.describes = {};
     this.queries = {};
     this.context.fakeConnectionRequest = this.fakeConnectionRequest;
@@ -92,7 +92,9 @@ export default class SfConnectionMocks {
    * @param resultFile
    */
   public mockProfileResolve(profileName: string, resultFile: string): void {
-    this.setQueryMock(`SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`, resultFile);
+    const filePath = path.join(MOCK_DATA_BASE_PATH, 'profiles-metadata', `${resultFile}.json`);
+    const records = loadRecords(filePath);
+    this.queries[`SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`] = records;
   }
 
   /**
