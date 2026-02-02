@@ -12,6 +12,11 @@ export type PartialPolicyRuleResult = Optional<
 >;
 
 /**
+ * Map of partial results for executed rules
+ */
+export type PartialRuleResults = Record<string, PartialPolicyRuleResult>;
+
+/**
  *
  */
 export type RowLevelPolicyRule<ResolvedEntityType> = {
@@ -19,7 +24,8 @@ export type RowLevelPolicyRule<ResolvedEntityType> = {
 };
 
 export type IPolicy = {
-  run(context: AuditContext): Promise<AuditPolicyResult>;
+  executeRules(context: AuditContext): Promise<PartialRuleResults>;
+  finalise(partialResults: PartialRuleResults): AuditPolicyResult;
 };
 
 export type AuditContext = {

@@ -5,9 +5,17 @@ import { AuditConfigShape, AuditRunConfig, Policies } from './registry/shape/aud
 import FileManager from './file-manager/fileManager.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
+import { PartialRuleResults } from './registry/context.types.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
+type PendingPolicyResults = Record<string, PartialRuleResults>;
 type PolicyMap = Record<string, Policy<unknown>>;
+
+type AuditRunStage = 'resolving' | 'executing' | 'finalising' | 'completed';
+
+export type AuditRunStageUpdate = {
+  newStage: AuditRunStage;
+};
 
 export function startAuditRun(directoryPath: string): AuditRun {
   const fm = new FileManager(AuditConfigShape);
@@ -39,6 +47,28 @@ export default class AuditRun extends EventEmitter {
   }
 
   /**
+   * Runs an audit from config. Execution emits a series of status events.
+   *
+   * @param targetOrgConnection
+   * @returns
+   */
+  public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
+    this.emitStageUpdate('resolving');
+    const executablePolicies = await this.resolve(targetOrgConnection);
+    this.emitStageUpdate('executing');
+    const pendingResults = await runPolicies(executablePolicies, targetOrgConnection);
+    this.emitStageUpdate('finalising');
+    const result = {
+      orgId: targetOrgConnection.getAuthInfoFields().orgId,
+      ...this.finalise(pendingResults),
+    };
+    this.emitStageUpdate('completed');
+    return result;
+  }
+
+  // PRIVATE ZONE
+
+  /**
    * Loads all policies, resolves entities and caches the results.
    *
    * @param targetOrgConnection
@@ -57,19 +87,23 @@ export default class AuditRun extends EventEmitter {
   }
 
   /**
-   * Executes an initialised audit run. Resolves policies entities
-   * and executes all rules.
+   * Completes partial results and returns as a full AuditResult
    *
-   * @param targetOrgConnection
+   * @param pendingResults
    * @returns
    */
-  public async execute(targetCon: Connection): Promise<Omit<AuditResult, 'orgId'>> {
-    this.executablePolicies = await this.resolve(targetCon);
-    const results = await runPolicies(this.executablePolicies, targetCon);
+  private finalise(pendingResults: PendingPolicyResults): Omit<AuditResult, 'orgId'> {
+    const finalisedResults: ResultsMap = {};
+    for (const [policyName, pendingResult] of Object.entries(pendingResults)) {
+      const policy = this.executablePolicies?.[policyName];
+      if (policy) {
+        finalisedResults[policyName] = policy.finalise(pendingResult);
+      }
+    }
     return {
       auditDate: new Date().toISOString(),
-      isCompliant: isCompliant(results),
-      policies: results,
+      isCompliant: isCompliant(finalisedResults),
+      policies: finalisedResults,
     };
   }
 
@@ -86,6 +120,13 @@ export default class AuditRun extends EventEmitter {
     }
     return pols;
   }
+
+  private emitStageUpdate(newStage: AuditRunStage): void {
+    const updateEvt: AuditRunStageUpdate = {
+      newStage,
+    };
+    this.emit('stageupdate', updateEvt);
+  }
 }
 
 function isCompliant(results: ResultsMap): boolean {
@@ -96,15 +137,15 @@ function isCompliant(results: ResultsMap): boolean {
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
 
-async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection): Promise<ResultsMap> {
-  const resultsArray: Array<Promise<AuditPolicyResult>> = [];
+async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection): Promise<PendingPolicyResults> {
+  const resultsArray: Array<Promise<PartialRuleResults>> = [];
   const policiesList: string[] = [];
   Object.entries(policies).forEach(([policyKey, executable]) => {
     policiesList.push(policyKey);
-    resultsArray.push(executable.run({ targetOrgConnection }));
+    resultsArray.push(executable.executeRules({ targetOrgConnection }));
   });
   const arrayResult = await Promise.all(resultsArray);
-  const results: ResultsMap = {};
+  const results: PendingPolicyResults = {};
   arrayResult.forEach((policyResult) => {
     const policyKey = policiesList[arrayResult.indexOf(policyResult)];
     results[policyKey] = policyResult;

@@ -13,6 +13,7 @@ import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
 import { startAuditRun } from '../../../libs/audit-engine/index.js';
 import { envVars } from '../../../ux/environment.js';
+import { AuditRunStageUpdate } from '../../../libs/audit-engine/auditRun.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -59,12 +60,25 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     });
     stageOutput.start();
     const auditRun = startAuditRun(flags['source-dir']);
-    stageOutput.startPolicyResolve(auditRun);
-    await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
-    stageOutput.startRuleExecution(auditRun);
-    const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
-    const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
-    stageOutput.finish();
+
+    auditRun.on('stageupdate', (stageUpdate: AuditRunStageUpdate) => {
+      switch (stageUpdate.newStage) {
+        case 'resolving':
+          stageOutput.startPolicyResolve(auditRun);
+          break;
+        case 'executing':
+          stageOutput.startRuleExecution(auditRun);
+          break;
+        case 'finalising':
+          stageOutput.startFinalising();
+          break;
+        case 'completed':
+          stageOutput.finish();
+          break;
+      }
+    });
+
+    const result = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     this.printResults(result, flags['verbose']);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };

@@ -5,6 +5,7 @@ import { AuditRun, EntityResolveEvent, Policies } from '../libs/audit-engine/ind
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
 export const EXECUTE_RULES = 'Executing rules';
+export const ACCEPTING_RISKS = 'Accepting risks';
 export const FINALISE = 'Formatting results';
 
 export type AuditRunStageOptions = {
@@ -61,7 +62,7 @@ export default class AuditRunMultiStageOutput {
   public static create(opts: AuditRunStageOptions): AuditRunMultiStageOutput {
     return new AuditRunMultiStageOutput({
       jsonEnabled: opts.jsonEnabled ?? false,
-      stages: [LOAD_AUDIT_CONFIG, RESOLVE_POLICIES, EXECUTE_RULES, FINALISE],
+      stages: [LOAD_AUDIT_CONFIG, RESOLVE_POLICIES, EXECUTE_RULES, ACCEPTING_RISKS, FINALISE],
       title: 'Auditing Org',
       preStagesBlock: [
         {
@@ -121,12 +122,16 @@ export default class AuditRunMultiStageOutput {
     this.mso.updateData({});
   }
 
+  public startFinalising(): void {
+    this.mso.goto(ACCEPTING_RISKS, { currentStatus: 'Executing' });
+  }
+
   public finish(): void {
     this.mso.goto(FINALISE, { currentStatus: 'Completed' });
     this.mso.stop('completed');
   }
 
-  private addPolicyStatsListener = (policyName: string, runInstance: AuditRun): void => {
+  private readonly addPolicyStatsListener = (policyName: string, runInstance: AuditRun): void => {
     // multi stage output updates its entire internal state, but only "patches"
     // data one level deep (e.g. policies property is replaced entierly)
     // thats why we gather the statistics for each individual policy in a single variable

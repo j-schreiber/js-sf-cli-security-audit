@@ -2,21 +2,16 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { newRuleResult, parsePermSetFromFile } from '../../mocks/testHelpers.js';
+import { newRuleResult, parsePermSetFromFile, resolveAndRun } from '../../mocks/testHelpers.js';
 import { PERMISSION_SETS_QUERY } from '../../../src/salesforce/repositories/perm-sets/queries.js';
 import { PolicyConfig, UserPrivilegeLevel } from '../../../src/libs/audit-engine/registry/shape/schema.js';
-import PermissionSetsPolicy from '../../../src/libs/audit-engine/registry/policies/permissionSets.js';
-import { PolicyDefinitions } from '../../../src/libs/audit-engine/index.js';
-import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
 import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/registry/rules/enforcePermissionsOnProfileLike.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/audit-engine/registry/context.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-const defaultRegistry = new RuleRegistry(PolicyDefinitions['permissionSets'].rules);
-
-describe('permission sets policy', () => {
+describe('policy - permission sets', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: PolicyConfig;
 
@@ -45,6 +40,7 @@ describe('permission sets policy', () => {
         },
       },
     };
+    $$.mockAuditConfig.policies.permissionSets = defaultConfig;
     $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
     await $$.init();
   });
@@ -55,8 +51,7 @@ describe('permission sets policy', () => {
 
   it('runs all rules in policy configuration with fully valid config', async () => {
     // Act
-    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
-    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await resolveAndRun('permissionSets', $$);
 
     // Assert
     expect(policyResult.isCompliant).to.equal(true);
@@ -69,8 +64,7 @@ describe('permission sets policy', () => {
     const ruleSpy = stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
 
     // Act
-    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
-    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await resolveAndRun('permissionSets', $$);
 
     // Assert
     const adminPermset = parsePermSetFromFile('Test_Admin_Permission_Set_1');
@@ -105,8 +99,7 @@ describe('permission sets policy', () => {
     });
 
     // Act
-    const pol = new PermissionSetsPolicy(defaultConfig, $$.mockAuditConfig, defaultRegistry);
-    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await resolveAndRun('permissionSets', $$);
 
     // Assert
     expect(policyResult.auditedEntities).to.deep.equal(['Test_Admin_Permission_Set_1']);

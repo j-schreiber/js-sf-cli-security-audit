@@ -2,7 +2,13 @@ import EventEmitter from 'node:events';
 import AcceptedRisks from '../accepted-risks/acceptedRisks.js';
 import RuleRegistry, { RegistryRuleResolveResult } from './ruleRegistry.js';
 import { AuditPolicyResult, EntityResolveError, PolicyRuleExecutionResult } from './result.types.js';
-import { AuditContext, IPolicy, PartialPolicyRuleResult, RowLevelPolicyRule } from './context.types.js';
+import {
+  AuditContext,
+  IPolicy,
+  PartialPolicyRuleResult,
+  PartialRuleResults,
+  RowLevelPolicyRule,
+} from './context.types.js';
 import { PolicyConfig } from './shape/schema.js';
 import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
 
@@ -38,41 +44,45 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     // when a policy is disabled, we still want to appear it in audit results
     // as disabled with 0 resolved entities and 0 executed rules
     if (!this.config.enabled) {
-      return { resolvedEntities: {}, ignoredEntities: [] };
+      this.entities = { resolvedEntities: {}, ignoredEntities: [] };
     }
     this.entities ??= await this.resolveEntities(context);
     return this.entities;
   }
 
   /**
-   * Runs all rules of a policy. If the entities are not yet resolved, they are
-   * resolved on the fly before rules are executed.
+   * Executes all rules of a policy and returns the partial rule results.
    *
    * @param context
-   * @returns
    */
-  public async run(context: AuditContext): Promise<AuditPolicyResult> {
+  public async executeRules(context: AuditContext): Promise<PartialRuleResults> {
     if (!this.config.enabled) {
-      return {
-        isCompliant: true,
-        enabled: false,
-        executedRules: {},
-        skippedRules: [],
-        auditedEntities: [],
-        ignoredEntities: [],
-      };
+      return {};
     }
     const resolveResult = await this.resolve(context);
     const ruleResultPromises = new Array<Promise<PartialPolicyRuleResult>>();
     for (const rule of this.resolvedRules.enabledRules) {
       ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
     }
-    const ruleResults = await Promise.all(ruleResultPromises);
+    const results: PartialRuleResults = {};
+    const promises = await Promise.all(ruleResultPromises);
+    for (const result of promises) {
+      results[result.ruleName] = result;
+    }
+    return results;
+  }
+
+  /**
+   * Finalises the partial rule results. Scrubs violations from accepted risks,
+   * adds compliant and violated entities, and completes summaries.
+   *
+   * @param partialResults
+   */
+  public finalise(partialResults: PartialRuleResults): AuditPolicyResult {
+    const resolveResult = this.entities!;
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
-    for (const ruleResult of ruleResults) {
-      // scrub violations from accepted risks before evaluating entities
+    for (const ruleResult of Object.values(partialResults)) {
       const scrubbedResult = this.riskManager.scrub(this.policyName, ruleResult);
-      // only fill compliant & violated entities, if they have not been set already
       const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(scrubbedResult, resolveResult);
       executedRules[scrubbedResult.ruleName] = {
         ...scrubbedResult,
@@ -83,7 +93,7 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     }
     return {
       isCompliant: isCompliant(executedRules),
-      enabled: true,
+      enabled: this.config.enabled,
       executedRules,
       skippedRules: this.resolvedRules.skippedRules,
       auditedEntities: Object.keys(resolveResult.resolvedEntities),

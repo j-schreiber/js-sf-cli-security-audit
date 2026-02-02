@@ -20,7 +20,7 @@ const permScanningMessages = Messages.loadMessages(
 );
 const riskMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'acceptedRisks');
 
-describe('users policy', () => {
+describe('policy - users', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: UserPolicyConfig;
 
@@ -33,8 +33,8 @@ describe('users policy', () => {
   async function resolveAndRun(): Promise<AuditPolicyResult> {
     const pol = loadPolicy('users', $$.mockAuditConfig);
     await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
-    const result = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
-    return result;
+    const partials = await pol.executeRules({ targetOrgConnection: $$.targetOrgConnection });
+    return pol.finalise(partials);
   }
 
   function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
@@ -674,6 +674,8 @@ describe('users policy', () => {
             reason: riskMessages.getMessage('user-skipped-cannot-manage'),
           },
         ]);
+        expect(ruleResult.compliantEntities).to.deep.equal([username]);
+        expect(ruleResult.violatedEntities).to.deep.equal([]);
       });
     });
   });

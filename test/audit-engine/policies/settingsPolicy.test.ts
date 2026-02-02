@@ -5,13 +5,19 @@ import AuditTestContext from '../../mocks/auditTestContext.js';
 import SettingsPolicy, { SettingsRuleRegistry } from '../../../src/libs/audit-engine/registry/policies/settings.js';
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import EnforceSettings from '../../../src/libs/audit-engine/registry/rules/enforceSettings.js';
+import { resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 const ruleMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.settings');
 
-describe('settings policy', () => {
+describe('policy - settings', () => {
   const $$ = new AuditTestContext();
+  /**
+   * Modify this config in your tests; the beforeEach hook automatically
+   * resets it during tests and references it for settings policy. Just
+   * make sure to not replace it with a new object.
+   */
   let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
@@ -246,14 +252,9 @@ describe('settings policy', () => {
   });
 
   describe('run policy', () => {
-    function run(conf: PolicyConfig): ReturnType<SettingsPolicy['run']> {
-      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
-      return pol.run({ targetOrgConnection: $$.targetOrgConnection });
-    }
-
     it('resolves settings for valid rules and enforces plain setting options', async () => {
       // Act
-      const result = await run(defaultConfig);
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       expect(Object.keys(result.executedRules)).to.deep.equal(['EnforceSecuritySettings', 'EnforceApexSettings']);
@@ -269,26 +270,23 @@ describe('settings policy', () => {
 
     it('resolves settings for valid rules and traverses nested setting options', async () => {
       // Arrange
-      const config = {
-        enabled: true,
-        rules: {
-          EnforceSecuritySettings: {
-            enabled: true,
-            options: {
-              passwordPolicies: {
-                minimumPasswordLength: 12,
-              },
-              sessionSettings: {
-                canConfirmIdentityBySmsOnly: false,
-                lockSessionsToIp: true,
-              },
+      defaultConfig.rules = {
+        EnforceSecuritySettings: {
+          enabled: true,
+          options: {
+            passwordPolicies: {
+              minimumPasswordLength: 12,
+            },
+            sessionSettings: {
+              canConfirmIdentityBySmsOnly: false,
+              lockSessionsToIp: true,
             },
           },
         },
       };
 
       // Act
-      const result = await run(config);
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       const secResult = result.executedRules.EnforceSecuritySettings;
@@ -316,7 +314,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const result = await run(defaultConfig);
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       const apexResult = result.executedRules.EnforceApexSettings;
@@ -341,7 +339,7 @@ describe('settings policy', () => {
       };
 
       // Act
-      const result = await run(defaultConfig);
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       expect(result.skippedRules).to.deep.equal([
@@ -352,14 +350,12 @@ describe('settings policy', () => {
 
     it('reports a rule that does not resolve to a valid setting as skipped', async () => {
       // Act
-      const result = await run({
-        enabled: true,
-        rules: {
-          EnforceInvalidSettings: { enabled: true },
-          EnforceApexSettings: { enabled: true },
-          EnforceOtherInvalidSettings: { enabled: true },
-        },
-      });
+      defaultConfig.rules = {
+        EnforceInvalidSettings: { enabled: true },
+        EnforceApexSettings: { enabled: true },
+        EnforceOtherInvalidSettings: { enabled: true },
+      };
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       expect(result.auditedEntities).to.deep.equal(['Apex']);
@@ -379,7 +375,7 @@ describe('settings policy', () => {
     it('reports correct ignored entity message for skipped rule', async () => {
       // Act
       defaultConfig.rules.EnforceApexSettings.enabled = false;
-      const result = await run(defaultConfig);
+      const result = await resolveAndRun('settings', $$);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([

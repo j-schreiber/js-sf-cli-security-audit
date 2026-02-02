@@ -328,6 +328,7 @@ describe('org audit run', () => {
   describe('report file creation', () => {
     it('writes audit result to source directory', async () => {
       // Arrange
+      NON_COMPLIANT_RESULT.orgId = $$.targetOrg.orgId;
       mockResult(NON_COMPLIANT_RESULT);
 
       // Act

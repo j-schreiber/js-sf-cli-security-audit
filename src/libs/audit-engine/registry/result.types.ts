@@ -183,9 +183,9 @@ export type AuditResult = {
   isCompliant: boolean;
 
   /**
-   * Id of the audited org.
+   * Id of the audited org, if it was available.
    */
-  orgId: string;
+  orgId?: string;
 
   /**
    * ISO date time of the audit

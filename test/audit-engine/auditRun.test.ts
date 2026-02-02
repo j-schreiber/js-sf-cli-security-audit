@@ -132,4 +132,32 @@ describe('audit run execution', () => {
     expect(audit.getExecutableRulesCount('permissionSets')).to.equal(1);
     expect(audit.getExecutableRulesCount('connectedApps')).to.equal(2);
   });
+
+  it('emits all stage-lifecycle events during a full audit run', async () => {
+    // Arrange
+    const stageListener = $$.context.SANDBOX.stub();
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    audit.addListener('stageupdate', stageListener);
+
+    // Act
+    await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    expect(stageListener.callCount).to.equal(4);
+    expect(stageListener.args.flat()).to.deep.equal([
+      {
+        newStage: 'resolving',
+      },
+      {
+        newStage: 'executing',
+      },
+      {
+        newStage: 'finalising',
+      },
+      {
+        newStage: 'completed',
+      },
+    ]);
+  });
 });
