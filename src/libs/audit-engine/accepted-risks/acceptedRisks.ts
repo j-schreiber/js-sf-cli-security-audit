@@ -21,7 +21,7 @@ type ViolationsScrubResult = {
 export default class AcceptedRisks {
   private readonly config: RiskTree;
 
-  public constructor(risks?: Partial<RiskTree>) {
+  public constructor(risks?: RiskTree) {
     this.config = {
       users: {
         NoStandardProfilesOnActiveUsers: {
@@ -41,17 +41,6 @@ export default class AcceptedRisks {
   }
 
   /**
-   * Traverses the tree of risks and returns the accepted risks for the
-   * riskNodes path. Risks nodes path starts from policy > rules > identifiers.
-   *
-   * @param policyName
-   * @param path
-   */
-  public matchRisk(...path: string[]): LeafNode | undefined {
-    return findLeaf(this.config, ...path);
-  }
-
-  /**
    * Scrubs all accepted risks from the violations of a policy result.
    * The "muted" violations are augmented with the documented reason.
    *
@@ -59,7 +48,7 @@ export default class AcceptedRisks {
    * @param ruleResult
    */
   public scrub(policyName: Policies, ruleResult: PartialPolicyRuleResult): PartialPolicyRuleResult {
-    const risks = traverseRisks(this.config, policyName, ruleResult.ruleName);
+    const risks = this.config[policyName]?.[ruleResult.ruleName];
     if (!risks) {
       return ruleResult;
     }
@@ -106,9 +95,10 @@ function findLeaf(node: TreeNode, ...path: string[]): LeafNode | undefined {
   return maybeLeaf && isLeaf(maybeLeaf) ? maybeLeaf : undefined;
 }
 
-function scrubViolations(violations: PolicyRuleViolation[], acceptedRuleRisks: TreeNode): ViolationsScrubResult {
+function scrubViolations(unscrubbed: PolicyRuleViolation[], acceptedRuleRisks: TreeNode): ViolationsScrubResult {
   const mutedViolations: PolicyRuleViolationMute[] = [];
-  for (const [index, violation] of violations.entries()) {
+  const violations: PolicyRuleViolation[] = [];
+  for (const violation of unscrubbed) {
     // can we truly iterate all violations per each risk?
     // this is quadratic runtime (O(n2))
     // need to find a smart algorithm that hashes identifiers and only
@@ -116,7 +106,8 @@ function scrubViolations(violations: PolicyRuleViolation[], acceptedRuleRisks: T
     const riskOrNothing = findLeaf(acceptedRuleRisks, ...violation.identifier);
     if (riskOrNothing) {
       mutedViolations.push({ ...violation, reason: riskOrNothing.reason });
-      violations.splice(index, 1);
+    } else {
+      violations.push(violation);
     }
   }
   return { violations, mutedViolations };

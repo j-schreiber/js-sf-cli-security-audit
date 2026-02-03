@@ -1,6 +1,8 @@
 import { Policies } from '../registry/shape/auditConfigShape.js';
 
-export type RiskTree = Record<Policies, TreeNode>;
+export type RiskTree = Partial<Record<Policies, RuleRisks>>;
+
+export type RuleRisks = Record<string, TreeNode>;
 
 export type TreeNode = LeafNode | BranchNode;
 
