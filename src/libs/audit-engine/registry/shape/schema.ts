@@ -106,6 +106,17 @@ export const UserPolicyFileSchema = PolicyFileSchema.extend({
   options: UsersPolicyOptions,
 });
 
+// Accepted Risks Schemata
+
+const allowedRiskSchema = z.object({ reason: z.string() });
+
+const riskIdentifierMapping = z.record(z.string(), allowedRiskSchema);
+
+export const AcceptedRisksSchema = z.record(
+  z.string(),
+  z.union([riskIdentifierMapping, z.record(z.string(), riskIdentifierMapping)])
+);
+
 // Classification Types
 export type PermissionClassifications = z.infer<typeof PermissionClassifications>;
 export type PermissionSetClassifications = z.infer<typeof PermSetMap>;
@@ -115,3 +126,6 @@ export type UserClassifications = z.infer<typeof UsersMap>;
 // Policy Types
 export type PolicyConfig = z.infer<typeof PolicyFileSchema>;
 export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
+
+// Accepted Risks
+export type AcceptedRisks = z.infer<typeof AcceptedRisksSchema>;

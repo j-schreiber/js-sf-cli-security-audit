@@ -1,8 +1,7 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.types.js';
-import { AuditConfigShape, AuditRunConfig, Policies } from './registry/shape/auditConfigShape.js';
-import FileManager from './file-manager/fileManager.js';
+import { AuditRunConfig, Policies } from './registry/shape/auditConfigShape.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
 import { PartialRuleResults } from './registry/context.types.js';
@@ -16,12 +15,6 @@ type AuditRunStage = 'resolving' | 'executing' | 'finalising' | 'completed';
 export type AuditRunStageUpdate = {
   newStage: AuditRunStage;
 };
-
-export function startAuditRun(directoryPath: string): AuditRun {
-  const fm = new FileManager(AuditConfigShape);
-  const loadedConfig = fm.parse(directoryPath);
-  return new AuditRun(loadedConfig);
-}
 
 export type EntityResolveEvent = {
   total: number;

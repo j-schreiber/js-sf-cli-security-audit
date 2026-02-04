@@ -1,0 +1,11 @@
+test-user-1@example.com:
+  Test_Developer_Permission_Set_1:
+    '*':
+      reason: 'All violations from this permset are fine'
+  Test_Admin_Permission_Set_1:
+    '*':
+      reason: 'All violations from this permset are fine'
+test-user-2@example.com:
+  System Administrator:
+    CustomizeMetadata:
+      reason: 'Its okay if this user has this from this profile'
