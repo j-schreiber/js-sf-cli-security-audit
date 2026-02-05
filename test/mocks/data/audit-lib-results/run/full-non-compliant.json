@@ -26,7 +26,13 @@
             }
           ],
           "violatedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
-          "mutedViolations": [],
+          "mutedViolations": [
+            {
+              "identifier": ["Standard User", "ApiEnabled"],
+              "message": "Is 'High', not allowed",
+              "reason": "Allowed today"
+            }
+          ],
           "warnings": [
             {
               "identifier": ["Standard User", "ActivitiesAccess"],

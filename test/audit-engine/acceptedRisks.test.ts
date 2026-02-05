@@ -181,6 +181,67 @@ describe('accepted risks', () => {
     expect(scrubbedResult.violations).to.have.lengthOf(2000);
     expect(scrubbedResult.mutedViolations).to.have.lengthOf(3000);
   });
+
+  it('returns all risks as flat list', () => {
+    // Act
+    const riskManager = new AcceptedRisks(defaultRisks);
+    const risks = riskManager.getStats();
+
+    // Assert
+    expect(risks).to.have.lengthOf(5);
+    expect(risks[0]).to.deep.equal({
+      rule: 'NoStandardProfilesOnActiveUsers',
+      policy: 'users',
+      matcher: ['*', 'Sales Insights Integration User'],
+      appliedCount: 0,
+    });
+    expect(risks[1]).to.deep.equal({
+      rule: 'MyTestRule',
+      policy: 'users',
+      matcher: ['key1', 'subIdentifier2'],
+      appliedCount: 0,
+    });
+    expect(risks[2]).to.deep.equal({
+      rule: 'MyTestRule',
+      policy: 'users',
+      matcher: ['key1', '*'],
+      appliedCount: 0,
+    });
+    expect(risks[3]).to.deep.equal({
+      rule: 'MyTestRule',
+      policy: 'users',
+      matcher: ['key3', '*'],
+      appliedCount: 0,
+    });
+    expect(risks[4]).to.deep.equal({
+      rule: 'TestProfileBasedRule',
+      policy: 'users',
+      matcher: ['username@example.com', '*'],
+      appliedCount: 0,
+    });
+  });
+
+  it('accurately counts usage for an accepted risk after scrubbing violations', () => {
+    // Act
+    const riskManager = new AcceptedRisks(defaultRisks);
+    const partialResult = initRuleResult('MyTestRule', [
+      { identifier: ['key1', 'subIdentifier3'], message: 'Msg 1' },
+      { identifier: ['key1', 'subIdentifier4'], message: 'Msg 2' },
+      { identifier: ['key1', 'subIdentifier5'], message: 'Msg 3' },
+      { identifier: ['key1', 'subIdentifier6'], message: 'Msg 4' },
+    ]);
+    riskManager.scrub('users', partialResult);
+    const stats = riskManager.getStats();
+
+    // Assert
+    const matchedRisk = stats[2];
+    expect(matchedRisk).to.deep.equal({
+      rule: 'MyTestRule',
+      policy: 'users',
+      matcher: ['key1', '*'],
+      appliedCount: 4,
+    });
+  });
 });
 
 function initRuleResult(ruleName: string, violations: PolicyRuleViolation[]): PartialPolicyRuleResult {

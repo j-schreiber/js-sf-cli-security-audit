@@ -13,6 +13,7 @@ import {
   PolicyRuleViolationMute,
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
+import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
 import { loadPolicy, Policies } from '../../src/libs/audit-engine/index.js';
 import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
 import AuditTestContext from './auditTestContext.js';
@@ -27,7 +28,7 @@ export async function resolveAndRun(policy: Policies, context: AuditTestContext)
   const pol = loadPolicy(policy, context.mockAuditConfig);
   await pol.resolve({ targetOrgConnection: context.targetOrgConnection });
   const partials = await pol.executeRules({ targetOrgConnection: context.targetOrgConnection });
-  return pol.finalise(partials);
+  return pol.finalise(partials, new AcceptedRisks(context.mockAuditConfig.acceptedRisks));
 }
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {

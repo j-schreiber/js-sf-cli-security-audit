@@ -177,4 +177,22 @@ describe('audit run execution', () => {
     expect(noStandardProfiles.violations).to.deep.equal([]);
     expect(noStandardProfiles.mutedViolations).to.have.lengthOf(2);
   });
+
+  it('returns all triggered accepted risks with usage statistics in audit result', async () => {
+    // Act
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    // 4 rules in total define risks, each risk-matcher is counted individually
+    expect(auditResult.acceptedRisks).to.have.lengthOf(9);
+    // user risk matchers
+    expect(auditResult.acceptedRisks[0].appliedCount).to.equal(0);
+    expect(auditResult.acceptedRisks[1].appliedCount).to.equal(1);
+    expect(auditResult.acceptedRisks[2].appliedCount).to.equal(1);
+    // profile risk matchers
+    expect(auditResult.acceptedRisks.at(-2)!.appliedCount).to.equal(1);
+    expect(auditResult.acceptedRisks.at(-1)!.appliedCount).to.equal(1);
+  });
 });

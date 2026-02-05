@@ -2,7 +2,6 @@
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { AuditPolicyResult } from '../../../src/libs/audit-engine/registry/result.types.js';
 import { differenceInDays } from '../../../src/utils.js';
 import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
 import {
@@ -10,6 +9,7 @@ import {
   UserPolicyConfig,
   UserPrivilegeLevel,
 } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import { resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -23,19 +23,6 @@ const riskMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit',
 describe('policy - users', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: UserPolicyConfig;
-
-  /**
-   * Runs user policy with the mocked audit config. Add policy config
-   * classifications to mock context before calling this.
-   *
-   * @returns Policy result
-   */
-  async function resolveAndRun(): Promise<AuditPolicyResult> {
-    const pol = loadPolicy('users', $$.mockAuditConfig);
-    await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
-    const partials = await pol.executeRules({ targetOrgConnection: $$.targetOrgConnection });
-    return pol.finalise(partials);
-  }
 
   function mockUsersLastLoginDate(numberOfDaysSinceLastLogin: number): number {
     const mockLastLogin = Date.now() - 1000 * 60 * 60 * 24 * numberOfDaysSinceLastLogin;
@@ -212,7 +199,7 @@ describe('policy - users', () => {
         );
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
@@ -234,7 +221,7 @@ describe('policy - users', () => {
         $$.mocks.mockLoginHistory('logins-with-browser-only', ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory);
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
@@ -261,7 +248,7 @@ describe('policy - users', () => {
         const mockLastLogin = mockUsersLastLoginDate(31);
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -295,7 +282,7 @@ describe('policy - users', () => {
         mockUsersLastLoginDate(31);
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -318,7 +305,7 @@ describe('policy - users', () => {
 
       it('reports violation if user has never logged in', async () => {
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -342,7 +329,7 @@ describe('policy - users', () => {
         }));
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['NoInactiveUsers']);
@@ -382,7 +369,7 @@ describe('policy - users', () => {
         };
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionClassifications']);
@@ -407,7 +394,7 @@ describe('policy - users', () => {
         };
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionClassifications);
@@ -436,7 +423,7 @@ describe('policy - users', () => {
         mockSingleUser('Custom Profile');
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionClassifications);
@@ -485,7 +472,7 @@ describe('policy - users', () => {
 
       it('reports compliance if user has only permission sets assigned that match their role', async () => {
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         expect(Object.keys(result.executedRules)).deep.equals(['EnforcePermissionPresets']);
@@ -504,7 +491,7 @@ describe('policy - users', () => {
         $$.mockUserClassification('test-user-2@example.de', { role: UserPrivilegeLevel.POWER_USER });
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);
@@ -536,7 +523,7 @@ describe('policy - users', () => {
         $$.mockProfileClassification('System Administrator', { role: UserPrivilegeLevel.UNKNOWN });
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);
@@ -564,7 +551,7 @@ describe('policy - users', () => {
         });
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         assert.isDefined(result.executedRules.EnforcePermissionPresets);
@@ -602,7 +589,7 @@ describe('policy - users', () => {
         mockSingleUser('System Administrator');
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
@@ -620,7 +607,7 @@ describe('policy - users', () => {
         mockSingleUser('Custom Profile');
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
@@ -636,7 +623,7 @@ describe('policy - users', () => {
         mockSingleUser('Standard User', false);
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;
@@ -661,7 +648,7 @@ describe('policy - users', () => {
         $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
 
         // Act
-        const result = await resolveAndRun();
+        const result = await resolveAndRun('users', $$);
 
         // Assert
         const ruleResult = result.executedRules.NoStandardProfilesOnActiveUsers;

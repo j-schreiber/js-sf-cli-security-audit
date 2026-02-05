@@ -8,4 +8,4 @@ export type TreeNode = LeafNode | BranchNode;
 
 export type BranchNode = { [nodePath: string]: TreeNode };
 
-export type LeafNode = { reason: string };
+export type LeafNode = { reason: string; usageCount?: number };

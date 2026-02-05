@@ -5,6 +5,7 @@ import { AuditRunConfig, Policies } from './registry/definitions.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
 import { PartialRuleResults } from './registry/context.types.js';
+import AcceptedRisks from './accepted-risks/acceptedRisks.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PendingPolicyResults = Record<string, PartialRuleResults>;
@@ -89,16 +90,18 @@ export default class AuditRun extends EventEmitter {
    */
   private finalise(pendingResults: PendingPolicyResults): Omit<AuditResult, 'orgId'> {
     const finalisedResults: ResultsMap = {};
+    const riskManager = new AcceptedRisks(this.config.acceptedRisks);
     for (const [policyName, pendingResult] of Object.entries(pendingResults)) {
       const policy = this.executablePolicies?.[policyName];
       if (policy) {
-        finalisedResults[policyName] = policy.finalise(pendingResult);
+        finalisedResults[policyName] = policy.finalise(pendingResult, riskManager);
       }
     }
     return {
       auditDate: new Date().toISOString(),
       isCompliant: isCompliant(finalisedResults),
       policies: finalisedResults,
+      acceptedRisks: riskManager.getStats(),
     };
   }
 

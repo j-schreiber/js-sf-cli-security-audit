@@ -185,6 +185,7 @@ function transposeExecutedPolicyRules(result: AuditPolicyResult): ExecutedRulesR
     compliantEntities: ruleDetails.compliantEntities?.length ?? 0,
     violatedEntities: ruleDetails.violatedEntities?.length ?? 0,
     violations: ruleDetails.violations.length,
+    acceptedRisks: ruleDetails.mutedViolations.length,
     warnings: ruleDetails.warnings.length,
     errors: ruleDetails.errors.length,
   }));

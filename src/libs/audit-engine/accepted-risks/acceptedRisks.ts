@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { merge } from '@salesforce/kit';
 import { PartialPolicyRuleResult } from '../registry/context.types.js';
-import { PolicyRuleViolation, PolicyRuleViolationMute } from '../registry/result.types.js';
+import { AcceptedRiskStatistics, PolicyRuleViolation, PolicyRuleViolationMute } from '../registry/result.types.js';
 import { Policies } from '../registry/definitions.js';
 import { LeafNode, RiskTree, TreeNode } from './acceptedRisks.types.js';
 
@@ -41,6 +41,21 @@ export default class AcceptedRisks {
   }
 
   /**
+   * Returns all accepted risks in a flattend lists
+   * with usage statistics.
+   */
+  public getStats(): AcceptedRiskStatistics[] {
+    const stats = new Array<AcceptedRiskStatistics>();
+    for (const [policy, policyRisks] of Object.entries(this.config)) {
+      for (const [rule, ruleRisks] of Object.entries(policyRisks)) {
+        const flattenedRuleRisks = flatten(ruleRisks);
+        stats.push(...flattenedRuleRisks.map((rr) => ({ ...rr, policy, rule })));
+      }
+    }
+    return stats;
+  }
+
+  /**
    * Scrubs all accepted risks from the violations of a policy result.
    * The "muted" violations are augmented with the documented reason.
    *
@@ -59,6 +74,17 @@ export default class AcceptedRisks {
       mutedViolations,
     };
   }
+}
+
+function flatten(node: TreeNode, nodePathToFar: string[] = []): Array<Omit<AcceptedRiskStatistics, 'policy' | 'rule'>> {
+  if (isLeaf(node)) {
+    return [{ matcher: nodePathToFar, appliedCount: node.usageCount ?? 0 }];
+  }
+  const flattendChildren = [];
+  for (const [key, maybeLeaf] of Object.entries(node)) {
+    flattendChildren.push(...flatten(maybeLeaf, [...nodePathToFar, key]));
+  }
+  return flattendChildren;
 }
 
 function isLeaf(node: TreeNode): node is LeafNode {
@@ -105,6 +131,7 @@ function scrubViolations(unscrubbed: PolicyRuleViolation[], acceptedRuleRisks: T
     // iterates wildcards - linear runtime is MUST
     const riskOrNothing = findLeaf(acceptedRuleRisks, ...violation.identifier);
     if (riskOrNothing) {
+      riskOrNothing.usageCount = riskOrNothing.usageCount ? ++riskOrNothing.usageCount : 1;
       mutedViolations.push({ ...violation, reason: riskOrNothing.reason });
     } else {
       violations.push(violation);

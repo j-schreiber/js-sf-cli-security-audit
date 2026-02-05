@@ -20,7 +20,6 @@ export type ResolveEntityResult<T> = {
 export default abstract class Policy<T> extends EventEmitter implements IPolicy {
   protected resolvedRules: RegistryRuleResolveResult;
   protected entities?: ResolveEntityResult<T>;
-  protected riskManager: AcceptedRisks;
 
   public constructor(
     protected policyName: Policies,
@@ -30,7 +29,6 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
   ) {
     super();
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
-    this.riskManager = new AcceptedRisks(this.auditConfig.acceptedRisks);
   }
 
   public getExecutableRules(): Array<RowLevelPolicyRule<T>> {
@@ -77,12 +75,13 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
    * adds compliant and violated entities, and completes summaries.
    *
    * @param partialResults
+   * @param riskManager Instance of global risk manager
    */
-  public finalise(partialResults: PartialRuleResults): AuditPolicyResult {
+  public finalise(partialResults: PartialRuleResults, riskManager: AcceptedRisks): AuditPolicyResult {
     const resolveResult = this.entities!;
     const executedRules: Record<string, PolicyRuleExecutionResult> = {};
     for (const ruleResult of Object.values(partialResults)) {
-      const scrubbedResult = this.riskManager.scrub(this.policyName, ruleResult);
+      const scrubbedResult = riskManager.scrub(this.policyName, ruleResult);
       const { compliantEntities, violatedEntities } = evalResolvedEntities<T>(scrubbedResult, resolveResult);
       executedRules[scrubbedResult.ruleName] = {
         ...scrubbedResult,
