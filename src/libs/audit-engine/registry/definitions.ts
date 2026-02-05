@@ -1,3 +1,4 @@
+import { AuditConfigShapeDefinition, ExtractAuditConfigTypes } from '../file-manager/fileManager.types.js';
 import ConnectedAppsPolicy from './policies/connectedApps.js';
 import PermissionSetsPolicy from './policies/permissionSets.js';
 import ProfilesPolicy from './policies/profiles.js';
@@ -13,8 +14,8 @@ import NoInactiveUsers from './rules/noInactiveUsers.js';
 import NoOtherApexApiLogins from './rules/noOtherApexApiLogins.js';
 import NoStandardProfilesOnActiveUsers from './rules/noStandardProfilesOnActiveUsers.js';
 import NoUserCanSelfAuthorize from './rules/noUserCanSelfAuthorize.js';
-import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
-import { PolicyConfig, UserPolicyConfig } from './shape/schema.js';
+import { BaseAuditConfigShape } from './shape/auditConfigShape.js';
+import { AcceptedRisksSchema, PolicyConfig, UserPolicyConfig } from './shape/schema.js';
 
 type PolicyDefinition<T, C extends PolicyConfig = PolicyConfig> = {
   handler: Constructor<T>;
@@ -30,6 +31,17 @@ type PolicyDefinitions = {
   settings: PolicyDefinition<SettingsPolicy>;
 };
 
+export type AuditRunConfig = ExtractAuditConfigTypes<typeof AuditConfigShape>;
+export type Policies = keyof AuditRunConfig['policies'];
+export type PolicyShapes = AuditRunConfig['policies'];
+export type Classifications = keyof AuditRunConfig['classifications'];
+export type ClassificationShapes = AuditRunConfig['classifications'];
+
+/**
+ * Central definition of policies (handlers + registered rules).
+ * These definitions are used to load policies and derive config
+ * for accepted risks.
+ */
 export const PolicyDefinitions: PolicyDefinitions = {
   permissionSets: {
     handler: PermissionSetsPolicy,
@@ -65,6 +77,29 @@ export const PolicyDefinitions: PolicyDefinitions = {
     handler: SettingsPolicy,
   },
 };
+
+/**
+ * Merges the base audit config shape with a dynamically generated shape
+ * for all accepted risks. Automatically generates a correlating config
+ * for each registered rule in the PolicyDefinitions.
+ */
+export const AuditConfigShape = {
+  ...BaseAuditConfigShape,
+  acceptedRisks: {
+    dirs: Object.fromEntries(
+      Object.entries(PolicyDefinitions).map(([policyName, policyDef]) => [
+        policyName,
+        {
+          files: policyDef.rules
+            ? Object.fromEntries(
+                Object.entries(policyDef.rules).map(([policyRule]) => [policyRule, { schema: AcceptedRisksSchema }])
+              )
+            : {},
+        },
+      ])
+    ),
+  },
+} satisfies AuditConfigShapeDefinition;
 
 export function loadPolicy<P extends Policies>(
   policyName: P,

@@ -223,8 +223,9 @@ describe('audit config', () => {
 
     it('bubbles zod parse exceptions as formatted SfError', async () => {
       // Assert
+      const actualFilePath = buildAuditConfigPath(path.join('invalid-schema', 'policies', 'users.yml'));
       const expectedErrorMsg = auditRunMessages.getMessage('error.InvalidConfigFileSchema', [
-        'users.yml',
+        actualFilePath,
         'Unrecognized key: "unknownKeyForOptions" in "options"',
       ]);
       expect(() => loadAuditConfig(buildAuditConfigPath('invalid-schema'))).to.throw(expectedErrorMsg);

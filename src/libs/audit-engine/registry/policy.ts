@@ -10,7 +10,7 @@ import {
   RowLevelPolicyRule,
 } from './context.types.js';
 import { PolicyConfig } from './shape/schema.js';
-import { AuditRunConfig, Policies } from './shape/auditConfigShape.js';
+import { AuditRunConfig, Policies } from './definitions.js';
 
 export type ResolveEntityResult<T> = {
   resolvedEntities: Record<string, T>;
@@ -30,7 +30,7 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
   ) {
     super();
     this.resolvedRules = registry.resolveRules(config.rules, auditConfig);
-    this.riskManager = new AcceptedRisks();
+    this.riskManager = new AcceptedRisks(this.auditConfig.acceptedRisks);
   }
 
   public getExecutableRules(): Array<RowLevelPolicyRule<T>> {

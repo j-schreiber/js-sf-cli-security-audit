@@ -1,4 +1,4 @@
-import { Policies } from '../registry/shape/auditConfigShape.js';
+import { Policies } from '../registry/definitions.js';
 
 export type RiskTree = Partial<Record<Policies, RuleRisks>>;
 

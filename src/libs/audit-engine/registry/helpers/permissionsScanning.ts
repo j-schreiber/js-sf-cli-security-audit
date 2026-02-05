@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleViolation, RuleComponentMessage } from '../result.types.js';
-import { AuditRunConfig } from '../shape/auditConfigShape.js';
+import { AuditRunConfig } from '../definitions.js';
 import { PermissionClassifications, PermissionRiskLevel, UserPrivilegeLevel } from '../shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

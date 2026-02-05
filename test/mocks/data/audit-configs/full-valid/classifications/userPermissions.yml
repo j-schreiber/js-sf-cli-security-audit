@@ -5,11 +5,11 @@ permissions:
     reason: Imposes security risk, effectively bypasses all restrictions.
   CustomizeApplication:
     label: Customize Application
-    classification: Low
+    classification: Critical
     reason: Allows to modify all parts of the app, including security settings.
   ViewSetup:
     label: View Setup and Configuration
-    classification: Low
+    classification: High
     reason: Allows to browse setup and view sensitive configurations.
   AuthorApex:
     label: Author Apex

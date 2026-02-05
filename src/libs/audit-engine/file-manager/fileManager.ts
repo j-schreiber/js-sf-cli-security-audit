@@ -71,6 +71,19 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
         };
         fs.mkdirSync(dirConf.targetPath, { recursive: true });
         saveResult[dirName.toString()] = writeSubdir(dirConf);
+      } else if (isNestedDir(dirDefinition)) {
+        const nestedSaveResults: Record<string, unknown> = {};
+        const partialConf = conf[dirName.toString()] as Record<string, unknown>;
+        for (const [fileDirName, fileDirDef] of Object.entries(dirDefinition.dirs)) {
+          const dirConf: DirSaveConfig = {
+            dirContent: partialConf[fileDirName],
+            targetPath: path.join(targetDirPath.toString(), dirName.toString(), fileDirName),
+            dirDefinition: fileDirDef,
+          };
+          fs.mkdirSync(dirConf.targetPath, { recursive: true });
+          nestedSaveResults[fileDirName] = writeSubdir(dirConf);
+        }
+        saveResult[dirName.toString()] = nestedSaveResults;
       }
     }
     return saveResult as AuditShapeSaveResult<ConfShape>;
@@ -140,7 +153,7 @@ function parseFilesDirectory(def: ConfigsFileDir, dirPath: PathLike): Record<str
     if (parseResult.success) {
       parseResults[fileName] = parseResult.data;
     } else {
-      throwAsSfError(`${fileName}.yml`, parseResult.error);
+      throwAsSfError(filePath, parseResult.error);
     }
   }
   return parseResults;

@@ -4,7 +4,7 @@ import { AuditContext } from '../context.types.js';
 import Policy, { getTotal, ResolveEntityResult } from '../policy.js';
 import { EntityResolveError } from '../result.types.js';
 import RuleRegistry from '../ruleRegistry.js';
-import { AuditRunConfig } from '../shape/auditConfigShape.js';
+import { AuditRunConfig } from '../definitions.js';
 import { PolicyConfig, ProfileClassifications, UserPrivilegeLevel } from '../shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

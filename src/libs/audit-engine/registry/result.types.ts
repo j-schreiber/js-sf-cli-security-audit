@@ -1,4 +1,4 @@
-import { AuditRunConfig } from './shape/auditConfigShape.js';
+import { AuditRunConfig } from './definitions.js';
 
 /**
  * A single violation from a policy rule execution.

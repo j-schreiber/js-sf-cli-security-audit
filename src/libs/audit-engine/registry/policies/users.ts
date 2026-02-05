@@ -5,7 +5,7 @@ import Policy, { getTotal, ResolveEntityResult } from '../policy.js';
 import { AuditContext } from '../context.types.js';
 import { EntityResolveError } from '../result.types.js';
 import { UserClassifications, UserPolicyConfig, UserPrivilegeLevel } from '../shape/schema.js';
-import { AuditRunConfig } from '../shape/auditConfigShape.js';
+import { AuditRunConfig } from '../definitions.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');

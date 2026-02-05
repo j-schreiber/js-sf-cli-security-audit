@@ -108,14 +108,23 @@ export const UserPolicyFileSchema = PolicyFileSchema.extend({
 
 // Accepted Risks Schemata
 
+// Recursive schema type; same as accepted risks "TreeNode | BranchNode"
+// must be exported because otherwise yarn compile fails
+export type NestedStructure = {
+  [key: string]: NestedStructure | { reason: string };
+};
+
 const allowedRiskSchema = z.object({ reason: z.string() });
 
-const riskIdentifierMapping = z.record(z.string(), allowedRiskSchema);
-
-export const AcceptedRisksSchema = z.record(
-  z.string(),
-  z.union([riskIdentifierMapping, z.record(z.string(), riskIdentifierMapping)])
+/**
+ * z.lazy allows to define a recursive schema that can be a a accepted
+ * risk or a structure of nested identifiers.
+ */
+const mappingOrAllowedRisk: z.ZodType<NestedStructure> = z.lazy(() =>
+  z.record(z.string(), z.union([allowedRiskSchema, mappingOrAllowedRisk]))
 );
+
+export const AcceptedRisksSchema = z.record(z.string(), mappingOrAllowedRisk);
 
 // Classification Types
 export type PermissionClassifications = z.infer<typeof PermissionClassifications>;
@@ -128,4 +137,4 @@ export type PolicyConfig = z.infer<typeof PolicyFileSchema>;
 export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
 
 // Accepted Risks
-export type AcceptedRisks = z.infer<typeof AcceptedRisksSchema>;
+export type AcceptedRuleRisks = z.infer<typeof AcceptedRisksSchema>;

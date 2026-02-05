@@ -160,4 +160,21 @@ describe('audit run execution', () => {
       },
     ]);
   });
+
+  it('applies accepted risks from audit config to rule violations', async () => {
+    // Act
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    const enforcePerms = auditResult.policies.profiles?.executedRules.EnforcePermissionClassifications;
+    assert.isDefined(enforcePerms);
+    expect(enforcePerms.violations).to.deep.equal([]);
+    expect(enforcePerms.mutedViolations).to.have.lengthOf(2);
+    const noStandardProfiles = auditResult.policies.users?.executedRules.NoStandardProfilesOnActiveUsers;
+    assert.isDefined(noStandardProfiles);
+    expect(noStandardProfiles.violations).to.deep.equal([]);
+    expect(noStandardProfiles.mutedViolations).to.have.lengthOf(2);
+  });
 });

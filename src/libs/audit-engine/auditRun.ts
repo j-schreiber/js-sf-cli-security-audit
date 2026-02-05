@@ -1,7 +1,7 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.types.js';
-import { AuditRunConfig, Policies } from './registry/shape/auditConfigShape.js';
+import { AuditRunConfig, Policies } from './registry/definitions.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
 import { PartialRuleResults } from './registry/context.types.js';
@@ -26,10 +26,12 @@ export type EntityResolveEvent = {
  * Instance of an audit run that manages high-level operations
  */
 export default class AuditRun extends EventEmitter {
+  public config: AuditRunConfig;
   private executablePolicies?: PolicyMap;
 
-  public constructor(public config: AuditRunConfig) {
+  public constructor(config: Partial<AuditRunConfig>) {
     super();
+    this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {} }, ...config };
   }
 
   public getExecutableRulesCount(policyName: Policies): number {

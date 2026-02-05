@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { merge } from '@salesforce/kit';
 import { PartialPolicyRuleResult } from '../registry/context.types.js';
 import { PolicyRuleViolation, PolicyRuleViolationMute } from '../registry/result.types.js';
-import { Policies } from '../registry/shape/auditConfigShape.js';
+import { Policies } from '../registry/definitions.js';
 import { LeafNode, RiskTree, TreeNode } from './acceptedRisks.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

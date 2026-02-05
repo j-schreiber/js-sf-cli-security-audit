@@ -5,6 +5,7 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
 import { ConfigFileManager, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
+import { AcceptedRuleRisks } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';
@@ -37,6 +38,21 @@ describe('org audit NUTs', () => {
         // eslint-disable-next-line no-param-reassign
         profile.role = role;
       }
+    }
+    ConfigFileManager.save(configDirPath, conf);
+  }
+
+  function initAcceptedRisks(dirPath: string) {
+    const configDirPath = resolveTestDirFilePath(dirPath);
+    const conf = ConfigFileManager.parse(configDirPath);
+    const userRisks: AcceptedRuleRisks = {};
+    if (conf.classifications.users?.users) {
+      for (const user of Object.keys(conf.classifications.users.users)) {
+        userRisks[user] = { '*': { reason: 'Testing ' } };
+      }
+      conf.acceptedRisks.users = {
+        EnforcePermissionClassifications: userRisks,
+      };
     }
     ConfigFileManager.save(configDirPath, conf);
   }
@@ -149,6 +165,22 @@ describe('org audit NUTs', () => {
       // every policy should have at least one audited entity
       expect(policy.auditedEntities, 'audited entities for: ' + policyName).not.deep.equal([]);
     }
+  });
+
+  it('completes an audit with accepted risks', async () => {
+    // Arrange
+    initAcceptedRisks('tmp');
+
+    // Act
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir tmp --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
   });
 
   it('successfully completes an audit of professional ed with all policies active', async () => {

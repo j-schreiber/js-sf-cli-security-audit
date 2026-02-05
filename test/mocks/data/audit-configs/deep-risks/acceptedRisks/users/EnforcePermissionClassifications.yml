@@ -1,0 +1,7 @@
+admin@example.com:
+  System Administrator:
+    Some Matcher:
+      Another Matcher:
+        Deep Matcher:
+          NoSpaces:
+            reason: These are a lot of identifiers

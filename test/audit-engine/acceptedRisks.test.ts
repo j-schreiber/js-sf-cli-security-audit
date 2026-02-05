@@ -1,8 +1,12 @@
 import { expect } from 'chai';
+import { Messages } from '@salesforce/core';
 import { PartialPolicyRuleResult } from '../../src/libs/audit-engine/registry/context.types.js';
 import { PolicyRuleViolation } from '../../src/libs/audit-engine/registry/result.types.js';
 import { RiskTree, TreeNode } from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.types.js';
 import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'acceptedRisks');
 
 describe('accepted risks', () => {
   let defaultRisks: RiskTree;
@@ -34,6 +38,30 @@ describe('accepted risks', () => {
         },
       },
     };
+  });
+
+  it('merges default built-in risks with custom risks', () => {
+    // Act
+    const riskManager = new AcceptedRisks({
+      users: {
+        NoStandardProfilesOnActiveUsers: {
+          'my-test-user@example.com': { 'Minimum Access': { reason: 'This is okay' } },
+        },
+      },
+    });
+
+    const violation = {
+      identifier: ['some-username@example.com', 'Sales Insights Integration User'],
+      message: 'Testing',
+    };
+    const partialResult = initRuleResult('NoStandardProfilesOnActiveUsers', [violation]);
+    const scrubbedResult = riskManager.scrub('users', partialResult);
+
+    // Assert
+    expect(scrubbedResult.violations).to.deep.equal([]);
+    expect(scrubbedResult.mutedViolations).to.deep.equal([
+      { ...violation, reason: messages.getMessage('user-skipped-cannot-manage') },
+    ]);
   });
 
   it('matches accepted risk with exact identifier match', () => {
