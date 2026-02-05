@@ -75,6 +75,9 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
         const nestedSaveResults: Record<string, unknown> = {};
         const partialConf = conf[dirName.toString()] as Record<string, unknown>;
         for (const [fileDirName, fileDirDef] of Object.entries(dirDefinition.dirs)) {
+          if (!partialConf[fileDirName]) {
+            continue;
+          }
           const dirConf: DirSaveConfig = {
             dirContent: partialConf[fileDirName],
             targetPath: path.join(targetDirPath.toString(), dirName.toString(), fileDirName),

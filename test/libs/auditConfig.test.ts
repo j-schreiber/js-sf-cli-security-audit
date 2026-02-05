@@ -6,7 +6,7 @@ import AuditTestContext, { buildAuditConfigPath } from '../mocks/auditTestContex
 import AuditConfig from '../../src/libs/conf-init/auditConfig.js';
 import StrictPreset from '../../src/libs/conf-init/presets/strict.js';
 import LoosePreset from '../../src/libs/conf-init/presets/loose.js';
-import { AuditRunConfig, ConfigFileManager } from '../../src/libs/audit-engine/index.js';
+import { AuditRunConfig, loadAuditConfig, saveAuditConfig } from '../../src/libs/audit-engine/index.js';
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import { AuditInitPresets } from '../../src/libs/conf-init/init.types.js';
 
@@ -14,10 +14,6 @@ const DEFAULT_TEST_OUTPUT_DIR = path.join('tmp', 'test-outputs', 'audit-config')
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policyclassifications');
 const auditRunMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
-
-function loadAuditConfig(dirPath: string): AuditRunConfig {
-  return ConfigFileManager.parse(dirPath);
-}
 
 describe('audit config', () => {
   const $$ = new AuditTestContext();
@@ -191,7 +187,7 @@ describe('audit config', () => {
     });
   });
 
-  describe('load config from directory', () => {
+  describe('read/write config from files', () => {
     it('loads existing full config', async () => {
       // Act
       const auditConf = loadAuditConfig(buildAuditConfigPath('full-valid'));
@@ -229,6 +225,22 @@ describe('audit config', () => {
         'Unrecognized key: "unknownKeyForOptions" in "options"',
       ]);
       expect(() => loadAuditConfig(buildAuditConfigPath('invalid-schema'))).to.throw(expectedErrorMsg);
+    });
+
+    it('writes fresh initialised audit config to file', async () => {
+      // Act
+      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const saveResult = saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
+
+      // Assert
+      expect(saveResult.acceptedRisks).to.deep.equal({});
+      expect(Object.keys(saveResult.policies)).to.have.members([
+        'profiles',
+        'settings',
+        'permissionSets',
+        'users',
+        'connectedApps',
+      ]);
     });
   });
 });
