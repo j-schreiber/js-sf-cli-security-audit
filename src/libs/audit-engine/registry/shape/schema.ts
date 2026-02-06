@@ -120,11 +120,9 @@ const allowedRiskSchema = z.object({ reason: z.string() });
  * z.lazy allows to define a recursive schema that can be a a accepted
  * risk or a structure of nested identifiers.
  */
-const mappingOrAllowedRisk: z.ZodType<NestedStructure> = z.lazy(() =>
-  z.record(z.string(), z.union([allowedRiskSchema, mappingOrAllowedRisk]))
+export const AcceptedRisksSchema: z.ZodType<NestedStructure> = z.lazy(() =>
+  z.record(z.string(), z.union([allowedRiskSchema, AcceptedRisksSchema]))
 );
-
-export const AcceptedRisksSchema = z.record(z.string(), mappingOrAllowedRisk);
 
 // Classification Types
 export type PermissionClassifications = z.infer<typeof PermissionClassifications>;

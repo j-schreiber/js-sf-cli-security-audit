@@ -28,6 +28,7 @@ export default class AcceptedRisks {
           '*': {
             'Sales Insights Integration User': {
               reason: messages.getMessage('user-skipped-cannot-manage'),
+              type: 'standard',
             },
           },
         },
@@ -78,7 +79,7 @@ export default class AcceptedRisks {
 
 function flatten(node: TreeNode, nodePathToFar: string[] = []): Array<Omit<AcceptedRiskStatistics, 'policy' | 'rule'>> {
   if (isLeaf(node)) {
-    return [{ matcher: nodePathToFar, appliedCount: node.usageCount ?? 0 }];
+    return [{ matcher: nodePathToFar, appliedCount: node.usageCount ?? 0, type: node.type ?? 'custom' }];
   }
   const flattendChildren = [];
   for (const [key, maybeLeaf] of Object.entries(node)) {

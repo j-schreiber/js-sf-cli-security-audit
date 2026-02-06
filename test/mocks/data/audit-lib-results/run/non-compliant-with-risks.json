@@ -1,0 +1,141 @@
+{
+  "isCompliant": false,
+  "auditDate": "2025-10-12T12:58:00.000Z",
+  "policies": {
+    "profiles": {
+      "isCompliant": false,
+      "enabled": true,
+      "auditedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
+      "ignoredEntities": [{ "name": "Some Other Profile", "message": "Not found on target org" }],
+      "executedRules": {
+        "EnforcePermissionClassifications": {
+          "ruleName": "EnforcePermissionClassifications",
+          "isCompliant": false,
+          "violations": [
+            {
+              "identifier": ["Standard User", "ViewSetup"],
+              "message": "Permission is classified as High but profile uses preset Standard User"
+            },
+            {
+              "identifier": ["Custom Standard User", "ViewSetup"],
+              "message": "Permission is classified as High but profile uses preset Standard User"
+            },
+            {
+              "identifier": ["System Administrator", "AuthorApex"],
+              "message": "Permission is classified as Critical but profile uses preset Admin"
+            }
+          ],
+          "violatedEntities": ["Standard User", "Custom Standard User", "System Administrator"],
+          "mutedViolations": [
+            {
+              "identifier": ["Standard User", "ApiEnabled"],
+              "message": "Is 'High', not allowed",
+              "reason": "Allowed today"
+            }
+          ],
+          "warnings": [
+            {
+              "identifier": ["Standard User", "ActivitiesAccess"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            },
+            {
+              "identifier": ["Standard User", "AddDirectMessageMembers"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            }
+          ],
+          "errors": []
+        },
+        "SingleAdminProfileInUse": {
+          "ruleName": "SingleAdminProfileInUse",
+          "isCompliant": true,
+          "violations": [],
+          "mutedViolations": [],
+          "warnings": [],
+          "errors": []
+        }
+      },
+      "skippedRules": []
+    },
+    "permissionSets": {
+      "isCompliant": false,
+      "enabled": true,
+      "auditedEntities": [
+        "Standard_User_Permission_Set_1",
+        "Standard_User_Permission_Set_2",
+        "Power_User_Permission_Set_1"
+      ],
+      "executedRules": {
+        "EnforcePermissionClassifications": {
+          "ruleName": "EnforcePermissionClassifications",
+          "isCompliant": false,
+          "violations": [
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "ViewSetup"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "ViewSetup"],
+              "message": "Permission is classified as High but preset is Standard User"
+            },
+            {
+              "identifier": ["Integration_User_Permission", "ModifyAllData"],
+              "message": "Permission is classified as High but profile uses preset Standard User"
+            },
+            {
+              "identifier": ["Integration_User_Permission", "UseAnyApiClient"],
+              "message": "Permission is blocked."
+            }
+          ],
+          "violatedEntities": ["Standard_User_Permission_Set_1", "Integration_User_Permission"],
+          "mutedViolations": [],
+          "warnings": [
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "ActivitiesAccess"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            },
+            {
+              "identifier": ["Standard_User_Permission_Set_1", "AddDirectMessageMembers"],
+              "message": "Permission was not classified. Update classification to LOW or higher to resolve."
+            }
+          ],
+          "errors": []
+        }
+      },
+      "skippedRules": []
+    }
+  },
+  "acceptedRisks": [
+    {
+      "matcher": ["my-test-user@example.com", "Standard User"],
+      "reason": "Someone allowed this.",
+      "appliedCount": 0,
+      "policy": "users",
+      "rule": "NoStandardProfilesOnActiveUsers",
+      "type": "custom"
+    },
+    {
+      "matcher": ["Standard User", "*"],
+      "reason": "Someone allowed this.",
+      "appliedCount": 5,
+      "policy": "profiles",
+      "rule": "EnforcePermissionClassifications",
+      "type": "custom"
+    },
+    {
+      "matcher": ["System Administrator", "AuthorApex"],
+      "reason": "Someone allowed this for mock reasons.",
+      "appliedCount": 1,
+      "policy": "profiles",
+      "rule": "EnforcePermissionClassifications",
+      "type": "custom"
+    },
+    {
+      "matcher": ["*", "Sales Insights Integration User"],
+      "reason": "Comes from built-in risks, but is mocked here.",
+      "appliedCount": 1,
+      "policy": "users",
+      "rule": "NoStandardProfilesOnActiveUsers",
+      "type": "standard"
+    }
+  ]
+}

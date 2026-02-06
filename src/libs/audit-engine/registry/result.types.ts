@@ -195,6 +195,10 @@ export type AcceptedRiskStatistics = {
    * Total number of uses for this accepted risk.
    */
   appliedCount: number;
+  /**
+   * Type of the risk
+   */
+  type: 'custom' | 'standard';
 };
 
 /**

@@ -194,30 +194,35 @@ describe('accepted risks', () => {
       policy: 'users',
       matcher: ['*', 'Sales Insights Integration User'],
       appliedCount: 0,
+      type: 'standard',
     });
     expect(risks[1]).to.deep.equal({
       rule: 'MyTestRule',
       policy: 'users',
       matcher: ['key1', 'subIdentifier2'],
       appliedCount: 0,
+      type: 'custom',
     });
     expect(risks[2]).to.deep.equal({
       rule: 'MyTestRule',
       policy: 'users',
       matcher: ['key1', '*'],
       appliedCount: 0,
+      type: 'custom',
     });
     expect(risks[3]).to.deep.equal({
       rule: 'MyTestRule',
       policy: 'users',
       matcher: ['key3', '*'],
       appliedCount: 0,
+      type: 'custom',
     });
     expect(risks[4]).to.deep.equal({
       rule: 'TestProfileBasedRule',
       policy: 'users',
       matcher: ['username@example.com', '*'],
       appliedCount: 0,
+      type: 'custom',
     });
   });
 
@@ -240,6 +245,7 @@ describe('accepted risks', () => {
       policy: 'users',
       matcher: ['key1', '*'],
       appliedCount: 4,
+      type: 'custom',
     });
   });
 });

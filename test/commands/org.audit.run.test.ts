@@ -123,6 +123,8 @@ describe('org audit run', () => {
       expect($$.sfCommandStubs.log.args.flat()).to.deep.equal([
         StandardColors.error(messages.getMessage('summary-non-compliant')),
         '',
+        '=== Rule Reports ===',
+        '',
       ]);
       expect($$.sfCommandStubs.table.callCount).to.equal(5);
       expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
@@ -137,7 +139,7 @@ describe('org audit run', () => {
             rule: 'EnforcePermissionClassifications',
             isCompliant: false,
             violations: 3,
-            acceptedRisks: 1,
+            acceptedViolations: 1,
             errors: 0,
             warnings: 2,
             compliantEntities: 0,
@@ -147,7 +149,7 @@ describe('org audit run', () => {
             rule: 'SingleAdminProfileInUse',
             isCompliant: true,
             violations: 0,
-            acceptedRisks: 0,
+            acceptedViolations: 0,
             errors: 0,
             warnings: 0,
             compliantEntities: 0,
@@ -173,6 +175,54 @@ describe('org audit run', () => {
       });
     });
 
+    it('reports accepted risks summary when custom risks are present', async () => {
+      // Act
+      mockResult(parseMockAuditConfig('non-compliant-with-risks.json'));
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+      // Assert
+      expect($$.sfCommandStubs.log.args.flat()).to.deep.contain.members([
+        StandardColors.warning(messages.getMessage('has-documented-accepted-risks', [3])),
+      ]);
+      const risksTableArgs = $$.sfCommandStubs.table.args.flat()[1];
+      expect(risksTableArgs.title).to.contain('Accepted Risks');
+      expect(risksTableArgs.data).to.have.deep.members([
+        {
+          policy: 'Profiles',
+          rule: 'EnforcePermissionClassifications',
+          matcher: 'Standard User • *',
+          applied: 5,
+        },
+        {
+          policy: 'Profiles',
+          rule: 'EnforcePermissionClassifications',
+          matcher: 'System Administrator • AuthorApex',
+          applied: 1,
+        },
+        {
+          policy: 'Users',
+          rule: 'NoStandardProfilesOnActiveUsers',
+          matcher: 'my-test-user@example.com • Standard User',
+          applied: 0,
+        },
+      ]);
+    });
+
+    it('skips accepted risks when no risks are documented', async () => {
+      // Act
+      mockResult(NON_COMPLIANT_RESULT);
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+      // Assert
+      expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal([]);
+      expect($$.sfCommandStubs.info.args.flat()).to.contain.members([
+        messages.getMessage('no-accepted-risks-configured'),
+      ]);
+      for (const tableArgs of $$.sfCommandStubs.table.args.flat()) {
+        expect(tableArgs.title).to.not.contain('Accepted Risks');
+      }
+    });
+
     it('reports violations with plain string identifiers in data table', async () => {
       // Arrange
       mockResult(PLAIN_IDENTIFIERS_RESULT);
@@ -188,7 +238,7 @@ describe('org audit run', () => {
             rule: 'MockRule',
             isCompliant: false,
             violations: 1,
-            acceptedRisks: 0,
+            acceptedViolations: 0,
             errors: 0,
             warnings: 0,
             compliantEntities: 3,
@@ -247,7 +297,7 @@ describe('org audit run', () => {
             rule: 'EnforcePermissionClassifications',
             isCompliant: true,
             violations: 0,
-            acceptedRisks: 0,
+            acceptedViolations: 0,
             errors: 0,
             warnings: 2,
             compliantEntities: 3,
@@ -345,7 +395,7 @@ describe('org audit run', () => {
 
       // Assert
       expect(fs.existsSync(result.filePath)).to.be.true;
-      expect($$.sfCommandStubs.info.args.flat()).to.deep.equal([
+      expect($$.sfCommandStubs.info.args.flat()).to.deep.contain.members([
         messages.getMessage('info.report-file-location', [result.filePath]),
       ]);
       expect(result.orgId).to.equal($$.targetOrg.orgId);

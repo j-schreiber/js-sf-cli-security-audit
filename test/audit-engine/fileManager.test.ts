@@ -103,6 +103,9 @@ const extendedShape = {
           EnforcePermissionClassifications: {
             schema: AcceptedRisksSchema,
           },
+          NoInactiveUsers: {
+            schema: AcceptedRisksSchema,
+          },
         },
       },
     },
@@ -215,15 +218,16 @@ describe('file manager', () => {
       assert.isUndefined(conf.acceptedRisks.profiles.TestRule);
     });
 
-    it('parses accepted risks with deep matchers', () => {
+    it('parses accepted risks with deep and flat matchers', () => {
       // Act
       const fm = new FileManager(extendedShape);
-      const conf = fm.parse(buildPath('deep-risks'));
+      const conf = fm.parse(buildPath('edge-case-risks'));
 
       // Assert
       assert.isDefined(conf.acceptedRisks);
       assert.isDefined(conf.acceptedRisks.users);
       assert.isDefined(conf.acceptedRisks.users.EnforcePermissionClassifications);
+      assert.isDefined(conf.acceptedRisks.users.NoInactiveUsers);
     });
   });
 

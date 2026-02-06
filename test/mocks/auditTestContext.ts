@@ -50,6 +50,7 @@ export default class AuditTestContext {
   public async init() {
     await this.context.stubAuths(this.targetOrg);
     this.targetOrgConnection = await this.targetOrg.getConnection();
+    // comment out this line to see console output in unit tests
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
