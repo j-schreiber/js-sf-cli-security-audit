@@ -1,10 +1,11 @@
-import { Policies } from '../registry/shape/auditConfigShape.js';
+import { Policies } from '../registry/definitions.js';
 
-export type AcceptedRisksConfig = Record<Policies, AcceptedPolicyRisks>;
+export type RiskTree = Partial<Record<Policies, RuleRisks>>;
 
-export type AcceptedPolicyRisks = Record<string, AcceptedRuleRisks[]>;
+export type RuleRisks = Record<string, TreeNode>;
 
-export type AcceptedRuleRisks = {
-  identifierMatcher: string[];
-  reason: string;
-};
+export type TreeNode = LeafNode | BranchNode;
+
+export type BranchNode = { [nodePath: string]: TreeNode };
+
+export type LeafNode = { reason: string; usageCount?: number; type?: 'standard' };

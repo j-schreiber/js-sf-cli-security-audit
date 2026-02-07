@@ -3,12 +3,12 @@ import { Messages } from '@salesforce/core';
 import AuditConfig from '../../../libs/conf-init/auditConfig.js';
 import { AuditInitPresets } from '../../../libs/conf-init/init.types.js';
 import { capitalize } from '../../../utils.js';
-import { ConfigFileManager } from '../../../libs/audit-engine/index.js';
+import { saveAuditConfig } from '../../../libs/audit-engine/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
 
-type AuditConfigSaveResult = ReturnType<(typeof ConfigFileManager)['save']>;
+type AuditConfigSaveResult = ReturnType<typeof saveAuditConfig>;
 export type OrgAuditInitResult = AuditConfigSaveResult;
 
 const presetFlag = Flags.custom<AuditInitPresets>({
@@ -45,7 +45,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     const auditConfig = await AuditConfig.init(flags['target-org'].getConnection(flags['api-version']), {
       preset: flags.preset,
     });
-    const saveResult = ConfigFileManager.save(flags['output-dir'], auditConfig);
+    const saveResult = saveAuditConfig(flags['output-dir'], auditConfig);
     this.printResults(saveResult);
     return saveResult;
   }

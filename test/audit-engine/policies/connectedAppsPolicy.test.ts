@@ -4,10 +4,11 @@ import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
+import { resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
-describe('connected apps policy', () => {
+describe('policy - connected apps', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: PolicyConfig;
 
@@ -37,13 +38,11 @@ describe('connected apps policy', () => {
     $$.mocks.mockOAuthTokens('oauth-usage');
 
     // Act
-    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-    const resolveResult = await pol.resolve({ targetOrgConnection: await $$.targetOrg.getConnection() });
-    const policyResult = await pol.run({ targetOrgConnection: await $$.targetOrg.getConnection() });
+    const policyResult = await resolveAndRun('connectedApps', $$);
 
     // Assert
-    expect(resolveResult.ignoredEntities).to.deep.equal([]);
-    expect(Object.keys(resolveResult.resolvedEntities)).to.deep.equal([
+    expect(policyResult.ignoredEntities).to.deep.equal([]);
+    expect(policyResult.auditedEntities).to.deep.equal([
       'Chatter Desktop',
       'Salesforce for Android',
       'Chatter Mobile for BlackBerry',
@@ -63,13 +62,11 @@ describe('connected apps policy', () => {
     defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
     // Act
-    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-    const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
-    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
+    const policyResult = await resolveAndRun('connectedApps', $$);
 
     // Assert
-    expect(resolveResult.ignoredEntities).to.deep.equal([]);
-    expect(Object.keys(resolveResult.resolvedEntities)).to.deep.equal([
+    expect(policyResult.ignoredEntities).to.deep.equal([]);
+    expect(policyResult.auditedEntities).to.deep.equal([
       'Chatter Desktop',
       'Salesforce for Android',
       'Chatter Mobile for BlackBerry',
@@ -89,16 +86,13 @@ describe('connected apps policy', () => {
     // Act
     const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
     const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
-    const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
 
     // Assert
     expect(resolveResult.ignoredEntities).to.deep.equal([]);
-    expect(Object.keys(resolveResult.resolvedEntities).length).to.equal(5);
+    expect(Object.keys(resolveResult.resolvedEntities)).to.have.lengthOf(5);
     Object.values(resolveResult.resolvedEntities).forEach((appConf) => {
       const resolvedApp = appConf;
       expect(resolvedApp.overrideByApiSecurityAccess).to.be.false;
     });
-    const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
   });
 });

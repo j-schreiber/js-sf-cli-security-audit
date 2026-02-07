@@ -3,7 +3,5 @@ options:
   defaultRoleForMissingUsers: Standard User
   analyseLastNDaysOfLoginHistory: 14
 rules:
-  NoOtherApexApiLogins:
-    enabled: true
-  NoStandardProfilesOnActiveUsers:
+  EnforcePermissionClassifications:
     enabled: true

@@ -8,11 +8,28 @@ import { SfError } from '@salesforce/core';
 import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { PartialPolicyRuleResult } from '../../src/libs/audit-engine/registry/context.types.js';
 import {
+  AuditPolicyResult,
   PolicyRuleViolation,
   PolicyRuleViolationMute,
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
+import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
+import { loadPolicy, Policies } from '../../src/libs/audit-engine/index.js';
 import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
+import AuditTestContext from './auditTestContext.js';
+
+/**
+ * Runs policy with the mocked audit config. Add policy config
+ * classifications to mock context before calling this.
+ *
+ * @returns Policy result
+ */
+export async function resolveAndRun(policy: Policies, context: AuditTestContext): Promise<AuditPolicyResult> {
+  const pol = loadPolicy(policy, context.mockAuditConfig);
+  await pol.resolve({ targetOrgConnection: context.targetOrgConnection });
+  const partials = await pol.executeRules({ targetOrgConnection: context.targetOrgConnection });
+  return pol.finalise(partials, new AcceptedRisks(context.mockAuditConfig.acceptedRisks));
+}
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
   return {

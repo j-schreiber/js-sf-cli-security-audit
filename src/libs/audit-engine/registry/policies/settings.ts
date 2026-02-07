@@ -6,7 +6,7 @@ import { MDAPI, MdapiRegistry } from '../../../../salesforce/index.js';
 import Policy, { ResolveEntityResult } from '../policy.js';
 import { AuditContext } from '../context.types.js';
 import { EntityResolveError } from '../result.types.js';
-import { AuditRunConfig } from '../shape/auditConfigShape.js';
+import { AuditRunConfig } from '../definitions.js';
 import { PolicyConfig } from '../shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);

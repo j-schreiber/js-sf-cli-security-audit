@@ -1,13 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { Messages } from '@salesforce/core';
 import {
-  AuditConfigFileSchema,
-  AuditConfigSaveResult,
+  AuditConfigShapeDefinition,
+  AuditShapeSaveResult,
   ConfigFileDependency,
-  ParsedAuditConfig,
+  ConfigsFileDir,
+  ExtractAuditConfigTypes,
+  FileResult,
+  NestedConfigDir,
 } from './fileManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -19,7 +26,7 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'or
  * structure is configurable, but most of the time using the default file manager
  * will be enough.
  */
-export default class FileManager<ConfShape extends AuditConfigFileSchema> {
+export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
   public constructor(private schema: ConfShape) {}
 
   /**
@@ -29,17 +36,16 @@ export default class FileManager<ConfShape extends AuditConfigFileSchema> {
    * @param dirPath
    * @returns
    */
-  public parse(dirPath: PathLike): ParsedAuditConfig<ConfShape> {
-    const parseResult = {} as ParsedAuditConfig<ConfShape>;
+  public parse(dirPath: PathLike): ExtractAuditConfigTypes<ConfShape> {
+    // no idea if there is not a better solution than casting to "any"
+    // but it works, and tests prove that its somewhat save :).
+    const parseResult: any = {};
     for (const dirName of typedKeys(this.schema)) {
-      // no idea if there is not a better solution than casting to "any"
-      // but it works, and tests prove that its somewhat save :).
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      (parseResult as any)[dirName] = this.parseSubdir(dirName, dirPath);
+      parseResult[dirName] = this.parseSubdir(dirName, dirPath);
     }
     assertIsMinimalConfig(parseResult, dirPath);
     this.validateDependencies(parseResult);
-    return parseResult;
+    return parseResult as ExtractAuditConfigTypes<ConfShape>;
   }
 
   /**
@@ -50,61 +56,118 @@ export default class FileManager<ConfShape extends AuditConfigFileSchema> {
    * @param conf AuditConfig to save
    * @returns
    */
-  public save(targetDirPath: string, conf: Record<string, unknown>): AuditConfigSaveResult<ConfShape> {
+  public save(targetDirPath: string, conf: Record<string, unknown>): AuditShapeSaveResult<ConfShape> {
     const saveResult: Record<string, unknown> = {};
     for (const dirName of typedKeys(this.schema)) {
-      if (!conf[dirName as string]) {
+      if (!conf[dirName.toString()]) {
         continue;
       }
-      const dirPath = path.join(targetDirPath.toString(), dirName as string);
-      fs.mkdirSync(dirPath, { recursive: true });
-      const subSaveResult: Record<string, unknown> = {};
-      for (const [key, def] of Object.entries(this.schema[dirName])) {
-        const maybeContent = (conf[dirName as string] as Record<string, unknown>)[key] as Record<string, unknown>;
-        if (maybeContent) {
-          const filePath = path.join(dirPath, `${key}.yml`);
-          const entitiesCount = def.entities ? countEntities(maybeContent[def.entities]) : 0;
-          subSaveResult[key] = { filePath, content: maybeContent, totalEntities: entitiesCount };
-          fs.writeFileSync(filePath, yaml.dump(maybeContent));
+      const dirDefinition = this.schema[dirName.toString()];
+      if (isFilesDir(dirDefinition)) {
+        const dirConf: DirSaveConfig = {
+          dirContent: conf[dirName.toString()],
+          targetPath: path.join(targetDirPath.toString(), dirName.toString()),
+          dirDefinition,
+        };
+        fs.mkdirSync(dirConf.targetPath, { recursive: true });
+        saveResult[dirName.toString()] = writeSubdir(dirConf);
+      } else if (isNestedDir(dirDefinition)) {
+        const nestedSaveResults: Record<string, unknown> = {};
+        const partialConf = conf[dirName.toString()] as Record<string, unknown>;
+        for (const [fileDirName, fileDirDef] of Object.entries(dirDefinition.dirs)) {
+          if (!partialConf[fileDirName]) {
+            continue;
+          }
+          const dirConf: DirSaveConfig = {
+            dirContent: partialConf[fileDirName],
+            targetPath: path.join(targetDirPath.toString(), dirName.toString(), fileDirName),
+            dirDefinition: fileDirDef,
+          };
+          fs.mkdirSync(dirConf.targetPath, { recursive: true });
+          nestedSaveResults[fileDirName] = writeSubdir(dirConf);
         }
+        saveResult[dirName.toString()] = nestedSaveResults;
       }
-      saveResult[dirName as string] = subSaveResult;
     }
-    return saveResult as AuditConfigSaveResult<ConfShape>;
+    return saveResult as AuditShapeSaveResult<ConfShape>;
   }
 
   //      PRIVATE ZONE
 
-  private parseSubdir<K extends keyof ConfShape>(
-    configType: K,
-    dirPath: PathLike
-  ): Record<string, ParsedAuditConfig<ConfShape>[K]> {
-    const parseResults: Record<string, ParsedAuditConfig<ConfShape>[K]> = {};
-    for (const [fileName, fileConfig] of Object.entries(this.schema[configType])) {
-      const filePath = path.join(dirPath.toString(), configType as string, `${fileName}.yml`);
-      if (!fs.existsSync(filePath)) {
-        continue;
+  private parseSubdir<K extends keyof ConfShape>(configType: K, dirPath: PathLike): Record<string, unknown> {
+    const dirToParse = this.schema[configType];
+    if (isFilesDir(dirToParse)) {
+      return parseFilesDirectory(dirToParse, path.join(dirPath.toString(), configType.toString()));
+    } else if (isNestedDir(dirToParse)) {
+      const subResults: Record<string, unknown> = {};
+      for (const [subDirName, subDirConfig] of Object.entries(dirToParse.dirs)) {
+        subResults[subDirName] = parseFilesDirectory(
+          subDirConfig,
+          path.join(dirPath.toString(), configType.toString(), subDirName)
+        );
       }
-      const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
-      const parseResult = fileConfig.schema.safeParse(fileContent);
-      if (parseResult.success) {
-        parseResults[fileName] = parseResult.data as ParsedAuditConfig<ConfShape>[K];
-      } else {
-        throwAsSfError(`${fileName}.yml`, parseResult.error);
-      }
+      return subResults;
     }
-    return parseResults;
+    return {};
   }
 
-  private validateDependencies(parseResult: ParsedAuditConfig<ConfShape>): void {
+  private validateDependencies(parseResult: ExtractAuditConfigTypes<ConfShape>): void {
     for (const [configType, config] of Object.entries(this.schema)) {
-      for (const [configName, detailShape] of Object.entries(config)) {
-        if (detailShape.dependencies && parseResult[configType][configName]) {
-          assertDependencies(detailShape.dependencies, parseResult);
+      if (isFilesDir(config)) {
+        for (const [configName, detailShape] of Object.entries(config.files)) {
+          if (detailShape.dependencies && parseResult[configType][configName]) {
+            assertDependencies(detailShape.dependencies, parseResult);
+          }
         }
       }
     }
   }
+}
+
+function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
+  const dirSaveResults: Record<string, FileResult<unknown>> = {};
+  for (const [fileName, fileDefinition] of Object.entries(conf.dirDefinition.files)) {
+    const maybeContent = conf.dirContent[fileName];
+    if (maybeContent) {
+      const filePath = path.join(conf.targetPath, `${fileName}.yml`);
+      const entitiesCount = fileDefinition.entities ? countEntities(maybeContent[fileDefinition.entities]) : 0;
+      dirSaveResults[fileName] = { filePath, content: maybeContent, totalEntities: entitiesCount };
+      fs.writeFileSync(filePath, yaml.dump(maybeContent));
+    }
+  }
+  return dirSaveResults;
+}
+
+type DirSaveConfig = {
+  dirDefinition: ConfigsFileDir;
+  targetPath: string;
+  dirContent: any;
+};
+
+function parseFilesDirectory(def: ConfigsFileDir, dirPath: PathLike): Record<string, unknown> {
+  const parseResults: Record<string, unknown> = {};
+  for (const [fileName, fileConfig] of Object.entries(def.files)) {
+    const filePath = path.join(dirPath.toString(), `${fileName}.yml`);
+    if (!fs.existsSync(filePath)) {
+      continue;
+    }
+    const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
+    const parseResult = fileConfig.schema.safeParse(fileContent);
+    if (parseResult.success) {
+      parseResults[fileName] = parseResult.data;
+    } else {
+      throwAsSfError(filePath, parseResult.error);
+    }
+  }
+  return parseResults;
+}
+
+function isFilesDir(dir: ConfigsFileDir | NestedConfigDir): dir is ConfigsFileDir {
+  return 'files' in dir;
+}
+
+function isNestedDir(dir: ConfigsFileDir | NestedConfigDir): dir is NestedConfigDir {
+  return 'dirs' in dir;
 }
 
 function countEntities(content: unknown): number {
@@ -115,7 +178,7 @@ function countEntities(content: unknown): number {
   }
 }
 
-function assertIsMinimalConfig(conf: ParsedAuditConfig<AuditConfigFileSchema>, dirPath: PathLike): void {
+function assertIsMinimalConfig(conf: any, dirPath: PathLike): void {
   if (Object.keys(conf.policies).length === 0) {
     const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
     throw messages.createError('NoAuditConfigFound', [formattedDirPath]);

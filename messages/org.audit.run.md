@@ -40,6 +40,14 @@ All policies are compliant.
 
 At least one policy is not compliant. Review details below.
 
+# no-accepted-risks-configured
+
+No accepted risks documented. All violations are reported.
+
+# has-documented-accepted-risks
+
+Audit config has %s accepted risks documented. %s violations were muted.
+
 # info.report-file-location
 
 Full report was written to: %s.

@@ -2,7 +2,7 @@ import z from 'zod';
 import { Record } from '@jsforce/jsforce-node';
 import { AuditConfigShape } from '../audit-engine/index.js';
 
-type AuditClassifications = (typeof AuditConfigShape)['classifications'];
+type AuditClassifications = (typeof AuditConfigShape)['classifications']['files'];
 
 export const CUSTOM_PERMS_QUERY = 'SELECT Id,MasterLabel,DeveloperName FROM CustomPermission';
 

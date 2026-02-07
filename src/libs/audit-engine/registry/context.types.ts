@@ -1,5 +1,6 @@
 import { Connection } from '@salesforce/core';
 import { Optional } from '../../../utils.js';
+import AcceptedRisks from '../accepted-risks/acceptedRisks.js';
 import { AuditPolicyResult, PolicyRuleExecutionResult } from './result.types.js';
 
 /**
@@ -12,6 +13,11 @@ export type PartialPolicyRuleResult = Optional<
 >;
 
 /**
+ * Map of partial results for executed rules
+ */
+export type PartialRuleResults = Record<string, PartialPolicyRuleResult>;
+
+/**
  *
  */
 export type RowLevelPolicyRule<ResolvedEntityType> = {
@@ -19,7 +25,8 @@ export type RowLevelPolicyRule<ResolvedEntityType> = {
 };
 
 export type IPolicy = {
-  run(context: AuditContext): Promise<AuditPolicyResult>;
+  executeRules(context: AuditContext): Promise<PartialRuleResults>;
+  finalise(partialResults: PartialRuleResults, riskManager: AcceptedRisks): AuditPolicyResult;
 };
 
 export type AuditContext = {

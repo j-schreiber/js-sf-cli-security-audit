@@ -1,4 +1,4 @@
-import { AuditRunConfig } from './shape/auditConfigShape.js';
+import { AuditRunConfig } from './definitions.js';
 
 /**
  * A single violation from a policy rule execution.
@@ -174,6 +174,34 @@ export type AuditPolicyResult = {
 };
 
 /**
+ * Aggregated usage statistics of accepted risks for this audit run.
+ */
+export type AcceptedRiskStatistics = {
+  /**
+   * Policy where this accepted risk is owned.
+   */
+  policy: string;
+  /**
+   * Name of the rule - identical to the filename or the rule
+   * identifier in the policy.
+   */
+  rule: string;
+  /**
+   * Hierarchical composite matcher of the risk. Matches identifiers
+   * of rule violations.
+   */
+  matcher: string[];
+  /**
+   * Total number of uses for this accepted risk.
+   */
+  appliedCount: number;
+  /**
+   * Type of the risk
+   */
+  type: 'custom' | 'standard';
+};
+
+/**
  * The final audit result, contains all policy results.
  */
 export type AuditResult = {
@@ -183,9 +211,9 @@ export type AuditResult = {
   isCompliant: boolean;
 
   /**
-   * Id of the audited org.
+   * Id of the audited org, if it was available.
    */
-  orgId: string;
+  orgId?: string;
 
   /**
    * ISO date time of the audit
@@ -198,4 +226,10 @@ export type AuditResult = {
   policies: {
     [P in keyof AuditRunConfig['policies']]: AuditPolicyResult;
   };
+
+  /**
+   * Usage stats for all accepted risks that were loaded and applied
+   * during this audit run.
+   */
+  acceptedRisks: AcceptedRiskStatistics[];
 };

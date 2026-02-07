@@ -5,10 +5,14 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
 import { ConfigFileManager, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
+import { AcceptedRuleRisks } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
+
+const profEdAudit = path.join('audits', 'prof-ed');
+const entEdAudit = path.join('audits', 'ent-ed');
 
 describe('org audit NUTs', () => {
   let session: TestSession;
@@ -37,6 +41,35 @@ describe('org audit NUTs', () => {
         // eslint-disable-next-line no-param-reassign
         profile.role = role;
       }
+    }
+    ConfigFileManager.save(configDirPath, conf);
+  }
+
+  function initAcceptedRisks(dirPath: string) {
+    const configDirPath = resolveTestDirFilePath(dirPath);
+    const conf = ConfigFileManager.parse(configDirPath);
+    const enforceClassificationsRisks: AcceptedRuleRisks = {};
+    const enforcePresetsRisks: AcceptedRuleRisks = {};
+    const standardProfilesRisks: AcceptedRuleRisks = {};
+    if (conf.classifications.users?.users) {
+      for (const user of Object.keys(conf.classifications.users.users)) {
+        enforceClassificationsRisks[user] = {
+          '*': {
+            '*': { reason: 'Matches all permissions from all profiles or permsets' },
+          },
+        };
+        enforcePresetsRisks[user] = {
+          '*': { reason: 'Matches all profiles or permsets' },
+        };
+        standardProfilesRisks[user] = {
+          '*': { reason: 'Matches all profiles' },
+        };
+      }
+      conf.acceptedRisks.users = {
+        EnforcePermissionClassifications: enforceClassificationsRisks,
+        EnforcePermissionPresets: enforcePresetsRisks,
+        NoStandardProfilesOnActiveUsers: standardProfilesRisks,
+      };
     }
     ConfigFileManager.save(configDirPath, conf);
   }
@@ -75,7 +108,7 @@ describe('org audit NUTs', () => {
   it('initialises a full audit config from enterprise org at target directory', () => {
     // Act
     const result = execCmd<OrgAuditInitResult>(
-      `org:audit:init --target-org ${enterpriseOrgAlias} --output-dir tmp --json`,
+      `org:audit:init --target-org ${enterpriseOrgAlias} --output-dir ${entEdAudit} --json`,
       { ensureExitCode: 0 }
     ).jsonOutput?.result;
 
@@ -92,7 +125,7 @@ describe('org audit NUTs', () => {
   it('initialises a full audit config from professional org at target directory', () => {
     // Act
     const result = execCmd<OrgAuditInitResult>(
-      `org:audit:init --target-org ${professionalOrgAlias} --output-dir prof_ed --json`,
+      `org:audit:init --target-org ${professionalOrgAlias} --output-dir ${profEdAudit} --json`,
       { ensureExitCode: 0 }
     ).jsonOutput?.result;
 
@@ -110,7 +143,7 @@ describe('org audit NUTs', () => {
     // Act
     // relies on the config that was created from the first test
     const result = execCmd<OrgAuditRunResult>(
-      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir tmp --json`,
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir ${entEdAudit} --json`,
       {
         ensureExitCode: 0,
       }
@@ -125,12 +158,12 @@ describe('org audit NUTs', () => {
 
   it('successfully completes an audit of enterprise ed with all policies active', async () => {
     // Arrange
-    activateClassifications('tmp', UserPrivilegeLevel.ADMIN);
+    activateClassifications(entEdAudit, UserPrivilegeLevel.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
     const result = execCmd<OrgAuditRunResult>(
-      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir tmp --json`,
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir ${entEdAudit} --json`,
       {
         ensureExitCode: 0,
       }
@@ -151,14 +184,43 @@ describe('org audit NUTs', () => {
     }
   });
 
+  it('completes an audit with accepted risks', async () => {
+    // Arrange
+    initAcceptedRisks(entEdAudit);
+
+    // Act
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir ${entEdAudit} --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+
+    // all rules would have created plenty of violations, but all of them are muted from accepted risks
+    const permsResult = result.policies.users?.executedRules.EnforcePermissionClassifications;
+    assert.isDefined(permsResult);
+    expect(permsResult.violations).to.deep.equal([]);
+
+    const presetsResult = result.policies.users?.executedRules.EnforcePermissionPresets;
+    assert.isDefined(presetsResult);
+    expect(permsResult.violations).to.deep.equal([]);
+
+    const standardProfilesResult = result.policies.users?.executedRules.NoStandardProfilesOnActiveUsers;
+    assert.isDefined(standardProfilesResult);
+    expect(standardProfilesResult.violations).to.deep.equal([]);
+  });
+
   it('successfully completes an audit of professional ed with all policies active', async () => {
     // Arrange
-    activateClassifications('prof_ed', UserPrivilegeLevel.ADMIN);
+    activateClassifications(profEdAudit, UserPrivilegeLevel.ADMIN);
 
     // Act
     // relies on the config that was created from the first test
     const result = execCmd<OrgAuditRunResult>(
-      `org:audit:run --target-org ${professionalOrgAlias} --source-dir prof_ed --json`,
+      `org:audit:run --target-org ${professionalOrgAlias} --source-dir ${profEdAudit} --json`,
       {
         ensureExitCode: 0,
       }

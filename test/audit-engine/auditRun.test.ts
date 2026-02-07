@@ -132,4 +132,85 @@ describe('audit run execution', () => {
     expect(audit.getExecutableRulesCount('permissionSets')).to.equal(1);
     expect(audit.getExecutableRulesCount('connectedApps')).to.equal(2);
   });
+
+  it('emits all stage-lifecycle events during a full audit run', async () => {
+    // Arrange
+    const stageListener = $$.context.SANDBOX.stub();
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    audit.addListener('stageupdate', stageListener);
+
+    // Act
+    await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    expect(stageListener.callCount).to.equal(4);
+    expect(stageListener.args.flat()).to.deep.equal([
+      {
+        newStage: 'resolving',
+      },
+      {
+        newStage: 'executing',
+      },
+      {
+        newStage: 'finalising',
+      },
+      {
+        newStage: 'completed',
+      },
+    ]);
+  });
+
+  it('applies accepted risks from audit config to rule violations', async () => {
+    // Act
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    const enforcePerms = auditResult.policies.profiles?.executedRules.EnforcePermissionClassifications;
+    assert.isDefined(enforcePerms);
+    expect(enforcePerms.violations).to.deep.equal([]);
+    expect(enforcePerms.mutedViolations).to.have.lengthOf(2);
+    const noStandardProfiles = auditResult.policies.users?.executedRules.NoStandardProfilesOnActiveUsers;
+    assert.isDefined(noStandardProfiles);
+    expect(noStandardProfiles.violations).to.deep.equal([]);
+    expect(noStandardProfiles.mutedViolations).to.have.lengthOf(2);
+  });
+
+  it('correctly applies risks with edge-cases to audit results', async () => {
+    // Arrange
+    // as it turns out, the underlying bug for this edge case test was
+    // that connectedApps policy identified itself as "users" policy
+    // in the constructor. Let this be a reminder.
+    $$.mocks.mockOAuthTokens('oauth-usage');
+
+    // Act
+    const dirPath = buildPath('edge-case-risks');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    const appsUnderMgmt = auditResult.policies.connectedApps?.executedRules.AllUsedAppsUnderManagement;
+    assert.isDefined(appsUnderMgmt);
+    expect(appsUnderMgmt.compliantEntities).to.deep.equal(['Test App 2', 'AI Platform Auth']);
+  });
+
+  it('returns all triggered accepted risks with usage statistics in audit result', async () => {
+    // Act
+    const dirPath = buildPath('full-valid');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    // 4 rules in total define risks, each risk-matcher is counted individually
+    expect(auditResult.acceptedRisks).to.have.lengthOf(9);
+    // user risk matchers
+    expect(auditResult.acceptedRisks[0].appliedCount).to.equal(0);
+    expect(auditResult.acceptedRisks[1].appliedCount).to.equal(1);
+    expect(auditResult.acceptedRisks[2].appliedCount).to.equal(1);
+    // profile risk matchers
+    expect(auditResult.acceptedRisks.at(-2)!.appliedCount).to.equal(1);
+    expect(auditResult.acceptedRisks.at(-1)!.appliedCount).to.equal(1);
+  });
 });

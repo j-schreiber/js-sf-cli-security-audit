@@ -1,5 +1,5 @@
 import { Messages } from '@salesforce/core';
-import { AuditRunConfig } from './shape/auditConfigShape.js';
+import { AuditRunConfig } from './definitions.js';
 import { EntityResolveError, PolicyRuleSkipResult } from './result.types.js';
 import { RowLevelPolicyRule } from './context.types.js';
 import { PolicyConfig } from './shape/schema.js';

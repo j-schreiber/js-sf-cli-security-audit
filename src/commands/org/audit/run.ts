@@ -13,6 +13,7 @@ import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
 import { startAuditRun } from '../../../libs/audit-engine/index.js';
 import { envVars } from '../../../ux/environment.js';
+import { AuditRunStageUpdate } from '../../../libs/audit-engine/auditRun.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -59,35 +60,90 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     });
     stageOutput.start();
     const auditRun = startAuditRun(flags['source-dir']);
-    stageOutput.startPolicyResolve(auditRun);
-    await auditRun.resolve(flags['target-org'].getConnection(flags['api-version']));
-    stageOutput.startRuleExecution(auditRun);
-    const partialResult = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
-    const result = { orgId: flags['target-org'].getOrgId(), ...partialResult };
-    stageOutput.finish();
+
+    auditRun.on('stageupdate', (stageUpdate: AuditRunStageUpdate) => {
+      switch (stageUpdate.newStage) {
+        case 'resolving':
+          stageOutput.startPolicyResolve(auditRun);
+          break;
+        case 'executing':
+          stageOutput.startRuleExecution(auditRun);
+          break;
+        case 'finalising':
+          stageOutput.startFinalising();
+          break;
+        case 'completed':
+          stageOutput.finish();
+          break;
+      }
+    });
+
+    const result = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
     this.printResults(result, flags['verbose']);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };
   }
 
   private printResults(result: AuditResult, isVerbose: boolean): void {
+    this.printHighlights(result);
     this.printPoliciesSummary(result);
+    this.printAcceptedRisksSummary(result.acceptedRisks);
+    this.log('=== Rule Reports ===');
+    this.log('');
     for (const [policyName, policyDetails] of Object.entries(result.policies)) {
       this.printExecutedRulesSummary(policyName, policyDetails);
       this.printRuleViolations(policyDetails.executedRules, isVerbose);
     }
   }
 
-  private printPoliciesSummary(result: AuditResult): void {
-    const polSummaries = transposePoliciesToTable(result);
+  private printHighlights(result: AuditResult): void {
     if (result.isCompliant) {
       this.logSuccess(messages.getMessage('success.all-policies-compliant'));
-      this.log('');
     } else {
       this.log(StandardColors.error(messages.getMessage('summary-non-compliant')));
-      this.log('');
     }
+    const customRisksCount = result.acceptedRisks ? result.acceptedRisks.filter((r) => r.type === 'custom').length : 0;
+    if (customRisksCount > 0) {
+      const totalViolationsMuted = result.acceptedRisks
+        .filter((r) => r.type === 'custom')
+        .reduce((sum, risk) => sum + risk.appliedCount, 0);
+      this.log(
+        StandardColors.warning(
+          messages.getMessage('has-documented-accepted-risks', [customRisksCount, totalViolationsMuted])
+        )
+      );
+    } else {
+      this.info(messages.getMessage('no-accepted-risks-configured'));
+    }
+    this.log('');
+  }
+
+  private printPoliciesSummary(result: AuditResult): void {
+    const polSummaries = transposePoliciesToTable(result);
     this.table({ data: polSummaries, title: '=== Summary ===', titleOptions: { bold: true } });
+  }
+
+  private printAcceptedRisksSummary(risks: AuditResult['acceptedRisks']): void {
+    if (!risks) {
+      return;
+    }
+    const data = risks
+      .filter((r) => r.type === 'custom')
+      .map((risk) => ({
+        policy: capitalize(risk.policy),
+        rule: risk.rule,
+        matcher: formatIdentifier(risk.matcher),
+        applied: risk.appliedCount,
+      }))
+      .sort((current, next) => next.applied - current.applied);
+    if (data.length === 0) {
+      return;
+    }
+    this.table({
+      data,
+      title: '=== Accepted Risks ===',
+      titleOptions: { bold: true },
+    });
   }
 
   private printExecutedRulesSummary(policyName: string, policyDetails: AuditPolicyResult): void {
@@ -109,10 +165,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     for (const uncompliantRule of Object.values(executedRules).filter((ruleDetails) => !ruleDetails.isCompliant)) {
       const data = uncompliantRule.violations.map((viol) => ({
         ...omit(viol, 'details'),
-        identifier:
-          typeof viol.identifier === 'string'
-            ? formatToLocale(viol.identifier)
-            : viol.identifier.map((id) => formatToLocale(id)).join(MERGE_CHAR),
+        identifier: formatIdentifier(viol.identifier),
       }));
       this.table({
         data: isVerbose ? data : data.slice(0, maxLength),
@@ -171,7 +224,14 @@ function transposeExecutedPolicyRules(result: AuditPolicyResult): ExecutedRulesR
     compliantEntities: ruleDetails.compliantEntities?.length ?? 0,
     violatedEntities: ruleDetails.violatedEntities?.length ?? 0,
     violations: ruleDetails.violations.length,
+    acceptedViolations: ruleDetails.mutedViolations.length,
     warnings: ruleDetails.warnings.length,
     errors: ruleDetails.errors.length,
   }));
+}
+
+function formatIdentifier(identifier: string[]): string {
+  return typeof identifier === 'string'
+    ? formatToLocale(identifier)
+    : identifier.map((id) => formatToLocale(id)).join(MERGE_CHAR);
 }

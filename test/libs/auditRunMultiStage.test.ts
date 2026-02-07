@@ -52,7 +52,6 @@ describe('audit run multi stage output', () => {
     // Act
     const auditRun = new AuditRun({
       policies: { profiles: PROFILES_CONFIG },
-      classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
     testInstance.startRuleExecution(auditRun);
@@ -76,7 +75,6 @@ describe('audit run multi stage output', () => {
     profilesConfig.enabled = false;
     const auditRun = new AuditRun({
       policies: { profiles: profilesConfig },
-      classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
 
@@ -89,7 +87,6 @@ describe('audit run multi stage output', () => {
     // Act
     const auditRun = new AuditRun({
       policies: { profiles: PROFILES_CONFIG, permissionSets: PERMSETS_CONFIG },
-      classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
     auditRun.emit('entityresolve-profiles', { total: 12, resolved: 0 });
@@ -117,7 +114,6 @@ describe('audit run multi stage output', () => {
     // Act
     const auditRun = new AuditRun({
       policies: { profiles: PROFILES_CONFIG },
-      classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
     auditRun.emit('entityresolve-profiles', { total: 12 });

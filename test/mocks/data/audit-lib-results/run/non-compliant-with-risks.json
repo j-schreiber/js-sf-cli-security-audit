@@ -103,5 +103,39 @@
       },
       "skippedRules": []
     }
-  }
+  },
+  "acceptedRisks": [
+    {
+      "matcher": ["my-test-user@example.com", "Standard User"],
+      "reason": "Someone allowed this.",
+      "appliedCount": 0,
+      "policy": "users",
+      "rule": "NoStandardProfilesOnActiveUsers",
+      "type": "custom"
+    },
+    {
+      "matcher": ["Standard User", "*"],
+      "reason": "Someone allowed this.",
+      "appliedCount": 5,
+      "policy": "profiles",
+      "rule": "EnforcePermissionClassifications",
+      "type": "custom"
+    },
+    {
+      "matcher": ["System Administrator", "AuthorApex"],
+      "reason": "Someone allowed this for mock reasons.",
+      "appliedCount": 1,
+      "policy": "profiles",
+      "rule": "EnforcePermissionClassifications",
+      "type": "custom"
+    },
+    {
+      "matcher": ["*", "Sales Insights Integration User"],
+      "reason": "Comes from built-in risks, but is mocked here.",
+      "appliedCount": 1,
+      "policy": "users",
+      "rule": "NoStandardProfilesOnActiveUsers",
+      "type": "standard"
+    }
+  ]
 }

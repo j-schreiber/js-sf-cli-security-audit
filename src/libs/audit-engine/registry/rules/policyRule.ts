@@ -1,7 +1,7 @@
 import { Messages } from '@salesforce/core';
 import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } from '../result.types.js';
 import { PartialPolicyRuleResult, RowLevelPolicyRule, RuleAuditContext } from '../context.types.js';
-import { AuditRunConfig } from '../shape/auditConfigShape.js';
+import { AuditRunConfig } from '../definitions.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 

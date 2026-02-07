@@ -33,7 +33,7 @@ export default class AuditTestContext {
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -50,6 +50,7 @@ export default class AuditTestContext {
   public async init() {
     await this.context.stubAuths(this.targetOrg);
     this.targetOrgConnection = await this.targetOrg.getConnection();
+    // comment out this line to see console output in unit tests
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
@@ -63,7 +64,7 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {} };
+    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
     MDAPI.clearCache();
     initDefaultMocks(this.mocks);
     resetAllEnvironmentVars();
@@ -139,6 +140,7 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
   defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
   mocks.prepareMocks(defaults);
+  mocks.mockPermsetAssignments('empty', ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF']);
   mocks.mockCustomPermissions('custom-permissions');
   mocks.mockUsers('active-user-details');
   mocks.mockProfiles('profiles');

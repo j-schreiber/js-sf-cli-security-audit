@@ -1,19 +1,13 @@
 import { expect, assert } from 'chai';
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import RuleRegistry from '../../../src/libs/audit-engine/registry/ruleRegistry.js';
-import { AuditRunConfig, loadPolicy } from '../../../src/libs/audit-engine/index.js';
-import ProfilesPolicy from '../../../src/libs/audit-engine/registry/policies/profiles.js';
-import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/registry/rules/enforcePermissionsOnProfileLike.js';
 import {
   PermissionRiskLevel,
   PolicyConfig,
   ProfileClassifications,
   UserPrivilegeLevel,
 } from '../../../src/libs/audit-engine/registry/shape/schema.js';
-import { PartialPolicyRuleResult } from '../../../src/libs/audit-engine/registry/context.types.js';
-import { newRuleResult } from '../../mocks/testHelpers.js';
-import { AuditPolicyResult } from '../../../src/libs/audit-engine/registry/result.types.js';
+import { resolveAndRun } from '../../mocks/testHelpers.js';
 import { createDigest } from '../../../src/utils.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -21,19 +15,9 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 const ruleMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 const ipRangesMessages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceLoginIpRanges');
 
-async function runPolicy(con: Connection, config: AuditRunConfig): Promise<AuditPolicyResult> {
-  const pol = loadPolicy('profiles', config);
-  const policyResult = await pol.run({ targetOrgConnection: con });
-  return policyResult;
-}
-
-describe('profile policy', () => {
+describe('policy - profiles', () => {
   const $$ = new AuditTestContext();
   let defaultConfig: PolicyConfig;
-
-  function stubUserClassificationRule(mockResult: PartialPolicyRuleResult) {
-    return $$.context.SANDBOX.stub(EnforcePermissionsOnProfileLike.prototype, 'run').resolves(mockResult);
-  }
 
   beforeEach(async () => {
     $$.mockAuditConfig.classifications = {
@@ -67,51 +51,13 @@ describe('profile policy', () => {
     $$.reset();
   });
 
-  describe('policy loading', () => {
-    it('uses custom registry to resolve rules when its passed to the constructor', async () => {
-      // Arrange
-      defaultConfig.rules = { TestRule: { enabled: true } };
-      const reg = new TestProfilesRegistry();
-
-      // Act
-      const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, reg);
-      const policyResult = await pol.run({ targetOrgConnection: $$.targetOrgConnection });
-
-      // Assert
-      expect(Object.keys(policyResult.executedRules)).to.deep.equal(['TestRule']);
-    });
-
-    it('runs all rules in policy configuration with fully valid config', async () => {
-      // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
-
-      // Assert
-      expect(policyResult.isCompliant).to.equal(true);
-      const executedRuleNames = Object.keys(policyResult.executedRules);
-      expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
-    });
-
-    it('ignores configured rules that cannot be resolved by implementation', async () => {
-      // Arrange
-      defaultConfig.rules['UnknownRuleDoesNotExist'] = { enabled: true };
-
-      // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
-
-      // Assert
-      expect(policyResult.isCompliant).to.equal(true);
-      const executedRuleNames = Object.keys(policyResult.executedRules);
-      expect(executedRuleNames).to.deep.equal(['EnforcePermissionClassifications']);
-    });
-  });
-
   describe('entity resolve', () => {
     it('ignores profiles from config where metadata is not resolved from target org', async () => {
       // Arrange
-      stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
+      defaultConfig.rules = {};
 
       // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+      const policyResult = await resolveAndRun('profiles', $$);
 
       // Assert
       expect(policyResult.ignoredEntities).to.deep.equal([
@@ -122,11 +68,11 @@ describe('profile policy', () => {
 
     it('ignores profile from config that does not exist on target org', async () => {
       // Arrange
-      stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
+      defaultConfig.rules = {};
       $$.mocks.mockProfiles('admin-and-standard-profiles');
 
       // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+      const policyResult = await resolveAndRun('profiles', $$);
 
       // Assert
       // this used to be "no metadata" error message, but moving the logic to
@@ -141,11 +87,11 @@ describe('profile policy', () => {
 
     it('ignores profiles with UNKNOWN preset without attempting to resolve', async () => {
       // Arrange
-      stubUserClassificationRule(newRuleResult('EnforcePermissionClassifications'));
+      defaultConfig.rules = {};
       $$.mockProfileClassification('Custom Profile', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+      const policyResult = await resolveAndRun('profiles', $$);
 
       // Assert
       expect(policyResult.ignoredEntities).to.deep.equal([
@@ -166,7 +112,7 @@ describe('profile policy', () => {
       });
 
       // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+      const policyResult = await resolveAndRun('profiles', $$);
 
       // Assert
       // default query returns 3 profiles, but only 2 are classified
@@ -191,7 +137,7 @@ describe('profile policy', () => {
         };
 
         // Act
-        const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const policyResult = await resolveAndRun('profiles', $$);
 
         // Assert
         expect(policyResult.isCompliant).to.equal(false);
@@ -245,7 +191,7 @@ describe('profile policy', () => {
 
       it('reports violation if profile does not have required login IP ranges', async () => {
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -269,7 +215,7 @@ describe('profile policy', () => {
         $$.mocks.mockProfileResolve('System Administrator', 'admin-profile-with-ip-ranges');
 
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -283,7 +229,7 @@ describe('profile policy', () => {
         $$.mocks.mockProfileResolve('System Administrator', 'admin-profile-with-ip-ranges');
 
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -309,7 +255,7 @@ describe('profile policy', () => {
         $$.mocks.mockProfileResolve('System Administrator', 'admin-profile-with-ip-ranges');
 
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -324,7 +270,7 @@ describe('profile policy', () => {
         $$.mocks.mockProfileResolve('System Administrator', 'admin-profile-with-ip-ranges');
 
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -346,7 +292,7 @@ describe('profile policy', () => {
         $$.mocks.mockProfileResolve('System Administrator', 'admin-profile-with-ip-ranges');
 
         // Act
-        const result = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
+        const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforceLoginIpRanges;
@@ -355,52 +301,4 @@ describe('profile policy', () => {
       });
     });
   });
-
-  describe('result post-processing', () => {
-    it('evaluates entities with no violations as compliant', async () => {
-      // Arrange
-      const mockResult = newRuleResult('EnforcePermissionClassifications');
-      mockResult.violations.push(
-        { identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' },
-        { identifier: ['Standard User', 'CustomizeApplication'], message: 'Irrelevant msg' }
-      );
-      stubUserClassificationRule(mockResult);
-
-      // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
-
-      // Assert
-      expect(policyResult.isCompliant).to.be.false;
-      const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
-      expect(ruleResult.compliantEntities).to.deep.equal(['System Administrator']);
-      expect(ruleResult.violatedEntities).to.deep.equal(['Standard User']);
-    });
-
-    it('evaluates entities with warnings as compliant', async () => {
-      // Arrange
-      const mockResult = newRuleResult('EnforcePermissionClassifications');
-      mockResult.warnings.push(
-        { identifier: ['Standard User', 'ViewSetup'], message: 'Irrelevant msg' },
-        { identifier: ['Standard User', 'ViewAllData'], message: 'Irrelevant msg' }
-      );
-      stubUserClassificationRule(mockResult);
-
-      // Act
-      const policyResult = await runPolicy($$.targetOrgConnection, $$.mockAuditConfig);
-
-      // Assert
-      expect(policyResult.isCompliant).to.be.true;
-      const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
-      expect(ruleResult.compliantEntities).to.deep.equal(['System Administrator', 'Standard User']);
-      expect(ruleResult.violatedEntities).to.deep.equal([]);
-    });
-  });
 });
-
-class TestProfilesRegistry extends RuleRegistry {
-  public constructor() {
-    super({
-      TestRule: EnforcePermissionsOnProfileLike,
-    });
-  }
-}
