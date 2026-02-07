@@ -178,6 +178,24 @@ describe('audit run execution', () => {
     expect(noStandardProfiles.mutedViolations).to.have.lengthOf(2);
   });
 
+  it('correctly applies risks with edge-cases to audit results', async () => {
+    // Arrange
+    // as it turns out, the underlying bug for this edge case test was
+    // that connectedApps policy identified itself as "users" policy
+    // in the constructor. Let this be a reminder.
+    $$.mocks.mockOAuthTokens('oauth-usage');
+
+    // Act
+    const dirPath = buildPath('edge-case-risks');
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.targetOrgConnection);
+
+    // Assert
+    const appsUnderMgmt = auditResult.policies.connectedApps?.executedRules.AllUsedAppsUnderManagement;
+    assert.isDefined(appsUnderMgmt);
+    expect(appsUnderMgmt.compliantEntities).to.deep.equal(['Test App 2', 'AI Platform Auth']);
+  });
+
   it('returns all triggered accepted risks with usage statistics in audit result', async () => {
     // Act
     const dirPath = buildPath('full-valid');

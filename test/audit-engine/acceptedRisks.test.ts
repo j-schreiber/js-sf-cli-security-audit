@@ -76,6 +76,26 @@ describe('accepted risks', () => {
     expect(scrubbedResult.mutedViolations).to.deep.equal([{ ...violation, reason: 'Is safe to use' }]);
   });
 
+  it('matches one-level identifier and scrubs violation', () => {
+    // Arrange
+    defaultRisks.connectedApps = {
+      AllUsedAppsUnderManagement: {
+        'Test App': {
+          reason: 'Is allowed',
+        },
+      },
+    };
+
+    // Act
+    const riskManager = new AcceptedRisks(defaultRisks);
+    const violation = { identifier: ['Test App'], message: 'Testing' };
+    const partialResult = initRuleResult('AllUsedAppsUnderManagement', [violation]);
+    const scrubbedResult = riskManager.scrub('connectedApps', partialResult);
+
+    // Assert
+    expect(scrubbedResult.violations).to.deep.equal([]);
+  });
+
   it('matches accepted risk with wildcard identifier match', () => {
     // Act
     const riskManager = new AcceptedRisks(defaultRisks);

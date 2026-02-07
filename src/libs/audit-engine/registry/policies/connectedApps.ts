@@ -7,7 +7,7 @@ import Policy, { ResolveEntityResult } from './../policy.js';
 
 export default class ConnectedAppsPolicy extends Policy<ConnectedApp> {
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
-    super('users', config, auditConfig, registry);
+    super('connectedApps', config, auditConfig, registry);
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ConnectedApp>> {
