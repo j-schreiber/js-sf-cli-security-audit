@@ -104,7 +104,14 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
     }
     const customRisksCount = result.acceptedRisks ? result.acceptedRisks.filter((r) => r.type === 'custom').length : 0;
     if (customRisksCount > 0) {
-      this.log(StandardColors.warning(messages.getMessage('has-documented-accepted-risks', [customRisksCount])));
+      const totalViolationsMuted = result.acceptedRisks
+        .filter((r) => r.type === 'custom')
+        .reduce((sum, risk) => sum + risk.appliedCount, 0);
+      this.log(
+        StandardColors.warning(
+          messages.getMessage('has-documented-accepted-risks', [customRisksCount, totalViolationsMuted])
+        )
+      );
     } else {
       this.info(messages.getMessage('no-accepted-risks-configured'));
     }

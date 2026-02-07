@@ -182,7 +182,7 @@ describe('org audit run', () => {
 
       // Assert
       expect($$.sfCommandStubs.log.args.flat()).to.deep.contain.members([
-        StandardColors.warning(messages.getMessage('has-documented-accepted-risks', [3])),
+        StandardColors.warning(messages.getMessage('has-documented-accepted-risks', [3, 6])),
       ]);
       const risksTableArgs = $$.sfCommandStubs.table.args.flat()[1];
       expect(risksTableArgs.title).to.contain('Accepted Risks');

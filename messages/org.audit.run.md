@@ -46,7 +46,7 @@ No accepted risks documented. All violations are reported.
 
 # has-documented-accepted-risks
 
-Audit config has %s accepted risks documented. Violations may be muted.
+Audit config has %s accepted risks documented. %s violations were muted.
 
 # info.report-file-location
 
