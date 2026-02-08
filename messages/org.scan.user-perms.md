@@ -35,3 +35,7 @@ Searches the profile and all assigned permission sets for every active user on t
 # success.scanned-entities-count
 
 Scanned %s profiles and %s permission sets.
+
+# warning.permission-not-found
+
+Permission "%s" does not exist on the target org. Maybe you mistyped it?

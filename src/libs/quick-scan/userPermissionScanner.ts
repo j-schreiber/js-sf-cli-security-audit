@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { Connection } from '@salesforce/core';
 import { Profile, PermissionSet as PermissionSetMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { PermissionSets, Profiles, User, Users } from '../../salesforce/index.js';
+import { OrgDescribe, PermissionSets, Profiles, User, Users } from '../../salesforce/index.js';
 import { QuickScanOptions, QuickScanResult, UserPermissionAssignment } from './types.js';
 
 type ScannedEntities = {
@@ -30,6 +30,10 @@ export type EntityScanStatus = {
   status?: string;
 };
 
+export type PermissionResolveWarning = {
+  permissionName: string;
+};
+
 export default class UserPermissionScanner extends EventEmitter {
   private status: ScanStatusEvent = {
     profiles: {},
@@ -44,18 +48,28 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
+    const org = new OrgDescribe(opts.targetOrg);
     const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
       scannedProfiles: Object.keys(scannedEntities.profiles),
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
-    opts.permissions.forEach((permName) => {
+    for (const permName of opts.permissions) {
+      // org caches async calls, so this is okay
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await org.isValid(permName))) {
+        this.emit('permissionNotFound', {
+          permissionName: permName,
+        });
+      }
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
       const users = findPermissionAssignments(permName, scannedEntities);
-      scanResult.permissions[permName] = { permissionSets, profiles, users };
-    });
+      if (profiles.length > 0 || permissionSets.length > 0) {
+        scanResult.permissions[permName] = { permissionSets, profiles, users };
+      }
+    }
     this.emitProgress({ status: 'Completed' });
     return scanResult;
   }

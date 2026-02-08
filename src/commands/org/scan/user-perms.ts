@@ -3,6 +3,7 @@ import { Messages } from '@salesforce/core';
 import { PermissionScanResult, QuickScanResult } from '../../../libs/quick-scan/types.js';
 import UserPermissionScanner, {
   EntityScanStatus,
+  PermissionResolveWarning,
   ScanStatusEvent,
 } from '../../../libs/quick-scan/userPermissionScanner.js';
 import { capitalize } from '../../../utils.js';
@@ -41,6 +42,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     const { flags } = await this.parse(OrgUserPermScan);
     const scanner = new UserPermissionScanner();
     scanner.on('progress', this.reportProgress);
+    scanner.on('permissionNotFound', this.reportWarning);
     const result = await scanner.quickScan({
       targetOrg: flags['target-org'].getConnection(flags['api-version']),
       permissions: flags.name,
@@ -70,6 +72,10 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     }
   };
 
+  private reportWarning = (event: PermissionResolveWarning): void => {
+    this.warn(messages.createWarning('warning.permission-not-found', [event.permissionName]));
+  };
+
   private print(result: QuickScanResult): void {
     this.printSummary(result);
     Object.entries(result.permissions).forEach(([permName, permResult]) => {
@@ -88,7 +94,9 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
         ...(permResult.users ? { users: permResult.users.length } : undefined),
       });
     });
-    this.table({ data, title: '=== Summary ===', titleOptions: { bold: true } });
+    if (data.length > 0) {
+      this.table({ data, title: '=== Summary ===', titleOptions: { bold: true } });
+    }
   }
 
   private printPermissionResults(permissionName: string, result: PermissionScanResult): void {

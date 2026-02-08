@@ -63,8 +63,6 @@ describe('org quick-scan NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    // not yet implemented. For now, we simply "ignore it" by reporting 0 profiles & perms
-    // later, we'll validate existing perms on the org and be smarter about this
-    // expect(result.permissions.DoesNotExist).to.be.undefined;
+    expect(result.permissions.DoesNotExist).to.be.undefined;
   });
 });

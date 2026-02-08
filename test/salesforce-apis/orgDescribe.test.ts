@@ -51,4 +51,21 @@ describe('org metadata describe', () => {
     // mock query from audit context returns 3 permission
     expect(customPerms).to.have.lengthOf(3);
   });
+
+  it('correctly evaluates if a user permission exists on the target org', async () => {
+    // Act
+    const org = new OrgDescribe($$.targetOrgConnection);
+
+    // Assert
+    const existingPerms = ['AuthorApex', 'ViewSetup', 'CanApproveUninstalledApps', 'Packaging2'];
+    for (const perm of existingPerms) {
+      // eslint-disable-next-line no-await-in-loop
+      expect(await org.isValid(perm)).to.be.true;
+    }
+    const nonExistingPerms = ['Something', 'SmthElse', '', ' '];
+    for (const perm of nonExistingPerms) {
+      // eslint-disable-next-line no-await-in-loop
+      expect(await org.isValid(perm)).to.be.false;
+    }
+  });
 });

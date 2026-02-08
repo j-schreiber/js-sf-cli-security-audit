@@ -1,8 +1,12 @@
 import { expect } from 'chai';
+import { Messages } from '@salesforce/core';
 import OrgUserPermScan from '../../src/commands/org/scan/user-perms.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
 import { QuickScanResult } from '../../src/libs/quick-scan/types.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.scan.user-perms');
 
 describe('org scan user-perm', () => {
   const $$ = new AuditTestContext();
@@ -160,5 +164,23 @@ describe('org scan user-perm', () => {
 
     // Assert
     expect($$.sfCommandStubs.table.callCount).to.equal(1);
+  });
+
+  it('prints warning if permission does not exist on target org', async () => {
+    // Act
+    const result = await OrgUserPermScan.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--name',
+      'SomethingUnknown',
+      '--deep-scan',
+    ]);
+
+    // Assert
+    expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal([
+      messages.createWarning('warning.permission-not-found', ['SomethingUnknown']),
+    ]);
+    expect($$.sfCommandStubs.table.callCount).to.equal(0);
+    expect(result.permissions).to.not.have.key('SomethingUnknown');
   });
 });
