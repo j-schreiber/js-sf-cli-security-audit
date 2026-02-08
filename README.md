@@ -85,7 +85,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.15.0/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -130,7 +130,7 @@ FLAG DESCRIPTIONS
     never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.15.0/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -138,12 +138,13 @@ Performs a quick scan for specific user permissions.
 
 ```
 USAGE
-  $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>]
+  $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>] [--deep-scan]
 
 FLAGS
   -n, --name=<value>...      (required) One or more permissions to be searched for.
   -o, --target-org=<value>   (required) The target org to scan.
       --api-version=<value>  Override the api version used for api requests made by this command
+      --deep-scan            Include all user permission assignments.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -167,9 +168,13 @@ FLAG DESCRIPTIONS
     If you are unsure what permissions are available on your org, initialise a new audit config and check the created
     userPermissions.yml. Currently, the names are not validated: If you have a typo (such as "AutorApex", the scan will
     retun 0 results).
+
+  --deep-scan  Include all user permission assignments.
+
+    Searches the profile and all assigned permission sets for every active user on the org.
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.15.0/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
