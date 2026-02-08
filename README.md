@@ -5,6 +5,10 @@
   <a href="https://github.com/j-schreiber/js-sf-cli-security-audit/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-blue" alt="License"></a>
 </p>
 
+A plugin for the sf CLI to perform automated security audits.
+
+![Audit Run Demo](/images/audit-run-demo.gif)
+
 > [!IMPORTANT]\
 > The SAE is still in beta and under active development. Command signatures, results report format, and directory structures can change.
 
