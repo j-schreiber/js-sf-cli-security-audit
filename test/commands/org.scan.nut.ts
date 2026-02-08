@@ -43,6 +43,19 @@ describe('org quick-scan NUTs', () => {
     expect(result.permissions.CanApproveUninstalledApps.profiles).to.include('System Administrator');
   });
 
+  it('includes users assignments for each permission when --deep-scan flag is given', () => {
+    // Act
+    const command = `org scan user-perms --target-org ${scratchOrgAlias} --name ViewSetup --deep-scan --json`;
+    const result = execCmd<OrgUserPermScanResult>(command, { ensureExitCode: 0 }).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+    assert.isDefined(result.permissions.ViewSetup);
+    expect(result.permissions.ViewSetup.profiles).to.include('System Administrator');
+    assert.isDefined(result.permissions.ViewSetup.users);
+    expect(result.permissions.ViewSetup.users).to.not.be.empty;
+  });
+
   it('gracefully ignores an unknown permission in the result', () => {
     // Act
     const command = `org scan user-perms --target-org ${scratchOrgAlias} --name DoesNotExist --json`;

@@ -128,7 +128,8 @@ export default class SfConnectionMocks {
   }
 
   /**
-   * Results for permission set assignments
+   * Results for permission set assignments. The actual assigneeIds are in the
+   * results file - the method param only sets the mock for query id.
    *
    * @param resultFile
    * @param assigneeIds

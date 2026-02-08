@@ -13,9 +13,17 @@ export type QuickScanPermissionResult = {
 export type PermissionScanResult = {
   profiles: string[];
   permissionSets: string[];
+  users?: UserPermissionAssignment[];
+};
+
+export type UserPermissionAssignment = {
+  username: string;
+  source: string;
+  type: 'Permission Set' | 'Profile';
 };
 
 export type QuickScanOptions = {
   targetOrg: Connection;
   permissions: string[];
+  deepScan: boolean;
 };

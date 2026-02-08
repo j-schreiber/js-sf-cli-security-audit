@@ -50,7 +50,7 @@ export const ResolveUsersOptionsSchema = z.object({
   withLoginHistory: z.boolean().default(false),
   /** Length of login history. Has no effect, if login history is false */
   loginHistoryDaysToAnalyse: z.number().optional(),
-  /** Include profile and assigned permission sets */
+  /** Include name of profile and developer names of assigned permission sets */
   withPermissions: z.boolean().default(false),
   /** Adds metadata to permissions. Has no effect, if withPermissions is false */
   withPermissionsMetadata: z.boolean().default(false),

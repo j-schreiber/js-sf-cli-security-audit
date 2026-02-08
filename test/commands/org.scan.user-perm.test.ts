@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import OrgUserPermScan from '../../src/commands/org/scan/user-perms.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
+import { QuickScanResult } from '../../src/libs/quick-scan/types.js';
 
 describe('org scan user-perm', () => {
   const $$ = new AuditTestContext();
@@ -98,5 +99,66 @@ describe('org scan user-perm', () => {
         { entityName: 'My_Test_Perm_Set', type: 'Permission Set' },
       ],
     });
+  });
+
+  it('formats permission assignments from user results as table', async () => {
+    // Arrange
+    const mockResult: QuickScanResult = {
+      permissions: {
+        ViewSetup: {
+          profiles: ['System Administrator', 'Custom Administrator'],
+          permissionSets: ['My_Test_Perm_Set'],
+          users: [
+            { username: 'test1@example.com', source: 'My_Test_Perm_Set', type: 'Permission Set' },
+            { username: 'test1@example.com', source: 'System Administrator', type: 'Profile' },
+            { username: 'test2@example.com', source: 'My_Test_Perm_Set_2', type: 'Permission Set' },
+            { username: 'test2@example.com', source: 'My_Test_Perm_Set', type: 'Permission Set' },
+          ],
+        },
+      },
+      scannedProfiles: [],
+      scannedPermissionSets: [],
+    };
+    $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
+
+    // Act
+    await OrgUserPermScan.run(['--target-org', $$.targetOrg.username, '--name', 'ViewSetup', '--deep-scan']);
+
+    // Assert
+    // 1 call for summary, 3 calls for details tables
+    const summaryTable = $$.sfCommandStubs.table.args.flat()[0];
+    expect(summaryTable).to.deep.contain({
+      data: [{ permissionName: 'ViewSetup', profiles: 2, permissionSets: 1, users: 4 }],
+    });
+    const usersTable = $$.sfCommandStubs.table.args.flat()[2];
+    expect(usersTable.title).to.equal('ViewSetup (Assignments)');
+    expect(usersTable.data).to.deep.equal([
+      { username: 'test1@example.com', source: 'System Administrator', type: 'Profile' },
+      { username: 'test1@example.com', source: 'My_Test_Perm_Set', type: 'Permission Set' },
+      { username: 'test2@example.com', source: 'My_Test_Perm_Set', type: 'Permission Set' },
+      { username: 'test2@example.com', source: 'My_Test_Perm_Set_2', type: 'Permission Set' },
+    ]);
+  });
+
+  it('ignores empty user permission assignments in results', async () => {
+    // Arrange
+    const mockResult: QuickScanResult = {
+      permissions: {
+        ViewSetup: {
+          profiles: [],
+          permissionSets: [],
+          users: [],
+        },
+      },
+      scannedProfiles: [],
+      scannedPermissionSets: [],
+    };
+    $$.context.SANDBOX.stub(UserPermissionScanner.prototype, 'quickScan').resolves(mockResult);
+
+    // Act
+    await OrgUserPermScan.run(['--target-org', $$.targetOrg.username, '--name', 'ViewSetup', '--deep-scan']);
+
+    // Assert
+    expect($$.sfCommandStubs.table.callCount).to.equal(1);
   });
 });
