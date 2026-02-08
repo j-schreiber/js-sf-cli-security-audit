@@ -21,14 +21,59 @@ describe('quick scanners', () => {
       const result = await scanner.quickScan({
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport'],
+        deepScan: false,
       });
 
       // Assert
-      expect(Object.keys(result.permissions)).to.deep.equal(['AuthorApex', 'EmailMass', 'ExportReport']);
+      expect(result.permissions).to.have.keys(['AuthorApex', 'EmailMass', 'ExportReport']);
       expect(result.permissions.AuthorApex.profiles).to.deep.equal(['System Administrator']);
       expect(result.permissions.AuthorApex.permissionSets).to.deep.equal(['Test_Admin_Permission_Set_2']);
       expect(result.permissions.EmailMass.profiles).to.deep.equal(['System Administrator', 'Standard User']);
       expect(result.permissions.ExportReport.profiles).to.deep.equal(['System Administrator', 'Standard User']);
+    });
+
+    it('includes user permissions in scan result when deepScan is enabled', async () => {
+      // Arrange
+      $$.mocks.mockPermsetAssignments('test-user-assignments', [
+        '0054P00000AYPYXQA5',
+        '005Pl000001p3HqIAI',
+        '0054P00000AaGueQAF',
+      ]);
+
+      // Act
+      const scanner = new UserPermissionScanner();
+      const result = await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: ['AuthorApex', 'EmailMass', 'ExportReport', 'ViewSetup'],
+        deepScan: true,
+      });
+
+      // Assert
+      expect(result.permissions).to.have.keys(['AuthorApex', 'EmailMass', 'ExportReport', 'ViewSetup']);
+      expect(result.permissions.AuthorApex.users).to.have.deep.members([
+        {
+          username: 'test-user-2@example.de',
+          source: 'System Administrator',
+          type: 'Profile',
+        },
+      ]);
+      expect(result.permissions.ViewSetup.users).to.have.deep.members([
+        {
+          username: 'test-user-2@example.de',
+          source: 'System Administrator',
+          type: 'Profile',
+        },
+        {
+          username: 'test-user-1@example.de',
+          source: 'Standard User',
+          type: 'Profile',
+        },
+        {
+          username: 'test-user-2@example.de',
+          source: 'Test_Admin_Permission_Set_1',
+          type: 'Permission Set',
+        },
+      ]);
     });
 
     it('emits events to report scan progress', async () => {
@@ -41,6 +86,7 @@ describe('quick scanners', () => {
       await scanner.quickScan({
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex'],
+        deepScan: false,
       });
 
       // Assert

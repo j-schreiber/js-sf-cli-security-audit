@@ -3,6 +3,7 @@ import { Messages } from '@salesforce/core';
 import { PermissionScanResult, QuickScanResult } from '../../../libs/quick-scan/types.js';
 import UserPermissionScanner, {
   EntityScanStatus,
+  PermissionResolveWarning,
   ScanStatusEvent,
 } from '../../../libs/quick-scan/userPermissionScanner.js';
 import { capitalize } from '../../../utils.js';
@@ -31,15 +32,21 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
       required: true,
     }),
     'api-version': Flags.orgApiVersion(),
+    'deep-scan': Flags.boolean({
+      summary: messages.getMessage('flags.deep-scan.summary'),
+      description: messages.getMessage('flags.deep-scan.description'),
+    }),
   };
 
   public async run(): Promise<OrgUserPermScanResult> {
     const { flags } = await this.parse(OrgUserPermScan);
     const scanner = new UserPermissionScanner();
     scanner.on('progress', this.reportProgress);
+    scanner.on('permissionNotFound', this.reportWarning);
     const result = await scanner.quickScan({
       targetOrg: flags['target-org'].getConnection(flags['api-version']),
       permissions: flags.name,
+      deepScan: flags['deep-scan'],
     });
     this.print(result);
     return result;
@@ -65,23 +72,31 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     }
   };
 
+  private reportWarning = (event: PermissionResolveWarning): void => {
+    this.warn(messages.createWarning('warning.permission-not-found', [event.permissionName]));
+  };
+
   private print(result: QuickScanResult): void {
     this.printSummary(result);
     Object.entries(result.permissions).forEach(([permName, permResult]) => {
       this.printPermissionResults(permName, permResult);
+      this.printUserAssignments(permName, permResult.users);
     });
   }
 
   private printSummary(result: QuickScanResult): void {
-    const data: Array<{ permissionName: string; profiles: number; permissionSets: number }> = [];
+    const data: Array<{ permissionName: string; profiles: number; permissionSets: number; users?: number }> = [];
     Object.entries(result.permissions).forEach(([permissionName, permResult]) => {
       data.push({
         permissionName,
         profiles: permResult.profiles.length,
         permissionSets: permResult.permissionSets.length,
+        ...(permResult.users ? { users: permResult.users.length } : undefined),
       });
     });
-    this.table({ data, title: '=== Summary ===', titleOptions: { bold: true } });
+    if (data.length > 0) {
+      this.table({ data, title: '=== Summary ===', titleOptions: { bold: true } });
+    }
   }
 
   private printPermissionResults(permissionName: string, result: PermissionScanResult): void {
@@ -95,6 +110,24 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     if (data.length > 0) {
       this.table({ data, title: permissionName, titleOptions: { underline: true } });
     }
+  }
+
+  private printUserAssignments(permName: string, data: PermissionScanResult['users']): void {
+    if (!data || data.length === 0) {
+      return;
+    }
+    data.sort((a, b) => {
+      const byUser = a.username.localeCompare(b.username);
+      if (byUser !== 0) {
+        return byUser;
+      }
+      const byType = b.type.localeCompare(a.type);
+      if (byType !== 0) {
+        return byType;
+      }
+      return a.source.localeCompare(b.source);
+    });
+    this.table({ title: `${permName} (Assignments)`, data });
   }
 }
 

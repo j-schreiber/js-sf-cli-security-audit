@@ -18,6 +18,14 @@ You can specify any valid user permission on your org, such as "AuthorApex", "Cu
 
 The target org to scan.
 
+# flags.deep-scan.summary
+
+Include all user permission assignments.
+
+# flags.deep-scan.description
+
+Searches the profile and all assigned permission sets for every active user on the org.
+
 # examples
 
 - Search for multiple permissions on MyTargetOrg
@@ -27,3 +35,7 @@ The target org to scan.
 # success.scanned-entities-count
 
 Scanned %s profiles and %s permission sets.
+
+# warning.permission-not-found
+
+Permission "%s" does not exist on the target org. Maybe you mistyped it?

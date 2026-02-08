@@ -1,13 +1,21 @@
 import { EventEmitter } from 'node:events';
 import { Connection } from '@salesforce/core';
 import { Profile, PermissionSet as PermissionSetMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { PermissionSets, Profiles } from '../../salesforce/index.js';
-import { QuickScanOptions, QuickScanResult } from './types.js';
+import { OrgDescribe, PermissionSets, Profiles, User, Users } from '../../salesforce/index.js';
+import { QuickScanOptions, QuickScanResult, UserPermissionAssignment } from './types.js';
 
 type ScannedEntities = {
-  profiles: Record<string, Profile>;
-  permissionSets: Record<string, PermissionSetMetadata>;
+  profiles: Record<string, ProfileLikeIndex>;
+  permissionSets: Record<string, ProfileLikeIndex>;
+  users?: Map<string, User>;
 };
+
+type ProfileLikeIndex = {
+  userPermissions: Set<string>;
+  customPermissions: Set<string>;
+};
+
+type PartialProfileLike = Pick<Profile, 'userPermissions' | 'customPermissions'>;
 
 export type ScanStatusEvent = {
   profiles: EntityScanStatus;
@@ -20,6 +28,10 @@ export type EntityScanStatus = {
   total?: number;
   resolved?: number;
   status?: string;
+};
+
+export type PermissionResolveWarning = {
+  permissionName: string;
 };
 
 export default class UserPermissionScanner extends EventEmitter {
@@ -36,31 +48,52 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    const scannedEntities = await this.resolveEntities(opts.targetOrg);
+    const org = new OrgDescribe(opts.targetOrg);
+    const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
       scannedProfiles: Object.keys(scannedEntities.profiles),
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
-    opts.permissions.forEach((permName) => {
+    for (const permName of opts.permissions) {
+      // org caches async calls, so this is okay
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await org.isValid(permName))) {
+        this.emit('permissionNotFound', {
+          permissionName: permName,
+        });
+      }
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
-      scanResult.permissions[permName] = { permissionSets, profiles };
-    });
+      const users = findPermissionAssignments(permName, scannedEntities);
+      if (profiles.length > 0 || permissionSets.length > 0) {
+        scanResult.permissions[permName] = { permissionSets, profiles, users };
+      }
+    }
     this.emitProgress({ status: 'Completed' });
     return scanResult;
   }
 
-  private async resolveEntities(targetOrg: Connection): Promise<ScannedEntities> {
+  private async resolveEntities(opts: QuickScanOptions): Promise<ScannedEntities> {
     const promises: Array<Promise<unknown>> = [];
     this.emitProgress({ status: 'In Progress' });
-    promises.push(this.resolveProfiles(targetOrg));
-    promises.push(this.resolvePermissionSets(targetOrg));
-    const resolvedEntities = await Promise.all(promises);
-    return {
-      profiles: resolvedEntities[0] as Record<string, Profile>,
-      permissionSets: resolvedEntities[1] as Record<string, PermissionSetMetadata>,
+    promises.push(this.resolveProfiles(opts.targetOrg));
+    promises.push(this.resolvePermissionSets(opts.targetOrg));
+    if (opts.deepScan) {
+      const usersRepo = new Users(opts.targetOrg);
+      promises.push(
+        usersRepo.resolve({ withLoginHistory: false, withPermissions: true, withPermissionsMetadata: false })
+      );
+    }
+    const resolvedPromises = await Promise.all(promises);
+    const resolvedEntities: ScannedEntities = {
+      profiles: prepareIndizes(resolvedPromises[0] as Record<string, PartialProfileLike>),
+      permissionSets: prepareIndizes(resolvedPromises[1] as Record<string, PartialProfileLike>),
     };
+    if (opts.deepScan) {
+      resolvedEntities.users = resolvedPromises[2] as Map<string, User>;
+    }
+    return resolvedEntities;
   }
 
   private async resolveProfiles(targetOrg: Connection): Promise<Record<string, Profile>> {
@@ -97,14 +130,50 @@ export default class UserPermissionScanner extends EventEmitter {
   }
 }
 
-function findGrantingEntities(
+function prepareIndizes(entities: Record<string, PartialProfileLike>): Record<string, ProfileLikeIndex> {
+  const result: Record<string, ProfileLikeIndex> = {};
+  for (const [identifier, metadata] of Object.entries(entities)) {
+    result[identifier] = {
+      userPermissions: new Set<string>(
+        metadata.userPermissions.filter((perm) => perm.enabled).map((perm) => perm.name)
+      ),
+      customPermissions: new Set<string>(
+        metadata.customPermissions.filter((perm) => perm.enabled).map((perm) => perm.name)
+      ),
+    };
+  }
+  return result;
+}
+
+function findPermissionAssignments(
   permName: string,
-  resolvedEntities: Record<string, Profile | PermissionSetMetadata>
-): string[] {
+  scanContext: ScannedEntities
+): UserPermissionAssignment[] | undefined {
+  if (!scanContext.users) {
+    return undefined;
+  }
+  const permAssignments: UserPermissionAssignment[] = [];
+  for (const [username, userDetails] of scanContext.users.entries()) {
+    const profile = scanContext.profiles[userDetails.profileName];
+    if (profile && profile.userPermissions.has(permName)) {
+      permAssignments.push({ username, source: userDetails.profileName, type: 'Profile' });
+    }
+    if (userDetails.assignments) {
+      for (const permSetAss of userDetails.assignments) {
+        const permSet = scanContext.permissionSets[permSetAss.permissionSetIdentifier];
+        if (permSet && permSet.userPermissions.has(permName)) {
+          permAssignments.push({ username, source: permSetAss.permissionSetIdentifier, type: 'Permission Set' });
+        }
+      }
+    }
+  }
+  return permAssignments;
+}
+
+function findGrantingEntities(permName: string, resolvedEntities: Record<string, ProfileLikeIndex>): string[] {
   const entities = new Set<string>();
   Object.entries(resolvedEntities).forEach(([entityName, metadata]) => {
-    const userPerms = metadata.userPermissions.map((userPerm) => userPerm.name);
-    if (userPerms.includes(permName)) {
+    if (metadata.userPermissions.has(permName)) {
       entities.add(entityName);
     }
   });
