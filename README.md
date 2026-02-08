@@ -1,4 +1,4 @@
-# @j-schreiber/sf-cli-security-audit
+# Security Audit Engine (SAE)
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@j-schreiber/sf-cli-security-audit"><img src="https://img.shields.io/npm/v/@j-schreiber/sf-cli-security-audit.svg?logo=npm" alt="NPM version"/></a>
