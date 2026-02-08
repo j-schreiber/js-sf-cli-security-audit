@@ -3,6 +3,7 @@ export { default as Users } from './repositories/users/users.js';
 export { default as Profiles } from './repositories/profiles/profiles.js';
 export { default as ConnectedApps } from './repositories/connected-apps/connected-apps.js';
 export { default as PermissionSets } from './repositories/perm-sets/permission-sets.js';
+export { default as OrgDescribe } from './describes/orgDescribe.js';
 
 // TYPES
 export type { User, ResolveUsersOptions } from './repositories/users/user.types.js';

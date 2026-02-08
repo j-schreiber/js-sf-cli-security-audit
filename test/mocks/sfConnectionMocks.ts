@@ -10,7 +10,7 @@ import {
   buildPermsetAssignmentsQuery,
   ACTIVE_USERS_DETAILS_QUERY,
 } from '../../src/salesforce/repositories/users/queries.js';
-import { CUSTOM_PERMS_QUERY } from '../../src/libs/conf-init/init.types.js';
+import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';

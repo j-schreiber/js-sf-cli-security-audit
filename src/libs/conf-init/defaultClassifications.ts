@@ -1,16 +1,13 @@
 import { Connection } from '@salesforce/core';
 import { Classifications, PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
-import { PermissionSets, Profiles, Users } from '../../salesforce/index.js';
+import { OrgDescribe, PermissionSets, Profiles, Users } from '../../salesforce/index.js';
 import { loadPreset } from './presets.js';
 import {
   AuditInitPresets,
-  CUSTOM_PERMS_QUERY,
   NamedPermissionClassification,
   PermissionClassifications,
   PermsetClassifications,
   ProfileClassifications,
-  SfCustomPermission,
-  UnclassifiedPerm,
   UserClassifications,
 } from './init.types.js';
 
@@ -37,17 +34,16 @@ export const ClassificationInitDefinitions: Record<Classifications, Classificati
 };
 
 async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
-  const describePerms = await parsePermsFromDescribe(con);
-  const assignedPerms = await getUserPermsFromProfiles(con);
-  const allPerms = { ...describePerms, ...assignedPerms };
+  const orgManager = new OrgDescribe(con);
+  const userPerms = await orgManager.getUserPermissions();
   const presConfig = loadPreset(preset);
-  const perms = presConfig.classifyUserPermissions(Object.values(allPerms));
+  const perms = presConfig.classifyUserPermissions(userPerms);
   perms.sort(classificationSorter);
   const result: PermissionClassifications = { permissions: {} };
   perms.forEach(
     (perm) =>
       (result.permissions[perm.name] = {
-        label: sanitiseLabel(perm.label),
+        label: perm.label,
         classification: perm.classification,
         reason: perm.reason,
       })
@@ -57,13 +53,13 @@ async function initUserPermissions(con: Connection, preset?: AuditInitPresets): 
 
 async function initCustomPermissions(con: Connection): Promise<PermissionClassifications | undefined> {
   const result: PermissionClassifications = { permissions: {} };
-  const customPerms = await con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
-  if (customPerms.records.length === 0) {
+  const orgManager = new OrgDescribe(con);
+  const customPerms = await orgManager.getCustomPermissions();
+  if (customPerms.length === 0) {
     return undefined;
   }
-  const perms = customPerms.records.map((cp) => ({
-    name: cp.DeveloperName,
-    label: cp.MasterLabel,
+  const perms = customPerms.map((cp) => ({
+    ...cp,
     classification: PermissionRiskLevel.UNKNOWN,
   }));
   perms.forEach(
@@ -112,36 +108,3 @@ function resolveRiskLevelOrdinalValue(value: string): number {
 
 const classificationSorter = (a: NamedPermissionClassification, b: NamedPermissionClassification): number =>
   resolveRiskLevelOrdinalValue(a.classification) - resolveRiskLevelOrdinalValue(b.classification);
-
-async function parsePermsFromDescribe(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
-  const permSet = await con.describe('PermissionSet');
-  const describeAvailablePerms: Record<string, UnclassifiedPerm> = {};
-  permSet.fields
-    .filter((field) => field.name.startsWith('Permissions'))
-    .forEach((field) => {
-      const permName = field.name.replace('Permissions', '');
-      describeAvailablePerms[permName] = {
-        label: field.label,
-        name: permName,
-      };
-    });
-  return describeAvailablePerms;
-}
-
-async function getUserPermsFromProfiles(con: Connection): Promise<Record<string, UnclassifiedPerm>> {
-  const assignedPerms: Record<string, UnclassifiedPerm> = {};
-  const profilesRepo = new Profiles(con);
-  const profiles = await profilesRepo.resolve({ withMetadata: true });
-  for (const profile of profiles.values()) {
-    if (profile.metadata) {
-      profile.metadata.userPermissions.forEach((userPerm) => {
-        assignedPerms[userPerm.name] = { name: userPerm.name };
-      });
-    }
-  }
-  return assignedPerms;
-}
-
-function sanitiseLabel(rawLabel?: string): string | undefined {
-  return rawLabel?.replaceAll(/[ \t]+$|[\r\n]+/g, '');
-}
