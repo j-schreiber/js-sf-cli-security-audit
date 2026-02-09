@@ -35,6 +35,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     'deep-scan': Flags.boolean({
       summary: messages.getMessage('flags.deep-scan.summary'),
       description: messages.getMessage('flags.deep-scan.description'),
+      char: 'd',
     }),
   };
 
