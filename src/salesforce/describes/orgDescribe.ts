@@ -3,13 +3,16 @@ import Profiles from '../repositories/profiles/profiles.js';
 import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
 
 export default class OrgDescribe {
-  private customPermissions?: Map<string, Permission>;
-  #userPermissions?: Promise<Map<string, Permission>>;
+  private customPermissions!: Map<string, Permission>;
+  private userPermissions!: Map<string, Permission>;
 
-  public constructor(private con: Connection) {}
+  private constructor() {}
 
-  private get userPermissions(): Promise<Map<string, Permission>> {
-    return (this.#userPermissions ??= this.fetchUserPermissions());
+  public static async create(con: Connection): Promise<OrgDescribe> {
+    const inst = new OrgDescribe();
+    inst.userPermissions = await fetchUserPermissions(con);
+    inst.customPermissions = await fetchCustomPermissions(con);
+    return inst;
   }
 
   /**
@@ -18,9 +21,8 @@ export default class OrgDescribe {
    *
    * @returns
    */
-  public async getUserPermissions(): Promise<Permission[]> {
-    const userPerms = await this.userPermissions;
-    return Array.from(userPerms.values());
+  public getUserPermissions(): Permission[] {
+    return Array.from(this.userPermissions.values());
   }
 
   /**
@@ -28,9 +30,8 @@ export default class OrgDescribe {
    *
    * @param permissionName
    */
-  public async isValid(permissionName: string): Promise<boolean> {
-    const userPerms = await this.userPermissions;
-    return userPerms.has(permissionName);
+  public isValid(permissionName: string): boolean {
+    return this.userPermissions.has(permissionName);
   }
 
   /**
@@ -38,27 +39,29 @@ export default class OrgDescribe {
    *
    * @returns
    */
-  public async getCustomPermissions(): Promise<Permission[]> {
-    if (!this.customPermissions) {
-      this.customPermissions = new Map<string, Permission>();
-      const customPerms = await this.con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
-      if (customPerms.records.length > 0) {
-        for (const cp of customPerms.records) {
-          this.customPermissions.set(cp.DeveloperName, {
-            name: cp.DeveloperName,
-            label: cp.MasterLabel,
-          });
-        }
-      }
-    }
+  public getCustomPermissions(): Permission[] {
     return Array.from(this.customPermissions.values());
   }
+}
 
-  private async fetchUserPermissions(): Promise<Map<string, Permission>> {
-    const describePerms = await parsePermsFromDescribe(this.con);
-    const assignedPerms = await getUserPermsFromProfiles(this.con);
-    return mergeMaps(assignedPerms, describePerms);
+async function fetchUserPermissions(con: Connection): Promise<Map<string, Permission>> {
+  const describePerms = await parsePermsFromDescribe(con);
+  const assignedPerms = await getUserPermsFromProfiles(con);
+  return mergeMaps(assignedPerms, describePerms);
+}
+
+async function fetchCustomPermissions(con: Connection): Promise<Map<string, Permission>> {
+  const result = new Map<string, Permission>();
+  const customPerms = await con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
+  if (customPerms.records.length > 0) {
+    for (const cp of customPerms.records) {
+      result.set(cp.DeveloperName, {
+        name: cp.DeveloperName,
+        label: cp.MasterLabel,
+      });
+    }
   }
+  return result;
 }
 
 function mergeMaps(...permMaps: Array<Map<string, Permission>>): Map<string, Permission> {

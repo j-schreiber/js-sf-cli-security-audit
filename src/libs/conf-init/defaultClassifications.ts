@@ -34,8 +34,8 @@ export const ClassificationInitDefinitions: Record<Classifications, Classificati
 };
 
 async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
-  const orgManager = new OrgDescribe(con);
-  const userPerms = await orgManager.getUserPermissions();
+  const orgManager = await OrgDescribe.create(con);
+  const userPerms = orgManager.getUserPermissions();
   const presConfig = loadPreset(preset);
   const perms = presConfig.classifyUserPermissions(userPerms);
   perms.sort(classificationSorter);
@@ -53,8 +53,8 @@ async function initUserPermissions(con: Connection, preset?: AuditInitPresets): 
 
 async function initCustomPermissions(con: Connection): Promise<PermissionClassifications | undefined> {
   const result: PermissionClassifications = { permissions: {} };
-  const orgManager = new OrgDescribe(con);
-  const customPerms = await orgManager.getCustomPermissions();
+  const orgManager = await OrgDescribe.create(con);
+  const customPerms = orgManager.getCustomPermissions();
   if (customPerms.length === 0) {
     return undefined;
   }

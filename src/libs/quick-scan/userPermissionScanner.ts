@@ -48,7 +48,7 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    const org = new OrgDescribe(opts.targetOrg);
+    const org = await OrgDescribe.create(opts.targetOrg);
     const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
@@ -56,9 +56,7 @@ export default class UserPermissionScanner extends EventEmitter {
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
     for (const permName of opts.permissions) {
-      // org caches async calls, so this is okay
-      // eslint-disable-next-line no-await-in-loop
-      if (!(await org.isValid(permName))) {
+      if (!org.isValid(permName)) {
         this.emit('permissionNotFound', {
           permissionName: permName,
         });
