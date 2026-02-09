@@ -73,7 +73,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
   };
 
   private reportWarning = (event: PermissionResolveWarning): void => {
-    this.warn(messages.createWarning('warning.permission-not-found', [event.permissionName]));
+    this.warn(messages.createWarning('PermissionNotFound', [event.permissionName]));
   };
 
   private print(result: QuickScanResult): void {

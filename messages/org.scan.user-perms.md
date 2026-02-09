@@ -12,7 +12,7 @@ One or more permissions to be searched for.
 
 # flags.name.description
 
-You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication" or "ViewSetup". If you are unsure what permissions are available on your org, initialise a new audit config and check the created userPermissions.yml. Currently, the names are not validated: If you have a typo (such as "AutorApex", the scan will retun 0 results).
+You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication", or "ViewSetup". If you are unsure what permissions are available on your org, initialise a new audit config and check the created userPermissions.yml.
 
 # flags.target-org.summary
 
@@ -24,7 +24,7 @@ Include all user permission assignments.
 
 # flags.deep-scan.description
 
-Searches the profile and all assigned permission sets for every active user on the org.
+Searches the profile and all assigned permission sets for active users on the target org. A user can be listed multiple times if they receive a permission from different sources (e.g. a profile and a permission set).
 
 # examples
 
@@ -36,6 +36,6 @@ Searches the profile and all assigned permission sets for every active user on t
 
 Scanned %s profiles and %s permission sets.
 
-# warning.permission-not-found
+# PermissionNotFound
 
 Permission "%s" does not exist on the target org. Maybe you mistyped it?
