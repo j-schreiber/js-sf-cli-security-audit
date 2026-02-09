@@ -22,8 +22,8 @@ describe('org metadata describe', () => {
     // To remedy that, we parse metadata of all profiles additional to PermissionSet describe.
 
     // Act
-    const org = new OrgDescribe($$.targetOrgConnection);
-    const userPerms = await org.getUserPermissions();
+    const org = await OrgDescribe.create($$.targetOrgConnection);
+    const userPerms = org.getUserPermissions();
 
     // Assert
     expect(userPerms).to.have.lengthOf(423); // permset has 417, profiles have additional 6
@@ -44,8 +44,8 @@ describe('org metadata describe', () => {
 
   it('lists all available custom permissions from target org', async () => {
     // Act
-    const org = new OrgDescribe($$.targetOrgConnection);
-    const customPerms = await org.getCustomPermissions();
+    const org = await OrgDescribe.create($$.targetOrgConnection);
+    const customPerms = org.getCustomPermissions();
 
     // Assert
     // mock query from audit context returns 3 permission
@@ -54,18 +54,18 @@ describe('org metadata describe', () => {
 
   it('correctly evaluates if a user permission exists on the target org', async () => {
     // Act
-    const org = new OrgDescribe($$.targetOrgConnection);
+    const org = await OrgDescribe.create($$.targetOrgConnection);
 
     // Assert
     const existingPerms = ['AuthorApex', 'ViewSetup', 'CanApproveUninstalledApps', 'Packaging2'];
     for (const perm of existingPerms) {
       // eslint-disable-next-line no-await-in-loop
-      expect(await org.isValid(perm)).to.be.true;
+      expect(org.isValid(perm)).to.be.true;
     }
     const nonExistingPerms = ['Something', 'SmthElse', '', ' '];
     for (const perm of nonExistingPerms) {
       // eslint-disable-next-line no-await-in-loop
-      expect(await org.isValid(perm)).to.be.false;
+      expect(org.isValid(perm)).to.be.false;
     }
   });
 });

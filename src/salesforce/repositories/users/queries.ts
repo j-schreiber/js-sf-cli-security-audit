@@ -1,5 +1,7 @@
 export const ACTIVE_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive FROM User WHERE IsActive = TRUE AND UserType IN ('Standard') LIMIT 2000";
+export const ALL_USERS_DETAILS_QUERY =
+  "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive FROM User WHERE UserType IN ('Standard') LIMIT 2000";
 
 // DYNAMIC QUERIES
 export const buildPermsetAssignmentsQuery = (userIds: string[]): string =>

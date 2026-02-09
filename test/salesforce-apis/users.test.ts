@@ -1,7 +1,6 @@
 import { expect, assert } from 'chai';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { Users } from '../../src/salesforce/index.js';
-import { buildPermsetAssignmentsQuery } from '../../src/salesforce/repositories/users/queries.js';
 import { parsePermSetFromFile, parseProfileFromFile } from '../mocks/testHelpers.js';
 
 describe('users resolve', () => {
@@ -57,7 +56,7 @@ describe('users resolve', () => {
   it('resolves assigned permission sets to existing users from target org', async () => {
     // Arrange
     // has assignments for test-user-2@example.de
-    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+    $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -77,7 +76,7 @@ describe('users resolve', () => {
   it('resolves users with permission set assignments with metadata from target org', async () => {
     // Arrange
     // has assignments for test-user-2@example.de
-    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'test-user-assignments');
+    $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -102,7 +101,7 @@ describe('users resolve', () => {
 
   it('resolves empty list of assignments for all users if they have no assignments', async () => {
     // Arrange
-    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'empty');
+    $$.mocks.mockPermsetAssignments('empty', testUserIds);
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -116,7 +115,7 @@ describe('users resolve', () => {
 
   it('resolves profile metadata for user if resolved with metadata', async () => {
     // Arrange
-    $$.mocks.setQueryMock(buildPermsetAssignmentsQuery(testUserIds), 'empty');
+    $$.mocks.mockPermsetAssignments('empty', testUserIds);
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -131,5 +130,20 @@ describe('users resolve', () => {
     expect(users.get('test-user-2@example.de')?.profileMetadata).to.deep.contain(
       parseProfileFromFile('admin-profile-with-metadata')
     );
+  });
+
+  it('includes inactive users when flag is set', async () => {
+    // Arrange
+    $$.mocks.mockUsers('all-user-details', undefined, false);
+
+    // Act
+    const repo = new Users($$.targetOrgConnection);
+    const users = await repo.resolve({ includeInactive: true });
+
+    // Assert
+    expect(users.size).to.equal(3);
+    const inactiveUser = users.get('guest-user@example.de');
+    assert.isDefined(inactiveUser);
+    expect(inactiveUser.isActive).to.be.false;
   });
 });

@@ -22,6 +22,7 @@ describe('quick scanners', () => {
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport'],
         deepScan: false,
+        includeInactive: false,
       });
 
       // Assert
@@ -46,6 +47,7 @@ describe('quick scanners', () => {
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport', 'ViewSetup'],
         deepScan: true,
+        includeInactive: false,
       });
 
       // Assert
@@ -87,6 +89,7 @@ describe('quick scanners', () => {
         targetOrg: $$.targetOrgConnection,
         permissions: ['AuthorApex'],
         deepScan: false,
+        includeInactive: false,
       });
 
       // Assert

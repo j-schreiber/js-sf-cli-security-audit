@@ -54,6 +54,8 @@ export const ResolveUsersOptionsSchema = z.object({
   withPermissions: z.boolean().default(false),
   /** Adds metadata to permissions. Has no effect, if withPermissions is false */
   withPermissionsMetadata: z.boolean().default(false),
+  /** Includes all existing users on the org */
+  includeInactive: z.boolean().default(false),
 });
 
 export type ResolveUsersOptions = z.infer<typeof ResolveUsersOptionsSchema>;

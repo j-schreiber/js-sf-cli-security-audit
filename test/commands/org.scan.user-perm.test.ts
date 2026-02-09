@@ -1,9 +1,10 @@
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import OrgUserPermScan from '../../src/commands/org/scan/user-perms.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import UserPermissionScanner from '../../src/libs/quick-scan/userPermissionScanner.js';
 import { QuickScanResult } from '../../src/libs/quick-scan/types.js';
+import { assertSfError } from '../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.scan.user-perms');
@@ -132,7 +133,7 @@ describe('org scan user-perm', () => {
     // 1 call for summary, 3 calls for details tables
     const summaryTable = $$.sfCommandStubs.table.args.flat()[0];
     expect(summaryTable).to.deep.contain({
-      data: [{ permissionName: 'ViewSetup', profiles: 2, permissionSets: 1, users: 4 }],
+      data: [{ permissionName: 'ViewSetup', profiles: 2, permissionSets: 1, assignments: 4 }],
     });
     const usersTable = $$.sfCommandStubs.table.args.flat()[2];
     expect(usersTable.title).to.equal('ViewSetup (Assignments)');
@@ -168,13 +169,7 @@ describe('org scan user-perm', () => {
 
   it('prints warning if permission does not exist on target org', async () => {
     // Act
-    const result = await OrgUserPermScan.run([
-      '--target-org',
-      $$.targetOrg.username,
-      '--name',
-      'SomethingUnknown',
-      '--deep-scan',
-    ]);
+    const result = await OrgUserPermScan.run(['--target-org', $$.targetOrg.username, '--name', 'SomethingUnknown']);
 
     // Assert
     expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal([
@@ -182,5 +177,62 @@ describe('org scan user-perm', () => {
     ]);
     expect($$.sfCommandStubs.table.callCount).to.equal(0);
     expect(result.permissions).to.not.have.key('SomethingUnknown');
+  });
+
+  it('includes inactive users and adds info to users table', async () => {
+    // Arrange
+    $$.mocks.mockUsers('all-user-details', undefined, false);
+
+    // Act
+    const result = await OrgUserPermScan.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--name',
+      'AuthorApex',
+      '--deep-scan',
+      '--include-inactive',
+    ]);
+
+    // Assert
+    const users = result.permissions.AuthorApex.users;
+    assert.isDefined(users);
+    for (const user of users.values()) {
+      assert.isDefined(user.isActive);
+    }
+    expect($$.sfCommandStubs.table.callCount).to.equal(3);
+    const assignmentsTable = $$.sfCommandStubs.table.args.flat()[2];
+    expect(assignmentsTable.data).to.deep.equal(users);
+  });
+
+  it('does not show isActive flag when inactive users are not included', async () => {
+    // Act
+    const result = await OrgUserPermScan.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--name',
+      'AuthorApex',
+      '--deep-scan',
+    ]);
+
+    // Assert
+    expect($$.sfCommandStubs.table.callCount).to.equal(3);
+    const users = result.permissions.AuthorApex.users;
+    assert.isDefined(users);
+    for (const user of users.values()) {
+      assert.isUndefined(user.isActive);
+    }
+  });
+
+  it('does not allow --include-inactive without --deep-scan', async () => {
+    // Act
+    try {
+      await OrgUserPermScan.run(['--target-org', $$.targetOrg.username, '--name', 'AuthorApex', '--include-inactive']);
+      assert.fail('Expected exception, but succeeded');
+    } catch (error) {
+      // thrown error is oclif internal and configured in "dependsOn" of the flag
+      // therefore, we do not over-assert and only check, that the dependend flag
+      // appears in the message.
+      assertSfError(error, '', '--deep-scan');
+    }
   });
 });

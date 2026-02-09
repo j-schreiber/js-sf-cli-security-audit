@@ -9,7 +9,12 @@ import {
   User,
   UserLogins,
 } from './user.types.js';
-import { ACTIVE_USERS_DETAILS_QUERY, buildLoginHistoryQuery, buildPermsetAssignmentsQuery } from './queries.js';
+import {
+  ACTIVE_USERS_DETAILS_QUERY,
+  ALL_USERS_DETAILS_QUERY,
+  buildLoginHistoryQuery,
+  buildPermsetAssignmentsQuery,
+} from './queries.js';
 
 export default class Users {
   private readonly mdapiRepo: MDAPI;
@@ -28,8 +33,10 @@ export default class Users {
   public async resolve(opts?: Partial<ResolveUsersOptions>): Promise<Map<string, User>> {
     const definitiveOpts = ResolveUsersOptionsSchema.parse(opts ?? {});
     const result: Map<string, User> = new Map<string, User>();
-    const allUsersOnOrg = await this.connection.query<SfUser>(ACTIVE_USERS_DETAILS_QUERY);
-    for (const user of allUsersOnOrg.records) {
+    const usersOnOrg = definitiveOpts.includeInactive
+      ? await this.connection.query<SfUser>(ALL_USERS_DETAILS_QUERY)
+      : await this.connection.query<SfUser>(ACTIVE_USERS_DETAILS_QUERY);
+    for (const user of usersOnOrg.records) {
       const usr = {
         userId: user.Id!,
         username: user.Username,

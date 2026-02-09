@@ -48,7 +48,7 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    const org = new OrgDescribe(opts.targetOrg);
+    const org = await OrgDescribe.create(opts.targetOrg);
     const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
@@ -56,18 +56,20 @@ export default class UserPermissionScanner extends EventEmitter {
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
     for (const permName of opts.permissions) {
-      // org caches async calls, so this is okay
-      // eslint-disable-next-line no-await-in-loop
-      if (!(await org.isValid(permName))) {
+      if (!org.isValid(permName)) {
         this.emit('permissionNotFound', {
           permissionName: permName,
         });
       }
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
-      const users = findPermissionAssignments(permName, scannedEntities);
+      const users = findPermissionAssignments(permName, scannedEntities, opts.includeInactive);
       if (profiles.length > 0 || permissionSets.length > 0) {
-        scanResult.permissions[permName] = { permissionSets, profiles, users };
+        scanResult.permissions[permName] = {
+          permissionSets,
+          profiles,
+          ...(opts.deepScan ? { users } : undefined),
+        };
       }
     }
     this.emitProgress({ status: 'Completed' });
@@ -82,7 +84,12 @@ export default class UserPermissionScanner extends EventEmitter {
     if (opts.deepScan) {
       const usersRepo = new Users(opts.targetOrg);
       promises.push(
-        usersRepo.resolve({ withLoginHistory: false, withPermissions: true, withPermissionsMetadata: false })
+        usersRepo.resolve({
+          withLoginHistory: false,
+          withPermissions: true,
+          withPermissionsMetadata: false,
+          includeInactive: opts.includeInactive,
+        })
       );
     }
     const resolvedPromises = await Promise.all(promises);
@@ -147,22 +154,33 @@ function prepareIndizes(entities: Record<string, PartialProfileLike>): Record<st
 
 function findPermissionAssignments(
   permName: string,
-  scanContext: ScannedEntities
-): UserPermissionAssignment[] | undefined {
+  scanContext: ScannedEntities,
+  includesInactive: boolean
+): UserPermissionAssignment[] {
   if (!scanContext.users) {
-    return undefined;
+    return [];
   }
   const permAssignments: UserPermissionAssignment[] = [];
   for (const [username, userDetails] of scanContext.users.entries()) {
     const profile = scanContext.profiles[userDetails.profileName];
     if (profile && profile.userPermissions.has(permName)) {
-      permAssignments.push({ username, source: userDetails.profileName, type: 'Profile' });
+      permAssignments.push({
+        username,
+        source: userDetails.profileName,
+        type: 'Profile',
+        ...(includesInactive ? { isActive: userDetails.isActive } : undefined),
+      });
     }
     if (userDetails.assignments) {
       for (const permSetAss of userDetails.assignments) {
         const permSet = scanContext.permissionSets[permSetAss.permissionSetIdentifier];
         if (permSet && permSet.userPermissions.has(permName)) {
-          permAssignments.push({ username, source: permSetAss.permissionSetIdentifier, type: 'Permission Set' });
+          permAssignments.push({
+            username,
+            source: permSetAss.permissionSetIdentifier,
+            type: 'Permission Set',
+            ...(includesInactive ? { isActive: userDetails.isActive } : undefined),
+          });
         }
       }
     }
