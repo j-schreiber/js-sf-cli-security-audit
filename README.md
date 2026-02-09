@@ -89,7 +89,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.1/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -134,7 +134,7 @@ FLAG DESCRIPTIONS
     never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.1/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -142,10 +142,11 @@ Performs a quick scan for specific user permissions.
 
 ```
 USAGE
-  $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>] [-d]
+  $ sf org scan user-perms -n <value>... -o <value> [--json] [--flags-dir <value>] [--api-version <value>] [-i -d]
 
 FLAGS
   -d, --deep-scan            Include all user permission assignments.
+  -i, --include-inactive     Include inactive users.
   -n, --name=<value>...      (required) One or more permissions to be searched for.
   -o, --target-org=<value>   (required) The target org to scan.
       --api-version=<value>  Override the api version used for api requests made by this command
@@ -171,6 +172,10 @@ FLAG DESCRIPTIONS
     Searches the profile and all assigned permission sets for active users on the target org. A user can be listed
     multiple times if they receive a permission from different sources (e.g. a profile and a permission set).
 
+  -i, --include-inactive  Include inactive users.
+
+    Include all inactive users on the org when you perform a deep scan.
+
   -n, --name=<value>...  One or more permissions to be searched for.
 
     You can specify any valid user permission on your org, such as "AuthorApex", "CustomizeApplication", or "ViewSetup".
@@ -178,7 +183,7 @@ FLAG DESCRIPTIONS
     userPermissions.yml.
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.16.1/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
