@@ -37,6 +37,12 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
       description: messages.getMessage('flags.deep-scan.description'),
       char: 'd',
     }),
+    'include-inactive': Flags.boolean({
+      summary: messages.getMessage('flags.include-inactive.summary'),
+      description: messages.getMessage('flags.include-inactive.description'),
+      char: 'i',
+      dependsOn: ['deep-scan'],
+    }),
   };
 
   public async run(): Promise<OrgUserPermScanResult> {
@@ -48,6 +54,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
       targetOrg: flags['target-org'].getConnection(flags['api-version']),
       permissions: flags.name,
       deepScan: flags['deep-scan'],
+      includeInactive: flags['include-inactive'],
     });
     this.print(result);
     return result;
@@ -92,7 +99,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
         permissionName,
         profiles: permResult.profiles.length,
         permissionSets: permResult.permissionSets.length,
-        ...(permResult.users ? { users: permResult.users.length } : undefined),
+        ...(permResult.users ? { assignments: permResult.users.length } : undefined),
       });
     });
     if (data.length > 0) {

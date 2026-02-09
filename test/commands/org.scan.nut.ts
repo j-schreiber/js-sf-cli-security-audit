@@ -54,6 +54,23 @@ describe('org quick-scan NUTs', () => {
     expect(result.permissions.ViewSetup.profiles).to.include('System Administrator');
     assert.isDefined(result.permissions.ViewSetup.users);
     expect(result.permissions.ViewSetup.users).to.not.be.empty;
+    for (const user of result.permissions.ViewSetup.users) {
+      assert.isUndefined(user.isActive);
+    }
+  });
+
+  it('queries all inactive users when --include-inactive is given', () => {
+    // Act
+    const command = `org scan user-perms --target-org ${scratchOrgAlias} --name ViewSetup --deep-scan --include-inactive --json`;
+    const result = execCmd<OrgUserPermScanResult>(command, { ensureExitCode: 0 }).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+    assert.isDefined(result.permissions.ViewSetup.users);
+    expect(result.permissions.ViewSetup.users).to.not.be.empty;
+    for (const user of result.permissions.ViewSetup.users) {
+      assert.isDefined(user.isActive);
+    }
   });
 
   it('gracefully ignores an unknown permission in the result', () => {

@@ -9,6 +9,7 @@ import {
   buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
   ACTIVE_USERS_DETAILS_QUERY,
+  ALL_USERS_DETAILS_QUERY,
 } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
@@ -119,12 +120,25 @@ export default class SfConnectionMocks {
   }
 
   /**
-   * Results for active (standard users) query
+   * Results for (standard) users query
    *
    * @param resultFile
+   * @param activeOnly Only include active users
    */
-  public mockUsers(resultFile: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
-    this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
+  public mockUsers(
+    resultFile: string,
+    transformer?: (a: JsForceRecord) => JsForceRecord,
+    activeOnly: boolean = true
+  ): void {
+    // reset both queries to avoid unexpected results
+    delete this.queries[ACTIVE_USERS_DETAILS_QUERY];
+    delete this.queries[ALL_USERS_DETAILS_QUERY];
+    // only initialise one query
+    if (activeOnly) {
+      this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
+    } else {
+      this.setQueryMock(ALL_USERS_DETAILS_QUERY, resultFile, transformer);
+    }
   }
 
   /**

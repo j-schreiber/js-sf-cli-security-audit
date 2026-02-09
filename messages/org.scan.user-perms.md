@@ -26,6 +26,14 @@ Include all user permission assignments.
 
 Searches the profile and all assigned permission sets for active users on the target org. A user can be listed multiple times if they receive a permission from different sources (e.g. a profile and a permission set).
 
+# flags.include-inactive.summary
+
+Include inactive users.
+
+# flags.include-inactive.description
+
+Include all inactive users on the org when you perform a deep scan.
+
 # examples
 
 - Search for multiple permissions on MyTargetOrg
