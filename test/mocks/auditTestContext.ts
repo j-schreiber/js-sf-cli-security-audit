@@ -2,7 +2,7 @@ import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
-import { stubSfCommandUx } from '@salesforce/sf-plugins-core';
+import { stubSfCommandUx, stubSpinner } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
@@ -32,6 +32,7 @@ export default class AuditTestContext {
   public defaultPath = path.join('my-test-org');
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
+  public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
   public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
 
@@ -53,6 +54,7 @@ export default class AuditTestContext {
     // comment out this line to see console output in unit tests
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
+    this.sfSpinnerStub = stubSpinner(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     await this.mocks.stubMetadataRetrieve('full');
     this.mocks.restoreStubs();
