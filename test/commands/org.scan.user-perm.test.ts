@@ -178,7 +178,7 @@ describe('org scan user-perm', () => {
 
     // Assert
     expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal([
-      messages.createWarning('warning.permission-not-found', ['SomethingUnknown']),
+      messages.createWarning('PermissionNotFound', ['SomethingUnknown']),
     ]);
     expect($$.sfCommandStubs.table.callCount).to.equal(0);
     expect(result.permissions).to.not.have.key('SomethingUnknown');

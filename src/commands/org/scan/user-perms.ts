@@ -35,6 +35,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     'deep-scan': Flags.boolean({
       summary: messages.getMessage('flags.deep-scan.summary'),
       description: messages.getMessage('flags.deep-scan.description'),
+      char: 'd',
     }),
   };
 
@@ -73,7 +74,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
   };
 
   private reportWarning = (event: PermissionResolveWarning): void => {
-    this.warn(messages.createWarning('warning.permission-not-found', [event.permissionName]));
+    this.warn(messages.createWarning('PermissionNotFound', [event.permissionName]));
   };
 
   private print(result: QuickScanResult): void {
