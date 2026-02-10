@@ -89,7 +89,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.18.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -134,7 +134,7 @@ FLAG DESCRIPTIONS
     never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.18.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -183,7 +183,7 @@ FLAG DESCRIPTIONS
     userPermissions.yml.
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.17.0/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.18.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
