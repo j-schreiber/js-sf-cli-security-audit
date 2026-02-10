@@ -235,4 +235,26 @@ describe('org scan user-perm', () => {
       assertSfError(error, '', '--deep-scan');
     }
   });
+
+  it('logs info if permission was resolved from label', async () => {
+    // Act
+    const result = await OrgUserPermScan.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--name',
+      'Author Apex',
+      '--name',
+      'customizeapplication',
+      '--name',
+      'export report',
+    ]);
+
+    // Assert
+    expect($$.sfCommandStubs.info.args.flat()).to.deep.equal([
+      messages.createInfo('PermissionNameNormalized', ['Author Apex', 'AuthorApex']),
+      messages.createInfo('PermissionNameNormalized', ['customizeapplication', 'CustomizeApplication']),
+      messages.createInfo('PermissionNameNormalized', ['export report', 'ExportReport']),
+    ]);
+    expect(result.permissions).to.have.keys(['AuthorApex', 'CustomizeApplication', 'ExportReport']);
+  });
 });

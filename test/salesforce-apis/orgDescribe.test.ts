@@ -26,7 +26,7 @@ describe('org metadata describe', () => {
     const userPerms = org.getUserPermissions();
 
     // Assert
-    expect(userPerms).to.have.lengthOf(423); // permset has 417, profiles have additional 6
+    expect(userPerms).to.have.lengthOf(424); // permset has 418, profiles have additional 6
     // these are the permissions from our prod that are part of profiles,
     // but not part of the permset describe. No idea which is the 6th one
     const missingPermsFromMetadata = [

@@ -2,6 +2,8 @@ import { Connection } from '@salesforce/core';
 import Profiles from '../repositories/profiles/profiles.js';
 import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
 
+/** Minimum length for perm label to start fuzzy matching */
+const FUZZY_MATCH_MIN_LENGTH = 15;
 export default class OrgDescribe {
   private customPermissions!: Map<string, Permission>;
   private userPermissions!: Map<string, Permission>;
@@ -13,6 +15,32 @@ export default class OrgDescribe {
     inst.userPermissions = await fetchUserPermissions(con);
     inst.customPermissions = await fetchCustomPermissions(con);
     return inst;
+  }
+
+  /**
+   * Tries to find a user permission based on unsanitized input. Searches
+   * by exact match (fastest) or tries fuzzy matching by name and label.
+   *
+   * @param maybeValidName
+   * @returns A valid user permission or undefined, if the name cannot be resolved
+   */
+  public findUserPermission(maybeValidName: string): Permission | undefined {
+    const canonicalName = maybeValidName.toLowerCase().replaceAll(/[\s.]/g, '');
+    if (this.userPermissions.has(canonicalName)) {
+      return this.userPermissions.get(canonicalName);
+    }
+    for (const perm of this.userPermissions.values()) {
+      if (!perm.label) {
+        continue;
+      }
+      const canonicalLabel = perm.label.toLowerCase().replaceAll(/[\s.]/g, '');
+      if (
+        canonicalLabel === canonicalName ||
+        (canonicalName.length >= FUZZY_MATCH_MIN_LENGTH && canonicalLabel.startsWith(canonicalName))
+      ) {
+        return perm;
+      }
+    }
   }
 
   /**
@@ -31,7 +59,10 @@ export default class OrgDescribe {
    * @param permissionName
    */
   public isValid(permissionName: string): boolean {
-    return this.userPermissions.has(permissionName);
+    return (
+      this.userPermissions.has(permissionName.toLowerCase()) &&
+      this.userPermissions.get(permissionName.toLowerCase())?.name === permissionName
+    );
   }
 
   /**
@@ -75,7 +106,7 @@ async function parsePermsFromDescribe(con: Connection): Promise<Map<string, Perm
     .filter((field) => field.name.startsWith('Permissions'))
     .forEach((field) => {
       const permName = field.name.replace('Permissions', '');
-      describeAvailablePerms.set(permName, {
+      describeAvailablePerms.set(permName.toLowerCase(), {
         label: sanitiseLabel(field.label),
         name: permName,
       });
@@ -90,7 +121,7 @@ async function getUserPermsFromProfiles(con: Connection): Promise<Map<string, Pe
   for (const profile of profiles.values()) {
     if (profile.metadata) {
       profile.metadata.userPermissions.forEach((userPerm) => {
-        assignedPerms.set(userPerm.name, { name: userPerm.name, label: userPerm.name });
+        assignedPerms.set(userPerm.name.toLowerCase(), { name: userPerm.name, label: userPerm.name });
       });
     }
   }
