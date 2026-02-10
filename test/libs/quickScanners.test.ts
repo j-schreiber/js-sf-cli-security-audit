@@ -121,5 +121,26 @@ describe('quick scanners', () => {
         status: 'Completed',
       });
     });
+
+    it('emits events to warn invalid permissions', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const warnListener = $$.context.SANDBOX.stub();
+      scanner.addListener('permissionNotFound', warnListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: ['AutorApex', 'SomethingUnknown', 'CustomizeApplication'],
+        deepScan: false,
+        includeInactive: false,
+      });
+
+      // Assert
+      expect(warnListener.args.flat()).to.deep.equal([
+        { permissionName: 'AutorApex' },
+        { permissionName: 'SomethingUnknown' },
+      ]);
+    });
   });
 });

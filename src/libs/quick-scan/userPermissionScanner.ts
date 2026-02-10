@@ -48,7 +48,7 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    const org = await OrgDescribe.create(opts.targetOrg);
+    await this.warnUnknownPermissions(opts);
     const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
@@ -56,11 +56,6 @@ export default class UserPermissionScanner extends EventEmitter {
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
     for (const permName of opts.permissions) {
-      if (!org.isValid(permName)) {
-        this.emit('permissionNotFound', {
-          permissionName: permName,
-        });
-      }
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
       const users = findPermissionAssignments(permName, scannedEntities, opts.includeInactive);
@@ -74,6 +69,17 @@ export default class UserPermissionScanner extends EventEmitter {
     }
     this.emitProgress({ status: 'Completed' });
     return scanResult;
+  }
+
+  private async warnUnknownPermissions(opts: QuickScanOptions): Promise<void> {
+    const org = await OrgDescribe.create(opts.targetOrg);
+    for (const permName of opts.permissions) {
+      if (!org.isValid(permName)) {
+        this.emit('permissionNotFound', {
+          permissionName: permName,
+        });
+      }
+    }
   }
 
   private async resolveEntities(opts: QuickScanOptions): Promise<ScannedEntities> {
