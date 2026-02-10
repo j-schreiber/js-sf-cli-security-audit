@@ -89,7 +89,7 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
   };
 
   private reportNormalisation = (event: PermissionNormalized): void => {
-    this.info(messages.createInfo('PermissionNameNormalised', [event.input, event.normalized]));
+    this.info(messages.createInfo('PermissionNameNormalized', [event.input, event.normalized]));
   };
 
   private print(result: QuickScanResult): void {

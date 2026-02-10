@@ -251,9 +251,9 @@ describe('org scan user-perm', () => {
 
     // Assert
     expect($$.sfCommandStubs.info.args.flat()).to.deep.equal([
-      messages.createInfo('PermissionNameNormalised', ['Author Apex', 'AuthorApex']),
-      messages.createInfo('PermissionNameNormalised', ['customizeapplication', 'CustomizeApplication']),
-      messages.createInfo('PermissionNameNormalised', ['export report', 'ExportReport']),
+      messages.createInfo('PermissionNameNormalized', ['Author Apex', 'AuthorApex']),
+      messages.createInfo('PermissionNameNormalized', ['customizeapplication', 'CustomizeApplication']),
+      messages.createInfo('PermissionNameNormalized', ['export report', 'ExportReport']),
     ]);
     expect(result.permissions).to.have.keys(['AuthorApex', 'CustomizeApplication', 'ExportReport']);
   });

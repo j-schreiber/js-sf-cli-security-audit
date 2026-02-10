@@ -48,6 +48,6 @@ Scanned %s profiles and %s permission sets.
 
 Permission "%s" does not exist on the target org. Maybe you mistyped it?
 
-# PermissionNameNormalised
+# PermissionNameNormalized
 
-Permission "%s" normalised to %s.
+Permission "%s" normalized to %s.
