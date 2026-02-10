@@ -161,6 +161,8 @@ describe('quick scanners', () => {
           'Manage Dashboards in Public Folders',
           'Run Macros on Multiple Records',
           'ExportReports',
+          'Manage Auth. Providers',
+          'Gives AI agents access',
         ],
         deepScan: false,
         includeInactive: false,
@@ -175,6 +177,8 @@ describe('quick scanners', () => {
         { input: 'Manage Dashboards in Public Folders', normalized: 'ManageDashbdsInPubFolders' },
         { input: 'Run Macros on Multiple Records', normalized: 'BulkMacrosAllowed' },
         { input: 'ExportReports', normalized: 'ExportReport' },
+        { input: 'Manage Auth. Providers', normalized: 'ManageAuthProviders' },
+        { input: 'Gives AI agents access', normalized: 'MngBenVerfForAssistiveAgnt' },
       ]);
     });
 
@@ -197,6 +201,28 @@ describe('quick scanners', () => {
       // Assert
       expect(warnListener.args.flat()).to.deep.equal([]);
       expect(normalizeListener.args.flat()).to.deep.equal([]);
+    });
+
+    it('does not match too eagerly for invalid names', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const warnListener = $$.context.SANDBOX.stub();
+      scanner.addListener('permissionNotFound', warnListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: ['Manage', 'Import', 'View'],
+        deepScan: false,
+        includeInactive: false,
+      });
+
+      // Assert
+      expect(warnListener.args.flat()).to.deep.equal([
+        { permissionName: 'Manage' },
+        { permissionName: 'Import' },
+        { permissionName: 'View' },
+      ]);
     });
   });
 });

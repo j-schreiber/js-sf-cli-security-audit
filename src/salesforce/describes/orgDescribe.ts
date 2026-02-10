@@ -2,6 +2,8 @@ import { Connection } from '@salesforce/core';
 import Profiles from '../repositories/profiles/profiles.js';
 import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
 
+/** Minimum length for perm label to start fuzzy matching */
+const FUZZY_MATCH_MIN_LENGTH = 15;
 export default class OrgDescribe {
   private customPermissions!: Map<string, Permission>;
   private userPermissions!: Map<string, Permission>;
@@ -23,8 +25,7 @@ export default class OrgDescribe {
    * @returns A valid user permission or undefined, if the name cannot be resolved
    */
   public findUserPermission(maybeValidName: string): Permission | undefined {
-    const loweredName = maybeValidName.toLowerCase();
-    const canonicalName = loweredName.replaceAll(' ', '');
+    const canonicalName = maybeValidName.toLowerCase().replaceAll(/[\s.]/g, '');
     if (this.userPermissions.has(canonicalName)) {
       return this.userPermissions.get(canonicalName);
     }
@@ -32,8 +33,11 @@ export default class OrgDescribe {
       if (!perm.label) {
         continue;
       }
-      const canonicalLabel = perm.label.toLowerCase().replaceAll(' ', '');
-      if (canonicalLabel === canonicalName) {
+      const canonicalLabel = perm.label.toLowerCase().replaceAll(/[\s.]/g, '');
+      if (
+        canonicalLabel === canonicalName ||
+        (canonicalName.length >= FUZZY_MATCH_MIN_LENGTH && canonicalLabel.startsWith(canonicalName))
+      ) {
         return perm;
       }
     }
