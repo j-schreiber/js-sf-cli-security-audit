@@ -47,3 +47,7 @@ Scanned %s profiles and %s permission sets.
 # PermissionNotFound
 
 Permission "%s" does not exist on the target org. Maybe you mistyped it?
+
+# PermissionNameNormalised
+
+Permission "%s" normalised to %s.

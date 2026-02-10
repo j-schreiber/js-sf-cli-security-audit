@@ -30,8 +30,13 @@ export type EntityScanStatus = {
   status?: string;
 };
 
-export type PermissionResolveWarning = {
+export type PermissionNotFound = {
   permissionName: string;
+};
+
+export type PermissionNormalized = {
+  input: string;
+  normalized: string;
 };
 
 export default class UserPermissionScanner extends EventEmitter {
@@ -48,14 +53,14 @@ export default class UserPermissionScanner extends EventEmitter {
 
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    await this.warnUnknownPermissions(opts);
+    const normalizedPerms = await this.normalizePermissions(opts);
     const scannedEntities = await this.resolveEntities(opts);
     const scanResult: QuickScanResult = {
       permissions: {},
       scannedProfiles: Object.keys(scannedEntities.profiles),
       scannedPermissionSets: Object.keys(scannedEntities.permissionSets),
     };
-    for (const permName of opts.permissions) {
+    for (const permName of normalizedPerms) {
       const profiles = findGrantingEntities(permName, scannedEntities.profiles);
       const permissionSets = findGrantingEntities(permName, scannedEntities.permissionSets);
       const users = findPermissionAssignments(permName, scannedEntities, opts.includeInactive);
@@ -71,15 +76,28 @@ export default class UserPermissionScanner extends EventEmitter {
     return scanResult;
   }
 
-  private async warnUnknownPermissions(opts: QuickScanOptions): Promise<void> {
+  private async normalizePermissions(opts: QuickScanOptions): Promise<string[]> {
+    const sanitizedPerms = [];
     const org = await OrgDescribe.create(opts.targetOrg);
     for (const permName of opts.permissions) {
-      if (!org.isValid(permName)) {
+      if (org.isValid(permName)) {
+        sanitizedPerms.push(permName);
+        continue;
+      }
+      const perm = org.findUserPermission(permName);
+      if (perm) {
+        this.emit('permissionNormalized', {
+          input: permName,
+          normalized: perm.name,
+        });
+        sanitizedPerms.push(perm.name);
+      } else {
         this.emit('permissionNotFound', {
           permissionName: permName,
         });
       }
     }
+    return sanitizedPerms;
   }
 
   private async resolveEntities(opts: QuickScanOptions): Promise<ScannedEntities> {

@@ -3,7 +3,8 @@ import { Messages } from '@salesforce/core';
 import { PermissionScanResult, QuickScanResult } from '../../../libs/quick-scan/types.js';
 import UserPermissionScanner, {
   EntityScanStatus,
-  PermissionResolveWarning,
+  PermissionNormalized,
+  PermissionNotFound,
   ScanStatusEvent,
 } from '../../../libs/quick-scan/userPermissionScanner.js';
 import { capitalize } from '../../../utils.js';
@@ -48,8 +49,11 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
   public async run(): Promise<OrgUserPermScanResult> {
     const { flags } = await this.parse(OrgUserPermScan);
     const scanner = new UserPermissionScanner();
+
     scanner.on('progress', this.reportProgress);
     scanner.on('permissionNotFound', this.reportWarning);
+    scanner.on('permissionNormalized', this.reportNormalisation);
+
     const result = await scanner.quickScan({
       targetOrg: flags['target-org'].getConnection(flags['api-version']),
       permissions: flags.name,
@@ -80,8 +84,12 @@ export default class OrgUserPermScan extends SfCommand<OrgUserPermScanResult> {
     }
   };
 
-  private reportWarning = (event: PermissionResolveWarning): void => {
+  private reportWarning = (event: PermissionNotFound): void => {
     this.warn(messages.createWarning('PermissionNotFound', [event.permissionName]));
+  };
+
+  private reportNormalisation = (event: PermissionNormalized): void => {
+    this.info(messages.createInfo('PermissionNameNormalised', [event.input, event.normalized]));
   };
 
   private print(result: QuickScanResult): void {

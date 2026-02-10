@@ -142,5 +142,61 @@ describe('quick scanners', () => {
         { permissionName: 'SomethingUnknown' },
       ]);
     });
+
+    it('emits normalizer event and no warn event for simple typos', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const warnListener = $$.context.SANDBOX.stub();
+      const normalizeListener = $$.context.SANDBOX.stub();
+      scanner.addListener('permissionNotFound', warnListener);
+      scanner.addListener('permissionNormalized', normalizeListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: [
+          'Author Apex',
+          'approvaladmin',
+          'customize application',
+          'Manage Dashboards in Public Folders',
+          'Run Macros on Multiple Records',
+          'ExportReports',
+        ],
+        deepScan: false,
+        includeInactive: false,
+      });
+
+      // Assert
+      expect(warnListener.args.flat()).to.deep.equal([]);
+      expect(normalizeListener.args.flat()).to.deep.equal([
+        { input: 'Author Apex', normalized: 'AuthorApex' },
+        { input: 'approvaladmin', normalized: 'ApprovalAdmin' },
+        { input: 'customize application', normalized: 'CustomizeApplication' },
+        { input: 'Manage Dashboards in Public Folders', normalized: 'ManageDashbdsInPubFolders' },
+        { input: 'Run Macros on Multiple Records', normalized: 'BulkMacrosAllowed' },
+        { input: 'ExportReports', normalized: 'ExportReport' },
+      ]);
+    });
+
+    it('emits no warnings and no normalizer events for exact matches', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const warnListener = $$.context.SANDBOX.stub();
+      const normalizeListener = $$.context.SANDBOX.stub();
+      scanner.addListener('permissionNotFound', warnListener);
+      scanner.addListener('permissionNormalized', normalizeListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.targetOrgConnection,
+        permissions: ['AuthorApex', 'ExportReport'],
+        deepScan: false,
+        includeInactive: false,
+      });
+
+      // Assert
+      expect(warnListener.args.flat()).to.deep.equal([]);
+      expect(normalizeListener.args.flat()).to.deep.equal([]);
+    });
   });
 });
