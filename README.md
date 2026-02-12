@@ -5,7 +5,7 @@
   <a href="https://github.com/j-schreiber/js-sf-cli-security-audit/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-blue" alt="License"></a>
 </p>
 
-A plugin for the sf CLI to perform automated security audits.
+A plugin for the sf CLI to automate security audits. Run audits on your CI platform in minutes, instead of manually documenting for hours.
 
 ![Audit Run Demo](/images/audit-run-demo.gif)
 
