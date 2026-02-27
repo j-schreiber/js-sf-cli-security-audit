@@ -14,7 +14,7 @@ import {
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
-import { OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
+import { COUNT_TOKEN_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
 import { CONNECTED_APPS_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE, FULL_QUERY_RESULTS_BASE } from './data/paths.js';
 
@@ -66,7 +66,11 @@ export default class SfConnectionMocks {
    * @param queryString
    * @param fileName file name without '.json' suffix
    */
-  public setQueryMock(queryString: string, fileName: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
+  public setQueryMock(
+    queryString: string,
+    fileName: string,
+    transformer?: (a: JsForceRecord) => JsForceRecord
+  ): JsForceRecord[] {
     const fullPath = path.join(QUERY_RESULTS_BASE, `${fileName}.json`);
     const records = loadRecords(fullPath);
     if (transformer) {
@@ -74,6 +78,7 @@ export default class SfConnectionMocks {
     } else {
       this.queries[queryString] = records;
     }
+    return records;
   }
 
   /**
@@ -180,7 +185,8 @@ export default class SfConnectionMocks {
   }
 
   public mockOAuthTokens(resultFile: string): void {
-    this.setQueryMock(OAUTH_TOKEN_QUERY, resultFile);
+    const mockRecords = this.setQueryMock(OAUTH_TOKEN_QUERY, resultFile);
+    this.fullQueryResults[COUNT_TOKEN_QUERY] = { done: true, records: [], totalSize: mockRecords.length };
   }
 
   /**
@@ -230,14 +236,14 @@ export default class SfConnectionMocks {
     const url = (request as { url: string }).url;
     if (url.includes('/query?q=')) {
       const queryParam = extractDecodedQueryParam(url);
+      // if we mocked a full query result, use this mock
+      if (this.fullQueryResults[queryParam]) {
+        return Promise.resolve(this.fullQueryResults[queryParam]);
+      }
       if (this.queries[queryParam] === undefined) {
         return Promise.reject({
           data: { errorCode: 'UNKNOWN_QUERY', message: `A query was executed that was not mocked: ${queryParam}` },
         });
-      }
-      // if we mocked a full query result, use this mock
-      if (this.fullQueryResults[queryParam]) {
-        return Promise.resolve(this.fullQueryResults[queryParam]);
       }
       // return records and auto-generate result otherwise
       const records = this.queries[queryParam];
