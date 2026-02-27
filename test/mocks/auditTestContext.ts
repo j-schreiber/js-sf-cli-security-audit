@@ -12,8 +12,6 @@ import {
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
-import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
@@ -138,9 +136,6 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
     },
     queries: {} as Record<string, string>,
   };
-  defaults.queries[PERMISSION_SETS_QUERY] = 'empty';
-  defaults.queries[CONNECTED_APPS_QUERY] = 'empty';
-  defaults.queries[OAUTH_TOKEN_QUERY] = 'empty';
   mocks.prepareMocks(defaults);
   mocks.mockPermsetAssignments('empty', ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF']);
   mocks.mockCustomPermissions('custom-permissions');
@@ -155,6 +150,9 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   mocks.mockLoginHistory('empty');
   // 14 days is option config in "full-valid" user policy
   mocks.mockLoginHistory('empty', 14);
+  mocks.mockOAuthTokens('empty');
+  mocks.mockConnectedApps('empty');
+  mocks.mockPermissionSets('empty');
   return mocks;
 }
 

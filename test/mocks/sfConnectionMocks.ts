@@ -14,16 +14,14 @@ import {
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
-import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH } from './data/paths.js';
+import { OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
+import { CONNECTED_APPS_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
+import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
   queries?: Record<string, string>;
 };
-
-export const QUERY_RESULTS_BASE = path.join('test', 'mocks', 'data', 'queryResults');
-
 export default class SfConnectionMocks {
   public describes: Record<string, Partial<DescribeSObjectResult>>;
   public queries: Record<string, JsForceRecord[]>;
