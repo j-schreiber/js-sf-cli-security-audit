@@ -1,0 +1,66 @@
+{
+  "done": false,
+  "nextRecordsUrl": "https://test.my.salesforce.com/services/data/v62.0/query/0r8xx3d3FsAvwqKAIR-5",
+  "totalSize": 9,
+  "records": [
+    {
+      "AppName": "Test App 1",
+      "UseCount": 1,
+      "User": {
+        "attributes": {
+          "type": "User",
+          "url": "/services/data/v63.0/sobjects/User/0053X00000DlblKQAR"
+        },
+        "Username": "test1@example.com"
+      }
+    },
+    {
+      "AppName": "Test App 1",
+      "UseCount": 1,
+      "User": {
+        "attributes": {
+          "type": "User",
+          "url": "/services/data/v63.0/sobjects/User/0053X00000AdMFgQAN"
+        },
+        "Username": "test2@example.com"
+      }
+    },
+    {
+      "attributes": {
+        "type": "OauthToken",
+        "url": "/services/data/v63.0/sobjects/OauthToken/0CQVl000000IIr4OAG"
+      },
+      "AppName": "Test App 1",
+      "UseCount": 1,
+      "User": {
+        "attributes": {
+          "type": "User",
+          "url": "/services/data/v63.0/sobjects/User/0053X00000EkqY9QAJ"
+        },
+        "Username": "test3@example.com"
+      }
+    },
+    {
+      "AppName": "Test App 1",
+      "UseCount": 1,
+      "User": {
+        "attributes": {
+          "type": "User",
+          "url": "/services/data/v63.0/sobjects/User/0053X00000AcNDRQA3"
+        },
+        "Username": "test4@example.com"
+      }
+    },
+    {
+      "AppName": "Test App 2",
+      "UseCount": 1,
+      "User": {
+        "attributes": {
+          "type": "User",
+          "url": "/services/data/v63.0/sobjects/User/0053X00000DlblKQAR"
+        },
+        "Username": "test1@example.com"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.types.js';
+import { ResolveLifecycle } from '../../salesforce/index.js';
 import { AuditRunConfig, Policies } from './registry/definitions.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
@@ -33,6 +34,7 @@ export default class AuditRun extends EventEmitter {
   public constructor(config: Partial<AuditRunConfig>) {
     super();
     this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {} }, ...config };
+    ResolveLifecycle.on('resolvewarning', (warning) => this.emit('resolvewarning', warning));
   }
 
   public getExecutableRulesCount(policyName: Policies): number {

@@ -1,6 +1,6 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
-import { DescribeSObjectResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
+import { DescribeSObjectResult, Record as JsForceRecord, QueryResult } from '@jsforce/jsforce-node';
 import { AnyJson, isString } from '@salesforce/ts-types';
 import { TestContext } from '@salesforce/core/testSetup';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
@@ -16,7 +16,7 @@ import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/q
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
 import { OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
 import { CONNECTED_APPS_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
-import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE } from './data/paths.js';
+import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE, FULL_QUERY_RESULTS_BASE } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
@@ -26,10 +26,12 @@ export default class SfConnectionMocks {
   public describes: Record<string, Partial<DescribeSObjectResult>>;
   public queries: Record<string, JsForceRecord[]>;
   public retrieveStub?: sinon.SinonStub;
+  public fullQueryResults: Record<string, AnyJson>;
 
   public constructor(private readonly context: TestContext) {
     this.describes = {};
     this.queries = {};
+    this.fullQueryResults = {};
     this.context.fakeConnectionRequest = this.fakeConnectionRequest;
   }
 
@@ -58,7 +60,7 @@ export default class SfConnectionMocks {
   }
 
   /**
-   * Mock query results from a file. The file must be located in queryResults
+   * Mock query results from a file. The file must be located in query-result-records
    * standard mock folder.
    *
    * @param queryString
@@ -72,6 +74,21 @@ export default class SfConnectionMocks {
     } else {
       this.queries[queryString] = records;
     }
+  }
+
+  /**
+   * Mocks a full query result for a SOQL or a query pointer. File must be located in query-results
+   * standard mock folder. Any full result overrides query mocks.
+   *
+   * @param soqlOrQueryLocator
+   * @param fileName
+   */
+  public setFullQueryResult(soqlOrQueryLocator: string, fileName: string): QueryResult<JsForceRecord> {
+    const fullPath = path.join(FULL_QUERY_RESULTS_BASE, `${fileName}.json`);
+    const content = fs.readFileSync(fullPath, 'utf-8');
+    const result = JSON.parse(content) as QueryResult<JsForceRecord>;
+    this.fullQueryResults[soqlOrQueryLocator] = result;
+    return result;
   }
 
   /**
@@ -218,8 +235,20 @@ export default class SfConnectionMocks {
           data: { errorCode: 'UNKNOWN_QUERY', message: `A query was executed that was not mocked: ${queryParam}` },
         });
       }
+      // if we mocked a full query result, use this mock
+      if (this.fullQueryResults[queryParam]) {
+        return Promise.resolve(this.fullQueryResults[queryParam]);
+      }
+      // return records and auto-generate result otherwise
       const records = this.queries[queryParam];
       return Promise.resolve({ done: true, totalSize: records.length, records } as AnyJson);
+    }
+    // check if its a call to a query pointer (object prefix is 0r8)
+    if (url.includes('/query/0r8')) {
+      const queryLocator = extractQueryLocator(url);
+      if (this.fullQueryResults[queryLocator]) {
+        return Promise.resolve(this.fullQueryResults[queryLocator]);
+      }
     }
     return Promise.reject(new Error(`No mock was defined for: ${JSON.stringify(request)}`));
   };
@@ -248,6 +277,11 @@ function extractDecodedQueryParam(url: string) {
   } else {
     return '';
   }
+}
+
+function extractQueryLocator(url: string) {
+  const locatorStart = url.indexOf('/0r8') + 1;
+  return url.slice(locatorStart);
 }
 
 function loadDescribeResult(filePath: PathLike): DescribeSObjectResult {
