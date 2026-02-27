@@ -24,9 +24,9 @@ export function uncapitalize(anyString: string): string {
 }
 
 export function isParseableDate(value: unknown): boolean {
+  const matcher = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?Z?)?$/;
   if (typeof value === 'string') {
-    const d = new Date(value);
-    return !Number.isNaN(d.getTime());
+    return matcher.test(value);
   }
   return false;
 }

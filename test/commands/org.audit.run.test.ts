@@ -377,6 +377,30 @@ describe('org audit run', () => {
       expect(violationsTable.data.length).to.equal(50);
       expect($$.sfCommandStubs.info.args.flat()).to.deep.include.members([]);
     });
+
+    it('correctly formats identifier with number as a string and not as local date', async () => {
+      // Arrange
+      const mr = parseMockAuditConfig('violations-with-numeric-identifier.json');
+      mockResult(mr);
+
+      // Act
+      await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', DEFAULT_WORKING_DIR]);
+
+      // Assert
+      expect($$.sfCommandStubs.table.callCount).to.equal(3);
+      const violationsTable = $$.sfCommandStubs.table.args.flat()[2];
+      // the output table used to format this identifier as "1.2.2001, 00:00:00"
+      expect(violationsTable.data).to.deep.equal([
+        {
+          identifier: 'Super Trustworthy App 2',
+          message: 'App has 2 users (total use count 2), but is not installed.',
+        },
+        {
+          identifier: '123',
+          message: 'App has 2 users (total use count 2), but is not installed.',
+        },
+      ]);
+    });
   });
 
   describe('report file creation', () => {
