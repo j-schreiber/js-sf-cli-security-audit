@@ -34,24 +34,26 @@ export default class OAuthTokens extends EventEmitter {
   public async queryAll(options?: QueryOptions): Promise<SfOauthToken[]> {
     const definitiveOptions = { ...this.defaultOptions, ...options };
     const countResult = await this.con.query(COUNT_TOKEN_QUERY);
+    let allTokens: SfOauthToken[];
     if (countResult.totalSize > definitiveOptions.totalSizeThreshold) {
-      const batchResult = await this.batchQueryTokens(definitiveOptions);
-      return batchResult;
+      allTokens = await this.batchQueryTokens(definitiveOptions);
     } else {
       const tokenResult = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY, {
         autoFetch: true,
       });
+      allTokens = tokenResult.records;
       if (!tokenResult.done) {
         ResolveLifecycle.emitWarn(
           messages.getMessage('warning.NotAllOauthTokenReturned', [tokenResult.totalSize, tokenResult.records.length])
         );
-      } else if (countResult.totalSize > tokenResult.totalSize) {
-        ResolveLifecycle.emitWarn(
-          messages.getMessage('warning.NotAllOauthTokenReturned', [countResult.totalSize, tokenResult.totalSize])
-        );
       }
-      return tokenResult.records;
     }
+    if (countResult.totalSize > allTokens.length) {
+      ResolveLifecycle.emitWarn(
+        messages.getMessage('warning.NotAllOauthTokenReturned', [countResult.totalSize, allTokens.length])
+      );
+    }
+    return allTokens;
   }
 
   private async batchQueryTokens(options: QueryOptions): Promise<SfOauthToken[]> {
@@ -89,7 +91,9 @@ export default class OAuthTokens extends EventEmitter {
         tokens.push(...subResult);
       }
     } else {
-      const direktResult = await this.con.query<SfOauthToken>(formatTokenSoql(userIds));
+      const direktResult = await this.con.query<SfOauthToken>(formatTokenSoql(userIds), {
+        autoFetch: true,
+      });
       tokens.push(...direktResult.records);
     }
     return tokens;
