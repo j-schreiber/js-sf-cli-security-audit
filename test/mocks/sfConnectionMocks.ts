@@ -14,8 +14,15 @@ import {
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
-import { COUNT_TOKEN_QUERY, OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
-import { CONNECTED_APPS_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
+import {
+  ALL_EXISTING_USER_IDS,
+  CONNECTED_APPS_QUERY,
+  COUNT_TOKEN_QUERY,
+  formatCountSoql,
+  formatTokenSoql,
+  OAUTH_TOKEN_QUERY,
+} from '../../src/salesforce/repositories/connected-apps/queries.js';
+import { SfMinimalUser, SfOauthToken } from '../../src/salesforce/repositories/connected-apps/connected-app.types.js';
 import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE, FULL_QUERY_RESULTS_BASE } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
@@ -187,6 +194,22 @@ export default class SfConnectionMocks {
   public mockOAuthTokens(resultFile: string): void {
     const mockRecords = this.setQueryMock(OAUTH_TOKEN_QUERY, resultFile);
     this.fullQueryResults[COUNT_TOKEN_QUERY] = { done: true, records: [], totalSize: mockRecords.length };
+  }
+
+  public mockOAuthTokenRecords(records: SfOauthToken[]): void {
+    this.queries[OAUTH_TOKEN_QUERY] = records;
+    this.fullQueryResults[COUNT_TOKEN_QUERY] = { done: true, records: [], totalSize: records.length };
+  }
+
+  public mockFilteredTokenRecords(userIds: string[], records: SfOauthToken[]): void {
+    const chunkQuery = formatTokenSoql(userIds);
+    const chunkCountQuery = formatCountSoql(userIds);
+    this.queries[chunkQuery] = records;
+    this.fullQueryResults[chunkCountQuery] = { done: true, records: [], totalSize: records.length };
+  }
+
+  public mockUserRecords(records: SfMinimalUser[]): void {
+    this.queries[ALL_EXISTING_USER_IDS] = records;
   }
 
   /**
