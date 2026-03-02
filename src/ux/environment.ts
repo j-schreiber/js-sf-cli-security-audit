@@ -21,6 +21,16 @@ export const SUPPORTED_ENV_VARS = {
     expectedType: 'number',
     defaultValue: 30,
   },
+  SAE_MAX_OAUTH_TOKEN_THRESHOLD: {
+    description: 'Maximum number of OauthToken before engine starts batching retrieval with user ids',
+    expectedType: 'number',
+    defaultValue: 2500,
+  },
+  SAE_OAUTH_TOKEN_BATCH_SIZE: {
+    description: 'Starting batch size when engine batches OauthToken retrieval by user ids',
+    expectedType: 'number',
+    defaultValue: 256,
+  },
 } as const satisfies Record<string, EnvVarConfig<ExpectedTypes>>;
 
 type EnvironmentVariable = keyof typeof SUPPORTED_ENV_VARS;

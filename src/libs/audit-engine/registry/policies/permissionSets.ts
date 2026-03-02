@@ -25,6 +25,10 @@ export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ClassifiedPermissionSet>> {
+    this.emit('entityresolve', {
+      total: this.totalEntities,
+      resolved: 0,
+    });
     const permsetsRepo = new PermissionSets(context.targetOrgConnection);
     permsetsRepo.addListener('entityresolve', (statusEvt) => this.emit('entityresolve', statusEvt));
     const allPermsets = await permsetsRepo.resolve();

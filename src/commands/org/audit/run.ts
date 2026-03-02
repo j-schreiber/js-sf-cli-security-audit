@@ -14,6 +14,7 @@ import { capitalize, formatToLocale } from '../../../utils.js';
 import { startAuditRun } from '../../../libs/audit-engine/index.js';
 import { envVars } from '../../../ux/environment.js';
 import { AuditRunStageUpdate } from '../../../libs/audit-engine/auditRun.js';
+import { MessageEvent } from '../../../salesforce/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -76,6 +77,10 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
           stageOutput.finish();
           break;
       }
+    });
+
+    auditRun.on('resolvewarning', (warning: MessageEvent) => {
+      this.warn(warning.message);
     });
 
     const result = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));

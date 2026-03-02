@@ -1,21 +1,19 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
-import {
-  ConnectedApp,
-  ResolveAppsOptions,
-  ResolveAppsOptionsSchema,
-  SfConnectedApp,
-  SfOauthToken,
-} from './connected-app.types.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from './queries.js';
+import { ConnectedApp, ResolveAppsOptions, ResolveAppsOptionsSchema, SfConnectedApp } from './connected-app.types.js';
+import { CONNECTED_APPS_QUERY } from './queries.js';
+import OAuthTokens from './oauth-tokens.js';
 
 export default class ConnectedApps extends EventEmitter {
   private readonly mdapi: MDAPI;
+  private readonly oauthTokenRepo: OAuthTokens;
 
   public constructor(private readonly con: Connection) {
     super();
     this.mdapi = MDAPI.create(this.con);
+    this.oauthTokenRepo = new OAuthTokens(this.con);
+    this.oauthTokenRepo.on('resolvewarning', (warning) => this.emit('resolvewarning', warning));
   }
 
   /**
@@ -48,8 +46,8 @@ export default class ConnectedApps extends EventEmitter {
       });
     }
     if (definitiveOpts.withOAuthToken) {
-      const usersOAuthToken = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY);
-      for (const sfToken of usersOAuthToken.records) {
+      const usersOAuthToken = await this.oauthTokenRepo.queryAll();
+      for (const sfToken of usersOAuthToken) {
         const appRef = apps.get(sfToken.AppName);
         if (appRef) {
           appRef.useCount += sfToken.UseCount;

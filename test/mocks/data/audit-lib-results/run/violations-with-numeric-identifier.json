@@ -1,0 +1,41 @@
+{
+  "orgId": "00D1X000000IvyiUAC",
+  "auditDate": "2026-02-27T16:03:50.514Z",
+  "isCompliant": false,
+  "policies": {
+    "connectedApps": {
+      "isCompliant": false,
+      "enabled": true,
+      "executedRules": {
+        "AllUsedAppsUnderManagement": {
+          "ruleName": "AllUsedAppsUnderManagement",
+          "violations": [
+            {
+              "identifier": ["Super Trustworthy App 2"],
+              "message": "App has 2 users (total use count 2), but is not installed."
+            },
+            {
+              "identifier": ["123"],
+              "message": "App has 2 users (total use count 2), but is not installed."
+            }
+          ],
+          "mutedViolations": [],
+          "warnings": [],
+          "errors": [],
+          "isCompliant": false,
+          "compliantEntities": [],
+          "violatedEntities": ["Super Trustworthy App 2"]
+        }
+      },
+      "skippedRules": [
+        {
+          "name": "NoUserCanSelfAuthorize",
+          "skipReason": "Rule was disabled in policy config."
+        }
+      ],
+      "auditedEntities": [],
+      "ignoredEntities": []
+    }
+  },
+  "filePath": "demo/report_00D1X000000IvyiUAC_1772208230515.json"
+}

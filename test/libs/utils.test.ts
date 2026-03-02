@@ -15,7 +15,16 @@ describe('utils', () => {
     });
   });
 
-  ['not-a-date', '21.12.2025', 0, 19_000_000_000].forEach((input) => {
+  [
+    'not-a-date',
+    '21.12.2025',
+    0,
+    19_000_000_000,
+    'My App 123',
+    '123 and else',
+    '2025-01-11 partial',
+    'No date 2025-01-11',
+  ].forEach((input) => {
     it(`returns false for invalid date input: ${input}`, () => {
       expect(isParseableDate(input)).to.be.false;
     });

@@ -14,6 +14,10 @@ export type SfOauthToken = Record & {
   UseCount: number;
 };
 
+export type SfMinimalUser = Record & {
+  Id: string;
+};
+
 export type ConnectedApp = {
   name: string;
   origin: 'Installed' | 'OauthToken' | 'Owned';
