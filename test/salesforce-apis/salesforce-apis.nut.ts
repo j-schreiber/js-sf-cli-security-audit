@@ -1,27 +1,35 @@
+import path from 'node:path';
 import { expect } from 'chai';
 import Sinon, { SinonSandbox } from 'sinon';
 import { AuthInfo, Connection } from '@salesforce/core';
+import { TestSession } from '@salesforce/cli-plugins-testkit';
 import OAuthTokens from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
 
+const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
+
 describe('salesforce APIs', () => {
+  let session: TestSession;
   let orgConnection: Connection;
   const SANDBOX: SinonSandbox = Sinon.createSandbox();
 
   before(async () => {
-    const testkitUsername = process.env['TESTKIT_HUB_USERNAME'];
-    const authInfo = await AuthInfo.create({ username: testkitUsername });
+    // TestSession prepares the auth files from env variables
+    session = await TestSession.create({
+      project: {
+        sourceDir: testingWorkingDir,
+      },
+      devhubAuthStrategy: 'AUTO',
+    });
+    const authInfo = await AuthInfo.create({ username: session.hubOrg.username });
     orgConnection = await Connection.create({ authInfo });
   });
 
   after(async () => {
+    await session?.clean();
     // clean env vars?
   });
 
-  afterEach(async () => {
-    // clean audit config files?
-  });
-
-  it('retrieves all oauth tokens in batch retrieve and regular retrieve', async () => {
+  it('queries all oauth tokens in batch fetch and regular fetch', async () => {
     // Arrange
     const warningListener = SANDBOX.mock();
     const tokenRepo = new OAuthTokens(orgConnection);
