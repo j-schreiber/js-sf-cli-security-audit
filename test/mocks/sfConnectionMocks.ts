@@ -280,7 +280,16 @@ export default class SfConnectionMocks {
       }
       // return records and auto-generate result otherwise
       const records = this.queries[queryParam];
-      return Promise.resolve({ done: true, totalSize: records.length, records } as AnyJson);
+      // default behavior of query API is to only return 2000 records for any query
+      // if we have more results than that, a query locator is created and returned
+      // this query pointer is deliberatly not stubbed, so any logic that relies on autoFetch
+      // must implement the query locator explicitly
+      return Promise.resolve({
+        done: records.length <= 2000,
+        ...{ nextRecordsUrl: 'https://test.my.salesforce.com/services/data/v62.0/query/0r8000000000000AAA-2000' },
+        totalSize: records.length,
+        records: records.slice(0, 2000),
+      } as AnyJson);
     }
     // check if its a call to a query pointer (object prefix is 0r8)
     if (url.includes('/query/0r8')) {

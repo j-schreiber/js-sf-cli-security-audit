@@ -1,9 +1,13 @@
 import { expect, assert } from 'chai';
-import { ConnectedApps } from '../../src/salesforce/index.js';
+import { Messages } from '@salesforce/core';
+import { ConnectedApps, ResolveLifecycle } from '../../src/salesforce/index.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import OAuthTokens from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
 import { SfMinimalUser, SfOauthToken } from '../../src/salesforce/repositories/connected-apps/connected-app.types.js';
 import { OAUTH_TOKEN_QUERY } from '../../src/salesforce/repositories/connected-apps/queries.js';
+
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'metadataretrieve');
 
 describe('connected apps resolve', () => {
   const $$ = new AuditTestContext();
@@ -102,6 +106,42 @@ describe('connected apps resolve', () => {
 
     // Assert
     expect(tokens).to.have.lengthOf(500);
+  });
+
+  it('emits warning if total user count exceeds autoFetch limit', async () => {
+    // Arrange
+    process.env['SAE_MAX_USERS_LIMIT'] = '2500';
+    const warnListener = $$.context.SANDBOX.stub();
+    ResolveLifecycle.on('resolvewarning', warnListener);
+    const users = generateMockUsers(3000);
+    const tokens = generateMockTokens(users.length, NUMBER_OF_APPS);
+    $$.mocks.mockUserRecords(users);
+    $$.mocks.mockOAuthTokenRecords(tokens);
+    prepareMocksForUserChunks(tokens, users, USER_IDS_BATCH_SIZE, NUMBER_OF_APPS);
+    $$.mocks.fullQueryResults['0r8000000000000AAA-2000'] = {
+      done: true,
+      records: users.slice(2000),
+      totalSize: 3000,
+    };
+
+    // Act
+    const tokenRepo = new OAuthTokens($$.targetOrgConnection);
+    const queriedTokens = await tokenRepo.queryAll({
+      totalSizeThreshold: 20,
+      startingBatchSize: USER_IDS_BATCH_SIZE,
+    });
+
+    // Assert
+    const expectedTokenCount = 2500 * NUMBER_OF_APPS;
+    expect(warnListener.args.flat()).to.deep.equal([
+      {
+        message: messages.getMessage('warning.TooManyUsersIncreaseLimit', [3000, 2500]),
+      },
+      {
+        message: messages.getMessage('warning.NotAllOauthTokenReturned', [15_000, expectedTokenCount]),
+      },
+    ]);
+    expect(queriedTokens).to.have.lengthOf(expectedTokenCount);
   });
 });
 

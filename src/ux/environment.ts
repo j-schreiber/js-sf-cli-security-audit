@@ -22,14 +22,19 @@ export const SUPPORTED_ENV_VARS = {
     defaultValue: 30,
   },
   SAE_MAX_OAUTH_TOKEN_THRESHOLD: {
-    description: 'Maximum number of OauthToken before engine starts batching retrieval with user ids',
+    description: 'Maximum number of OauthToken before engine starts batching retrieval with user ids.',
     expectedType: 'number',
     defaultValue: 2500,
   },
   SAE_OAUTH_TOKEN_BATCH_SIZE: {
-    description: 'Starting batch size when engine batches OauthToken retrieval by user ids',
+    description: 'Starting batch size when engine batches OauthToken retrieval by user ids.',
     expectedType: 'number',
     defaultValue: 256,
+  },
+  SAE_MAX_USERS_LIMIT: {
+    description: 'The maximum number of users that are retrieved from the org.',
+    expectedType: 'number',
+    defaultValue: 100_000,
   },
 } as const satisfies Record<string, EnvVarConfig<ExpectedTypes>>;
 

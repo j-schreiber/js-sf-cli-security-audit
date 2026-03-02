@@ -26,9 +26,11 @@ export default class OAuthTokens extends EventEmitter {
     totalSizeThreshold: envVars.resolve('SAE_MAX_OAUTH_TOKEN_THRESHOLD') ?? 2500,
     startingBatchSize: envVars.resolve('SAE_OAUTH_TOKEN_BATCH_SIZE') ?? 256,
   };
+  private readonly maxUserCount;
 
   public constructor(private readonly con: Connection) {
     super();
+    this.maxUserCount = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
   }
 
   public async queryAll(options?: QueryOptions): Promise<SfOauthToken[]> {
@@ -86,7 +88,15 @@ export default class OAuthTokens extends EventEmitter {
   }
 
   private async fetchUserIds(): Promise<string[]> {
-    const userResult = await this.con.query<SfMinimalUser>(ALL_EXISTING_USER_IDS);
+    const userResult = await this.con.query<SfMinimalUser>(ALL_EXISTING_USER_IDS, {
+      autoFetch: true,
+      maxFetch: this.maxUserCount,
+    });
+    if (userResult.totalSize > this.maxUserCount) {
+      ResolveLifecycle.emitWarn(
+        messages.getMessage('warning.TooManyUsersIncreaseLimit', [userResult.totalSize, this.maxUserCount])
+      );
+    }
     return userResult.records.map((userRecord) => userRecord.Id);
   }
 }

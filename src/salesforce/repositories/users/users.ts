@@ -1,7 +1,9 @@
-import { Connection } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
 import { isNullish } from '../../../utils.js';
 import MDAPI from '../../mdapi/mdapi.js';
+import { envVars } from '../../../ux/environment.js';
+import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import {
   PermissionSetAssignment,
   ResolveUsersOptions,
@@ -16,11 +18,16 @@ import {
   buildPermsetAssignmentsQuery,
 } from './queries.js';
 
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'metadataretrieve');
+
 export default class Users {
   private readonly mdapiRepo: MDAPI;
+  private readonly usersMaxFetch;
 
   public constructor(private readonly connection: Connection) {
     this.mdapiRepo = MDAPI.create(this.connection);
+    this.usersMaxFetch = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
   }
 
   /**
@@ -33,10 +40,8 @@ export default class Users {
   public async resolve(opts?: Partial<ResolveUsersOptions>): Promise<Map<string, User>> {
     const definitiveOpts = ResolveUsersOptionsSchema.parse(opts ?? {});
     const result: Map<string, User> = new Map<string, User>();
-    const usersOnOrg = definitiveOpts.includeInactive
-      ? await this.connection.query<SfUser>(ALL_USERS_DETAILS_QUERY)
-      : await this.connection.query<SfUser>(ACTIVE_USERS_DETAILS_QUERY);
-    for (const user of usersOnOrg.records) {
+    const usersOnOrg = await this.fetchUsers(definitiveOpts.includeInactive);
+    for (const user of usersOnOrg) {
       const usr = {
         userId: user.Id!,
         username: user.Username,
@@ -58,6 +63,21 @@ export default class Users {
 
   //        PRIVATE ZONE
 
+  private async fetchUsers(includeInactive: boolean): Promise<SfUser[]> {
+    const usersOnOrg = includeInactive
+      ? await this.connection.query<SfUser>(ALL_USERS_DETAILS_QUERY, { autoFetch: true, maxFetch: this.usersMaxFetch })
+      : await this.connection.query<SfUser>(ACTIVE_USERS_DETAILS_QUERY, {
+          autoFetch: true,
+          maxFetch: this.usersMaxFetch,
+        });
+    if (usersOnOrg.totalSize > this.usersMaxFetch) {
+      ResolveLifecycle.emitWarn(
+        messages.getMessage('warning.TooManyActiveUsersIncreaseLimit', [usersOnOrg.totalSize, this.usersMaxFetch])
+      );
+    }
+    return usersOnOrg.records;
+  }
+
   private async resolveLogins(users: Map<string, User>, daysToAnalyse?: number): Promise<void> {
     const userLogins = await this.fetchLoginData(daysToAnalyse);
     for (const user of users.values()) {
@@ -78,7 +98,9 @@ export default class Users {
   }
 
   private async fetchLoginData(daysToAnalyse?: number): Promise<Map<string, UserLogins[]>> {
-    const loginHistory = await this.connection.query<SfUserLoginsAggregate>(buildLoginHistoryQuery(daysToAnalyse));
+    const loginHistory = await this.connection.query<SfUserLoginsAggregate>(buildLoginHistoryQuery(daysToAnalyse), {
+      autoFetch: true,
+    });
     const partialUsers = new Map<string, UserLogins[]>();
     for (const loginHistoryRow of loginHistory.records) {
       if (!partialUsers.has(loginHistoryRow.UserId)) {
@@ -121,7 +143,10 @@ export default class Users {
 
   private async fetchAssignments(userIds: string[]): Promise<Map<string, PermissionSetAssignment[]>> {
     const assignments = new Map<string, PermissionSetAssignment[]>();
-    const rawAssignment = await this.connection.query<SfPermissionSetAssignment>(buildPermsetAssignmentsQuery(userIds));
+    const rawAssignment = await this.connection.query<SfPermissionSetAssignment>(
+      buildPermsetAssignmentsQuery(userIds),
+      { autoFetch: true }
+    );
     for (const assignment of rawAssignment.records) {
       if (isNullish(assignments.get(assignment.AssigneeId))) {
         assignments.set(assignment.AssigneeId, []);
