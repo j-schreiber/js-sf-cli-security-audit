@@ -1,9 +1,22 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
-import { ConnectedApp, ResolveAppsOptions, ResolveAppsOptionsSchema, SfConnectedApp } from './connected-app.types.js';
-import { CONNECTED_APPS_QUERY } from './queries.js';
+import {
+  ConnectedApp,
+  ResolveAppsOptions,
+  ResolveAppsOptionsSchema,
+  SfConnectedApp,
+  SfExternalAppOauthPolicy,
+  SfExternalClientApp,
+} from './connected-app.types.js';
+import { CONNECTED_APPS_QUERY, EXTERNAL_APPS_OAUTH_POLICY, EXTERNAL_CLIENT_APPS_QUERY } from './queries.js';
 import OAuthTokens from './oauth-tokens.js';
+
+type QueryResults = {
+  connectedApps: SfConnectedApp[];
+  externalClientApps: SfExternalClientApp[];
+  externalAppOauthPolicies: SfExternalAppOauthPolicy[];
+};
 
 export default class ConnectedApps extends EventEmitter {
   private readonly mdapi: MDAPI;
@@ -29,22 +42,12 @@ export default class ConnectedApps extends EventEmitter {
       total: 0,
       resolved: 0,
     });
-    const installedApps = await this.con.query<SfConnectedApp>(CONNECTED_APPS_QUERY);
+    const installedApps = await fetchAllInstalledApps(this.con);
+    const apps = initResolvedApps(installedApps);
     this.emit('entityresolve', {
-      total: installedApps.totalSize,
+      total: apps.size,
       resolved: 0,
     });
-    const apps = new Map<string, ConnectedApp>();
-    for (const sfrecord of installedApps.records) {
-      apps.set(sfrecord.Name, {
-        name: sfrecord.Name,
-        origin: 'Installed',
-        onlyAdminApprovedUsersAllowed: sfrecord.OptionsAllowAdminApprovedUsersOnly,
-        overrideByApiSecurityAccess: false,
-        useCount: 0,
-        users: [],
-      });
-    }
     if (definitiveOpts.withOAuthToken) {
       const usersOAuthToken = await this.oauthTokenRepo.queryAll();
       for (const sfToken of usersOAuthToken) {
@@ -58,6 +61,7 @@ export default class ConnectedApps extends EventEmitter {
           apps.set(sfToken.AppName, {
             name: sfToken.AppName,
             origin: 'OauthToken',
+            type: 'Unknown',
             onlyAdminApprovedUsersAllowed: false,
             overrideByApiSecurityAccess: false,
             useCount: sfToken.UseCount,
@@ -84,4 +88,50 @@ export default class ConnectedApps extends EventEmitter {
     });
     return apps;
   }
+}
+
+async function fetchAllInstalledApps(con: Connection): Promise<QueryResults> {
+  const resultPromises = [
+    con.query<SfConnectedApp>(CONNECTED_APPS_QUERY),
+    con.query<SfExternalClientApp>(EXTERNAL_CLIENT_APPS_QUERY),
+    con.query<SfExternalAppOauthPolicy>(EXTERNAL_APPS_OAUTH_POLICY),
+  ];
+  const results = await Promise.all(resultPromises);
+  return {
+    connectedApps: results[0].records as SfConnectedApp[],
+    externalClientApps: results[1].records as SfExternalClientApp[],
+    externalAppOauthPolicies: results[2].records as SfExternalAppOauthPolicy[],
+  };
+}
+
+function initResolvedApps(result: QueryResults): Map<string, ConnectedApp> {
+  const apps = new Map<string, ConnectedApp>();
+  for (const sfrecord of result.connectedApps) {
+    apps.set(sfrecord.Name, {
+      name: sfrecord.Name,
+      origin: 'Installed',
+      type: 'ConnectedApp',
+      onlyAdminApprovedUsersAllowed: sfrecord.OptionsAllowAdminApprovedUsersOnly,
+      overrideByApiSecurityAccess: false,
+      useCount: 0,
+      users: [],
+    });
+  }
+  const policies = new Map<string, SfExternalAppOauthPolicy>();
+  for (const pol of result.externalAppOauthPolicies) {
+    policies.set(pol.ExternalClientApplicationId, pol);
+  }
+  for (const sfrecord of result.externalClientApps) {
+    apps.set(sfrecord.MasterLabel, {
+      name: sfrecord.MasterLabel,
+      origin: sfrecord.DistributionState === 'Local' ? 'Owned' : 'Installed',
+      type: 'ExternalClientApp',
+      onlyAdminApprovedUsersAllowed:
+        policies.get(sfrecord.Id)?.PermittedUsersPolicyType === 'AdminApprovedPreAuthorized',
+      overrideByApiSecurityAccess: false,
+      useCount: 0,
+      users: [],
+    });
+  }
+  return apps;
 }

@@ -36,7 +36,8 @@ export default class OAuthTokens extends EventEmitter {
     const countResult = await this.con.query(COUNT_TOKEN_QUERY);
     let allTokens: SfOauthToken[];
     if (countResult.totalSize > definitiveOptions.totalSizeThreshold) {
-      allTokens = await this.batchQueryTokens(definitiveOptions);
+      const userIds = await this.fetchUserIds();
+      allTokens = await this.batchQueryTokens(userIds, definitiveOptions);
     } else {
       const tokenResult = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY, {
         autoFetch: true,
@@ -56,47 +57,32 @@ export default class OAuthTokens extends EventEmitter {
     return allTokens;
   }
 
-  private async batchQueryTokens(options: QueryOptions): Promise<SfOauthToken[]> {
-    const userIds = await this.fetchUserIds();
-    const queryPromises: Array<Promise<SfOauthToken[]>> = [];
-    const userIdChunks = chunkUserIds(userIds, options.startingBatchSize);
-    for (const idChunk of userIdChunks) {
-      queryPromises.push(this.fetchTokenChunk(idChunk, options));
-    }
+  private async batchQueryTokens(allUserIds: string[], options: QueryOptions): Promise<SfOauthToken[]> {
+    const userIdChunks = chunkUserIds(allUserIds, options.startingBatchSize);
+    const queryPromises = userIdChunks.map((idChunk) => this.fetchTokenChunk(idChunk, options));
     const results = await Promise.all(queryPromises);
-    const tokens: SfOauthToken[] = [];
-    for (const result of results) {
-      tokens.push(...result);
-    }
-    return tokens;
+    return results.flat();
   }
 
   private async fetchTokenChunk(userIds: string[], options: QueryOptions): Promise<SfOauthToken[]> {
-    const tokens: SfOauthToken[] = [];
     const countResult = await this.con.query(formatCountSoql(userIds));
     if (countResult.totalSize > options.totalSizeThreshold && options.startingBatchSize > 1) {
       const reducedChunkSize = Math.floor(options.startingBatchSize / 2);
       const subChunks = chunkUserIds(userIds, reducedChunkSize);
-      const subResultProms: Array<Promise<SfOauthToken[]>> = [];
-      for (const subChunk of subChunks) {
-        subResultProms.push(
-          this.fetchTokenChunk(subChunk, {
-            totalSizeThreshold: options.totalSizeThreshold,
-            startingBatchSize: reducedChunkSize,
-          })
-        );
-      }
+      const subResultProms = subChunks.map((chunk) =>
+        this.fetchTokenChunk(chunk, {
+          totalSizeThreshold: options.totalSizeThreshold,
+          startingBatchSize: reducedChunkSize,
+        })
+      );
       const subResults = await Promise.all(subResultProms);
-      for (const subResult of subResults) {
-        tokens.push(...subResult);
-      }
+      return subResults.flat();
     } else {
       const direktResult = await this.con.query<SfOauthToken>(formatTokenSoql(userIds), {
         autoFetch: true,
       });
-      tokens.push(...direktResult.records);
+      return direktResult.records;
     }
-    return tokens;
   }
 
   private async fetchUserIds(): Promise<string[]> {

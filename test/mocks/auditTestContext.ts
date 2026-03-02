@@ -147,6 +147,8 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   mocks.mockProfileResolve('Standard User', 'standard-profile-with-metadata');
   mocks.mockProfileResolve('Guest User Profile', 'empty');
   mocks.mockProfileResolve('Custom Profile', 'empty');
+  mocks.mockExternalClientApps('empty');
+  mocks.mockExternalClientAppOAuthPolicies('empty');
   mocks.mockLoginHistory('empty');
   // 14 days is option config in "full-valid" user policy
   mocks.mockLoginHistory('empty', 14);

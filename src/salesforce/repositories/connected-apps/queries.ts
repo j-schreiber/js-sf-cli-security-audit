@@ -1,5 +1,9 @@
 export const CONNECTED_APPS_QUERY = 'SELECT Name,OptionsAllowAdminApprovedUsersOnly FROM ConnectedApplication';
 export const ALL_EXISTING_USER_IDS = 'SELECT Id FROM User';
+export const EXTERNAL_CLIENT_APPS_QUERY =
+  'SELECT Id,MasterLabel,DeveloperName,DistributionState FROM ExternalClientApplication';
+export const EXTERNAL_APPS_OAUTH_POLICY =
+  'SELECT ExternalClientApplicationId,PermittedUsersPolicyType FROM ExtlClntAppOauthPlcyCnfg';
 export const OAUTH_TOKEN_QUERY = 'SELECT User.Username,UseCount,AppName FROM OauthToken';
 export const COUNT_TOKEN_QUERY = 'SELECT COUNT() FROM OauthToken';
 
