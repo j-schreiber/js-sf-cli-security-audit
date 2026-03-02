@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
@@ -51,6 +51,7 @@ describe('policy - connected apps', () => {
         'Test App 1',
         'Test App 2',
         'AI Platform Auth',
+        'Test External Client App',
       ]);
       expect(policyResult.isCompliant).to.equal(true);
       const executedRuleNames = Object.keys(policyResult.executedRules);
@@ -96,6 +97,49 @@ describe('policy - connected apps', () => {
         expect(resolvedApp.overrideByApiSecurityAccess).to.be.false;
       });
     });
+
+    it('does not identify external client app as oauth token source', async () => {
+      // Arrange
+      $$.mocks.mockOAuthTokens('oauth-usage');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+      $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApp1 = resolveResult.resolvedEntities['Test External Client App'];
+      assert.isDefined(externalApp1);
+      expect(externalApp1.origin).to.equal('Owned');
+      expect(externalApp1.type).to.equal('ExternalClientApp');
+      expect(externalApp1.onlyAdminApprovedUsersAllowed).to.be.false;
+      expect(externalApp1.useCount).to.equal(10);
+      const externalApp2 = resolveResult.resolvedEntities['Ext App 2'];
+      assert.isDefined(externalApp2);
+      expect(externalApp2.type).to.equal('ExternalClientApp');
+      expect(externalApp2.origin).to.equal('Owned');
+      expect(externalApp2.onlyAdminApprovedUsersAllowed).to.be.true;
+      expect(externalApp2.useCount).to.equal(0);
+    });
+
+    it('resolves external app as admin approved false if no oauth scope explicitly defines it', async () => {
+      // Arrange
+      $$.mocks.mockExternalClientApps('external-client-apps');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApps = Object.values(resolveResult.resolvedEntities).filter(
+        (app) => app.type === 'ExternalClientApp'
+      );
+      expect(externalApps).to.have.lengthOf(2);
+      for (const app of externalApps) {
+        expect(app.onlyAdminApprovedUsersAllowed).to.be.false;
+      }
+    });
   });
 
   describe('rule execution', () => {
@@ -103,6 +147,7 @@ describe('policy - connected apps', () => {
       it('adds each user of an app to details of violation', async () => {
         // Arrange
         $$.mocks.mockOAuthTokens('oauth-usage');
+        $$.mocks.mockExternalClientApps('external-client-apps');
 
         // Act
         defaultConfig.rules.AllUsedAppsUnderManagement.enabled = true;

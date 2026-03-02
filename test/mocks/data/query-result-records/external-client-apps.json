@@ -1,0 +1,14 @@
+[
+  {
+    "Id": "extAppId1",
+    "DeveloperName": "Test_External_Client_App",
+    "MasterLabel": "Test External Client App",
+    "DistributionState": "Local"
+  },
+  {
+    "Id": "extAppId2",
+    "DeveloperName": "Ext_App_2",
+    "MasterLabel": "Ext App 2",
+    "DistributionState": "Local"
+  }
+]

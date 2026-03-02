@@ -21,6 +21,8 @@ import {
   formatCountSoql,
   formatTokenSoql,
   OAUTH_TOKEN_QUERY,
+  EXTERNAL_CLIENT_APPS_QUERY,
+  EXTERNAL_APPS_OAUTH_POLICY,
 } from '../../src/salesforce/repositories/connected-apps/queries.js';
 import { SfMinimalUser, SfOauthToken } from '../../src/salesforce/repositories/connected-apps/connected-app.types.js';
 import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE, FULL_QUERY_RESULTS_BASE } from './data/paths.js';
@@ -210,6 +212,14 @@ export default class SfConnectionMocks {
 
   public mockUserRecords(records: SfMinimalUser[]): void {
     this.queries[ALL_EXISTING_USER_IDS] = records;
+  }
+
+  public mockExternalClientApps(resultFile: string): void {
+    this.setQueryMock(EXTERNAL_CLIENT_APPS_QUERY, resultFile);
+  }
+
+  public mockExternalClientAppOAuthPolicies(resultFile: string): void {
+    this.setQueryMock(EXTERNAL_APPS_OAUTH_POLICY, resultFile);
   }
 
   /**
