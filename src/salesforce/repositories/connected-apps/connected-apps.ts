@@ -74,19 +74,27 @@ export default class ConnectedApps extends EventEmitter {
         resolved: 0,
       });
     }
-    let overrideByApiSecurityAccess = false;
-    const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
-    if (apiSecurityAccessSetting?.enableAdminApprovedAppsOnly) {
-      overrideByApiSecurityAccess = true;
-    }
-    for (const app of apps.values()) {
-      app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
-    }
+    await this.setOverrideByApiAccess(Array.from(apps.values()));
     this.emit('entityresolve', {
       total: apps.size,
       resolved: apps.size,
     });
     return apps;
+  }
+
+  private async setOverrideByApiAccess(apps: ConnectedApp[]): Promise<void> {
+    this.emit('entityresolve', {
+      total: apps.length,
+      resolved: apps.filter((app) => app.type !== 'ConnectedApp'),
+    });
+    let overrideByApiSecurityAccess = false;
+    const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
+    if (apiSecurityAccessSetting?.enableAdminApprovedAppsOnly) {
+      overrideByApiSecurityAccess = true;
+    }
+    for (const app of apps.filter((a) => a.type === 'ConnectedApp')) {
+      app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
+    }
   }
 }
 

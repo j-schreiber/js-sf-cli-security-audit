@@ -58,28 +58,6 @@ describe('policy - connected apps', () => {
       expect(executedRuleNames).to.deep.equal([]);
     });
 
-    it('uses result form ApiAccess setting to override self-authorize flag', async () => {
-      // Arrange
-      await $$.mocks.stubMetadataRetrieve('security-settings');
-      defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
-
-      // Act
-      const policyResult = await resolveAndRun('connectedApps', $$);
-
-      // Assert
-      expect(policyResult.ignoredEntities).to.deep.equal([]);
-      expect(policyResult.auditedEntities).to.deep.equal([
-        'Chatter Desktop',
-        'Salesforce for Android',
-        'Chatter Mobile for BlackBerry',
-        'Salesforce for iOS',
-        'Test App 1',
-      ]);
-      expect(policyResult.isCompliant).to.equal(true);
-      const executedRuleNames = Object.keys(policyResult.executedRules);
-      expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
-    });
-
     it('gracefully handles if ApiAccess setting is not available on org', async () => {
       // Arrange
       await $$.mocks.stubMetadataRetrieve('api-access-not-available');
@@ -140,6 +118,25 @@ describe('policy - connected apps', () => {
         expect(app.onlyAdminApprovedUsersAllowed).to.be.false;
       }
     });
+
+    it('does not set override from api access control for external client apps', async () => {
+      // Arrange
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApps = Object.values(resolveResult.resolvedEntities).filter(
+        (app) => app.type === 'ExternalClientApp'
+      );
+      expect(externalApps).to.have.lengthOf(2);
+      for (const app of externalApps) {
+        expect(app.overrideByApiSecurityAccess).to.be.false;
+      }
+    });
   });
 
   describe('rule execution', () => {
@@ -165,6 +162,30 @@ describe('policy - connected apps', () => {
           identifier: ['AI Platform Auth'],
           details: ['cloud@00d3x000001tal2uaa'],
         });
+      });
+    });
+
+    describe('NoUserCanSelfAuthorize', () => {
+      it('uses result form ApiAccess setting to override self-authorize flag', async () => {
+        // Arrange
+        await $$.mocks.stubMetadataRetrieve('security-settings');
+        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+
+        // Act
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        expect(policyResult.ignoredEntities).to.deep.equal([]);
+        expect(policyResult.auditedEntities).to.deep.equal([
+          'Chatter Desktop',
+          'Salesforce for Android',
+          'Chatter Mobile for BlackBerry',
+          'Salesforce for iOS',
+          'Test App 1',
+        ]);
+        expect(policyResult.isCompliant).to.equal(true);
+        const executedRuleNames = Object.keys(policyResult.executedRules);
+        expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
       });
     });
   });
