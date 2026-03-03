@@ -5,7 +5,7 @@ import { parsePermSetFromFile, parseProfileFromFile } from '../mocks/testHelpers
 
 describe('users resolve', () => {
   const $$ = new AuditTestContext();
-  // directly copied from "queryResults/active-users.json"
+  // directly copied from "query-result-records/active-users.json"
   const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
 
   beforeEach(async () => {

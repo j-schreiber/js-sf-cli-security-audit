@@ -1,0 +1,10 @@
+[
+  {
+    "ExternalClientApplicationId": "extAppId1",
+    "PermittedUsersPolicyType": "AllSelfAuthorized"
+  },
+  {
+    "ExternalClientApplicationId": "extAppId2",
+    "PermittedUsersPolicyType": "AdminApprovedPreAuthorized"
+  }
+]

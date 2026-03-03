@@ -19,6 +19,7 @@ export default class AllUsedAppsUnderManagement extends PolicyRule<ConnectedApp>
         result.violations.push({
           identifier: [app.name],
           message: messages.getMessage('violations.app-used-but-not-registered', [app.users.length, app.useCount]),
+          details: app.users,
         });
       }
     });

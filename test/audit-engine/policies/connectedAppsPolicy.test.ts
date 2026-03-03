@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
 import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
@@ -33,66 +33,230 @@ describe('policy - connected apps', () => {
     $$.reset();
   });
 
-  it('resolves all apps from ConnectedApplication and OauthToken', async () => {
-    // Arrange
-    $$.mocks.mockOAuthTokens('oauth-usage');
+  describe('entity resolve', () => {
+    it('resolves all apps from ConnectedApplication and OauthToken', async () => {
+      // Arrange
+      $$.mocks.mockOAuthTokens('oauth-usage');
 
-    // Act
-    const policyResult = await resolveAndRun('connectedApps', $$);
+      // Act
+      const policyResult = await resolveAndRun('connectedApps', $$);
 
-    // Assert
-    expect(policyResult.ignoredEntities).to.deep.equal([]);
-    expect(policyResult.auditedEntities).to.deep.equal([
-      'Chatter Desktop',
-      'Salesforce for Android',
-      'Chatter Mobile for BlackBerry',
-      'Salesforce for iOS',
-      'Test App 1',
-      'Test App 2',
-      'AI Platform Auth',
-    ]);
-    expect(policyResult.isCompliant).to.equal(true);
-    const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal([]);
+      // Assert
+      expect(policyResult.ignoredEntities).to.deep.equal([]);
+      expect(policyResult.auditedEntities).to.deep.equal([
+        'Chatter Desktop',
+        'Salesforce for Android',
+        'Chatter Mobile for BlackBerry',
+        'Salesforce for iOS',
+        'Test App 1',
+        'Test App 2',
+        'AI Platform Auth',
+        'Test External Client App',
+      ]);
+      expect(policyResult.isCompliant).to.equal(true);
+      const executedRuleNames = Object.keys(policyResult.executedRules);
+      expect(executedRuleNames).to.deep.equal([]);
+    });
+
+    it('gracefully handles if ApiAccess setting is not available on org', async () => {
+      // Arrange
+      await $$.mocks.stubMetadataRetrieve('api-access-not-available');
+      defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(resolveResult.ignoredEntities).to.deep.equal([]);
+      expect(Object.keys(resolveResult.resolvedEntities)).to.have.lengthOf(5);
+      Object.values(resolveResult.resolvedEntities).forEach((appConf) => {
+        const resolvedApp = appConf;
+        expect(resolvedApp.overrideByApiSecurityAccess).to.be.false;
+      });
+    });
+
+    it('does not identify external client app as oauth token source', async () => {
+      // Arrange
+      $$.mocks.mockOAuthTokens('oauth-usage');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+      $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApp1 = resolveResult.resolvedEntities['Test External Client App'];
+      assert.isDefined(externalApp1);
+      expect(externalApp1.origin).to.equal('Owned');
+      expect(externalApp1.type).to.equal('ExternalClientApp');
+      expect(externalApp1.onlyAdminApprovedUsersAllowed).to.be.false;
+      expect(externalApp1.useCount).to.equal(10);
+      const externalApp2 = resolveResult.resolvedEntities['Ext App 2'];
+      assert.isDefined(externalApp2);
+      expect(externalApp2.type).to.equal('ExternalClientApp');
+      expect(externalApp2.origin).to.equal('Owned');
+      expect(externalApp2.onlyAdminApprovedUsersAllowed).to.be.true;
+      expect(externalApp2.useCount).to.equal(0);
+    });
+
+    it('resolves external app as admin approved false if no oauth scope explicitly defines it', async () => {
+      // Arrange
+      $$.mocks.mockExternalClientApps('external-client-apps');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApps = Object.values(resolveResult.resolvedEntities).filter(
+        (app) => app.type === 'ExternalClientApp'
+      );
+      expect(externalApps).to.have.lengthOf(2);
+      for (const app of externalApps) {
+        expect(app.onlyAdminApprovedUsersAllowed).to.be.false;
+      }
+    });
+
+    it('does not set override from api access control for external client apps', async () => {
+      // Arrange
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      const externalApps = Object.values(resolveResult.resolvedEntities).filter(
+        (app) => app.type === 'ExternalClientApp'
+      );
+      expect(externalApps).to.have.lengthOf(2);
+      for (const app of externalApps) {
+        expect(app.overrideByApiSecurityAccess).to.be.false;
+      }
+    });
+
+    it('emits ordered and valid resolve lifecycle events', async () => {
+      // Arrange
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+      $$.mocks.mockOAuthTokens('oauth-usage');
+      const evtListener = $$.context.SANDBOX.stub();
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      pol.on('entityresolve', evtListener);
+      await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(evtListener.args.flat()).to.deep.equal([
+        {
+          total: 0,
+          resolved: 0,
+        },
+        {
+          total: 7,
+          resolved: 0,
+        },
+        {
+          total: 9,
+          resolved: 0,
+        },
+        {
+          total: 9,
+          resolved: 4,
+        },
+        {
+          total: 9,
+          resolved: 9,
+        },
+      ]);
+    });
   });
 
-  it('uses result form ApiAccess setting to override self-authorize flag', async () => {
-    // Arrange
-    await $$.mocks.stubMetadataRetrieve('security-settings');
-    defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+  describe('rule execution', () => {
+    describe('AllUsedAppsUnderManagement', () => {
+      it('adds each user of an app to details of violation', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage');
+        $$.mocks.mockExternalClientApps('external-client-apps');
 
-    // Act
-    const policyResult = await resolveAndRun('connectedApps', $$);
+        // Act
+        defaultConfig.rules.AllUsedAppsUnderManagement.enabled = true;
+        const policyResult = await resolveAndRun('connectedApps', $$);
 
-    // Assert
-    expect(policyResult.ignoredEntities).to.deep.equal([]);
-    expect(policyResult.auditedEntities).to.deep.equal([
-      'Chatter Desktop',
-      'Salesforce for Android',
-      'Chatter Mobile for BlackBerry',
-      'Salesforce for iOS',
-      'Test App 1',
-    ]);
-    expect(policyResult.isCompliant).to.equal(true);
-    const executedRuleNames = Object.keys(policyResult.executedRules);
-    expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
-  });
+        // Assert
+        const ruleResult = policyResult.executedRules.AllUsedAppsUnderManagement;
+        expect(ruleResult.isCompliant).to.be.false;
+        expect(ruleResult.violations).to.have.lengthOf(2);
+        expect(ruleResult.violations.at(0)).to.deep.contain({
+          identifier: ['Test App 2'],
+          details: ['test3@example.com'],
+        });
+        expect(ruleResult.violations.at(1)).to.deep.contain({
+          identifier: ['AI Platform Auth'],
+          details: ['cloud@00d3x000001tal2uaa'],
+        });
+      });
+    });
 
-  it('gracefully handles if ApiAccess setting is not available on org', async () => {
-    // Arrange
-    await $$.mocks.stubMetadataRetrieve('api-access-not-available');
-    defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+    describe('NoUserCanSelfAuthorize', () => {
+      it('uses result form ApiAccess setting to override self-authorize flag', async () => {
+        // Arrange
+        await $$.mocks.stubMetadataRetrieve('security-settings');
+        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
-    // Act
-    const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-    const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+        // Act
+        const policyResult = await resolveAndRun('connectedApps', $$);
 
-    // Assert
-    expect(resolveResult.ignoredEntities).to.deep.equal([]);
-    expect(Object.keys(resolveResult.resolvedEntities)).to.have.lengthOf(5);
-    Object.values(resolveResult.resolvedEntities).forEach((appConf) => {
-      const resolvedApp = appConf;
-      expect(resolvedApp.overrideByApiSecurityAccess).to.be.false;
+        // Assert
+        expect(policyResult.ignoredEntities).to.deep.equal([]);
+        expect(policyResult.auditedEntities).to.deep.equal([
+          'Chatter Desktop',
+          'Salesforce for Android',
+          'Chatter Mobile for BlackBerry',
+          'Salesforce for iOS',
+          'Test App 1',
+        ]);
+        expect(policyResult.isCompliant).to.equal(true);
+        const executedRuleNames = Object.keys(policyResult.executedRules);
+        expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
+      });
+
+      it('shows app type and details in violation message', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage');
+        $$.mocks.mockExternalClientApps('external-client-apps');
+        $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
+
+        // Act
+        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.NoUserCanSelfAuthorize;
+        expect(ruleResult.violatedEntities).to.deep.equal([
+          'Test External Client App',
+          'Test App 2',
+          'AI Platform Auth',
+        ]);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['Test External Client App'],
+            message: 'ExternalClientApp allows users to self-authorize.',
+          },
+          {
+            identifier: ['Test App 2'],
+            message: 'Unknown app allows users to self-authorize.',
+          },
+          {
+            identifier: ['AI Platform Auth'],
+            message: 'Unknown app allows users to self-authorize.',
+          },
+        ]);
+      });
     });
   });
 });

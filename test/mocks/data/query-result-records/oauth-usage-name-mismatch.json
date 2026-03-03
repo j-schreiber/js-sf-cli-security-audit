@@ -1,0 +1,19 @@
+[
+  {
+    "AppName": "Should be Test App 1",
+    "UseCount": 1,
+    "User": {
+      "Username": "test2@example.com"
+    },
+    "AppMenuItem": {
+      "ApplicationId": "0H43X0000000twDSAQ"
+    }
+  },
+  {
+    "AppName": "Test App 2",
+    "UseCount": 3,
+    "User": {
+      "Username": "test3@example.com"
+    }
+  }
+]

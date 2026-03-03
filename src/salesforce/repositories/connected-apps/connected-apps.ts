@@ -6,16 +6,26 @@ import {
   ResolveAppsOptions,
   ResolveAppsOptionsSchema,
   SfConnectedApp,
-  SfOauthToken,
+  SfExternalAppOauthPolicy,
+  SfExternalClientApp,
 } from './connected-app.types.js';
-import { CONNECTED_APPS_QUERY, OAUTH_TOKEN_QUERY } from './queries.js';
+import { CONNECTED_APPS_QUERY, EXTERNAL_APPS_OAUTH_POLICY, EXTERNAL_CLIENT_APPS_QUERY } from './queries.js';
+import OAuthTokens from './oauth-tokens.js';
+
+type QueryResults = {
+  connectedApps: SfConnectedApp[];
+  externalClientApps: SfExternalClientApp[];
+  externalAppOauthPolicies: SfExternalAppOauthPolicy[];
+};
 
 export default class ConnectedApps extends EventEmitter {
   private readonly mdapi: MDAPI;
+  private readonly oauthTokenRepo: OAuthTokens;
 
   public constructor(private readonly con: Connection) {
     super();
     this.mdapi = MDAPI.create(this.con);
+    this.oauthTokenRepo = new OAuthTokens(this.con);
   }
 
   /**
@@ -31,26 +41,20 @@ export default class ConnectedApps extends EventEmitter {
       total: 0,
       resolved: 0,
     });
-    const installedApps = await this.con.query<SfConnectedApp>(CONNECTED_APPS_QUERY);
+    const installedApps = await fetchAllInstalledApps(this.con);
+    const apps = initResolvedApps(installedApps);
+    const appIndex = buildMapIdIndex(apps);
     this.emit('entityresolve', {
-      total: installedApps.totalSize,
+      total: apps.size,
       resolved: 0,
     });
-    const apps = new Map<string, ConnectedApp>();
-    for (const sfrecord of installedApps.records) {
-      apps.set(sfrecord.Name, {
-        name: sfrecord.Name,
-        origin: 'Installed',
-        onlyAdminApprovedUsersAllowed: sfrecord.OptionsAllowAdminApprovedUsersOnly,
-        overrideByApiSecurityAccess: false,
-        useCount: 0,
-        users: [],
-      });
-    }
-    if (definitiveOpts.withOAuthToken) {
-      const usersOAuthToken = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY);
-      for (const sfToken of usersOAuthToken.records) {
-        const appRef = apps.get(sfToken.AppName);
+    if (definitiveOpts.withTokenUsage) {
+      const usersOAuthToken = await this.oauthTokenRepo.queryAll();
+      for (const sfToken of usersOAuthToken) {
+        const appRef =
+          sfToken.AppMenuItem?.ApplicationId && appIndex.get(sfToken.AppMenuItem.ApplicationId)
+            ? appIndex.get(sfToken.AppMenuItem.ApplicationId)
+            : apps.get(sfToken.AppName);
         if (appRef) {
           appRef.useCount += sfToken.UseCount;
           if (!appRef.users.includes(sfToken.User.Username)) {
@@ -60,6 +64,7 @@ export default class ConnectedApps extends EventEmitter {
           apps.set(sfToken.AppName, {
             name: sfToken.AppName,
             origin: 'OauthToken',
+            type: 'Unknown',
             onlyAdminApprovedUsersAllowed: false,
             overrideByApiSecurityAccess: false,
             useCount: sfToken.UseCount,
@@ -72,18 +77,84 @@ export default class ConnectedApps extends EventEmitter {
         resolved: 0,
       });
     }
-    let overrideByApiSecurityAccess = false;
-    const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
-    if (apiSecurityAccessSetting?.enableAdminApprovedAppsOnly) {
-      overrideByApiSecurityAccess = true;
-    }
-    for (const app of apps.values()) {
-      app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
-    }
+    await this.setOverrideByApiAccess(Array.from(apps.values()));
     this.emit('entityresolve', {
       total: apps.size,
       resolved: apps.size,
     });
     return apps;
   }
+
+  private async setOverrideByApiAccess(apps: ConnectedApp[]): Promise<void> {
+    this.emit('entityresolve', {
+      total: apps.length,
+      resolved: apps.filter((app) => app.type !== 'ConnectedApp').length,
+    });
+    let overrideByApiSecurityAccess = false;
+    const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
+    if (apiSecurityAccessSetting?.enableAdminApprovedAppsOnly) {
+      overrideByApiSecurityAccess = true;
+    }
+    for (const app of apps.filter((a) => a.type === 'ConnectedApp')) {
+      app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
+    }
+  }
+}
+
+async function fetchAllInstalledApps(con: Connection): Promise<QueryResults> {
+  const resultPromises = [
+    con.query<SfConnectedApp>(CONNECTED_APPS_QUERY),
+    con.query<SfExternalClientApp>(EXTERNAL_CLIENT_APPS_QUERY),
+    con.query<SfExternalAppOauthPolicy>(EXTERNAL_APPS_OAUTH_POLICY),
+  ];
+  const results = await Promise.all(resultPromises);
+  return {
+    connectedApps: results[0].records as SfConnectedApp[],
+    externalClientApps: results[1].records as SfExternalClientApp[],
+    externalAppOauthPolicies: results[2].records as SfExternalAppOauthPolicy[],
+  };
+}
+
+function initResolvedApps(result: QueryResults): Map<string, ConnectedApp> {
+  const apps = new Map<string, ConnectedApp>();
+  for (const sfrecord of result.connectedApps) {
+    apps.set(sfrecord.Name, {
+      id: sfrecord.Id,
+      name: sfrecord.Name,
+      origin: 'Installed',
+      type: 'ConnectedApp',
+      onlyAdminApprovedUsersAllowed: sfrecord.OptionsAllowAdminApprovedUsersOnly,
+      overrideByApiSecurityAccess: false,
+      useCount: 0,
+      users: [],
+    });
+  }
+  const policies = new Map<string, SfExternalAppOauthPolicy>();
+  for (const pol of result.externalAppOauthPolicies) {
+    policies.set(pol.ExternalClientApplicationId, pol);
+  }
+  for (const sfrecord of result.externalClientApps) {
+    apps.set(sfrecord.MasterLabel, {
+      id: sfrecord.Id,
+      name: sfrecord.MasterLabel,
+      origin: sfrecord.DistributionState === 'Local' ? 'Owned' : 'Installed',
+      type: 'ExternalClientApp',
+      onlyAdminApprovedUsersAllowed:
+        policies.get(sfrecord.Id)?.PermittedUsersPolicyType === 'AdminApprovedPreAuthorized',
+      overrideByApiSecurityAccess: false,
+      useCount: 0,
+      users: [],
+    });
+  }
+  return apps;
+}
+
+function buildMapIdIndex(apps: Map<string, ConnectedApp>): Map<string, ConnectedApp> {
+  const byId = new Map<string, ConnectedApp>();
+  for (const app of apps.values()) {
+    if (app.id) {
+      byId.set(app.id, app);
+    }
+  }
+  return byId;
 }

@@ -1,0 +1,37 @@
+[
+  {
+    "AppName": "Test App 1",
+    "UseCount": 1588,
+    "User": {
+      "Username": "test1@example.com"
+    }
+  },
+  {
+    "AppName": "Test App 1",
+    "UseCount": 1,
+    "User": {
+      "Username": "test2@example.com"
+    }
+  },
+  {
+    "AppName": "Test App 2",
+    "UseCount": 3,
+    "User": {
+      "Username": "test3@example.com"
+    }
+  },
+  {
+    "AppName": "AI Platform Auth",
+    "UseCount": 13745,
+    "User": {
+      "Username": "cloud@00d3x000001tal2uaa"
+    }
+  },
+  {
+    "AppName": "Test External Client App",
+    "UseCount": 10,
+    "User": {
+      "Username": "test1@example.com"
+    }
+  }
+]
