@@ -224,6 +224,39 @@ describe('policy - connected apps', () => {
         const executedRuleNames = Object.keys(policyResult.executedRules);
         expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
       });
+
+      it('shows app type and details in violation message', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage');
+        $$.mocks.mockExternalClientApps('external-client-apps');
+        $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
+
+        // Act
+        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.NoUserCanSelfAuthorize;
+        expect(ruleResult.violatedEntities).to.deep.equal([
+          'Test External Client App',
+          'Test App 2',
+          'AI Platform Auth',
+        ]);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['Test External Client App'],
+            message: 'ExternalClientApp allows users to self-authorize.',
+          },
+          {
+            identifier: ['Test App 2'],
+            message: 'Unknown app allows users to self-authorize.',
+          },
+          {
+            identifier: ['AI Platform Auth'],
+            message: 'Unknown app allows users to self-authorize.',
+          },
+        ]);
+      });
     });
   });
 });

@@ -1,6 +1,10 @@
-# violations.users-can-self-authorize
+# violations.users-can-self-authorize-unknown-app
 
-App allows users to self-authorize.
+Unknown app allows users to self-authorize.
+
+# violations.users-can-self-authorize-known-app
+
+%s allows users to self-authorize.
 
 # warnings.users-can-self-authorize-but-setting-overrides
 

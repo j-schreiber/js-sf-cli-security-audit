@@ -24,7 +24,10 @@ export default class NoUserCanSelfAuthorize extends PolicyRule<ConnectedApp> {
         } else {
           result.violations.push({
             identifier: [app.name],
-            message: messages.getMessage('violations.users-can-self-authorize'),
+            message:
+              app.type === 'Unknown'
+                ? messages.getMessage('violations.users-can-self-authorize-unknown-app')
+                : messages.getMessage('violations.users-can-self-authorize-known-app', [app.type]),
           });
         }
       }
