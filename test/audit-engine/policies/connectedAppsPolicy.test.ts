@@ -137,6 +137,43 @@ describe('policy - connected apps', () => {
         expect(app.overrideByApiSecurityAccess).to.be.false;
       }
     });
+
+    it('emits ordered and valid resolve lifecycle events', async () => {
+      // Arrange
+      await $$.mocks.stubMetadataRetrieve('security-settings');
+      $$.mocks.mockExternalClientApps('external-client-apps');
+      $$.mocks.mockOAuthTokens('oauth-usage');
+      const evtListener = $$.context.SANDBOX.stub();
+
+      // Act
+      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
+      pol.on('entityresolve', evtListener);
+      await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+
+      // Assert
+      expect(evtListener.args.flat()).to.deep.equal([
+        {
+          total: 0,
+          resolved: 0,
+        },
+        {
+          total: 7,
+          resolved: 0,
+        },
+        {
+          total: 9,
+          resolved: 0,
+        },
+        {
+          total: 9,
+          resolved: 4,
+        },
+        {
+          total: 9,
+          resolved: 9,
+        },
+      ]);
+    });
   });
 
   describe('rule execution', () => {

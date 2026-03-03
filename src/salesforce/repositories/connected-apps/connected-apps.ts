@@ -85,7 +85,7 @@ export default class ConnectedApps extends EventEmitter {
   private async setOverrideByApiAccess(apps: ConnectedApp[]): Promise<void> {
     this.emit('entityresolve', {
       total: apps.length,
-      resolved: apps.filter((app) => app.type !== 'ConnectedApp'),
+      resolved: apps.filter((app) => app.type !== 'ConnectedApp').length,
     });
     let overrideByApiSecurityAccess = false;
     const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
