@@ -26,7 +26,6 @@ export default class ConnectedApps extends EventEmitter {
     super();
     this.mdapi = MDAPI.create(this.con);
     this.oauthTokenRepo = new OAuthTokens(this.con);
-    this.oauthTokenRepo.on('resolvewarning', (warning) => this.emit('resolvewarning', warning));
   }
 
   /**
@@ -44,14 +43,18 @@ export default class ConnectedApps extends EventEmitter {
     });
     const installedApps = await fetchAllInstalledApps(this.con);
     const apps = initResolvedApps(installedApps);
+    const appIndex = buildMapIdIndex(apps);
     this.emit('entityresolve', {
       total: apps.size,
       resolved: 0,
     });
-    if (definitiveOpts.withOAuthToken) {
+    if (definitiveOpts.withTokenUsage) {
       const usersOAuthToken = await this.oauthTokenRepo.queryAll();
       for (const sfToken of usersOAuthToken) {
-        const appRef = apps.get(sfToken.AppName);
+        const appRef =
+          sfToken.AppMenuItem?.ApplicationId && appIndex.get(sfToken.AppMenuItem.ApplicationId)
+            ? appIndex.get(sfToken.AppMenuItem.ApplicationId)
+            : apps.get(sfToken.AppName);
         if (appRef) {
           appRef.useCount += sfToken.UseCount;
           if (!appRef.users.includes(sfToken.User.Username)) {
@@ -116,6 +119,7 @@ function initResolvedApps(result: QueryResults): Map<string, ConnectedApp> {
   const apps = new Map<string, ConnectedApp>();
   for (const sfrecord of result.connectedApps) {
     apps.set(sfrecord.Name, {
+      id: sfrecord.Id,
       name: sfrecord.Name,
       origin: 'Installed',
       type: 'ConnectedApp',
@@ -131,6 +135,7 @@ function initResolvedApps(result: QueryResults): Map<string, ConnectedApp> {
   }
   for (const sfrecord of result.externalClientApps) {
     apps.set(sfrecord.MasterLabel, {
+      id: sfrecord.Id,
       name: sfrecord.MasterLabel,
       origin: sfrecord.DistributionState === 'Local' ? 'Owned' : 'Installed',
       type: 'ExternalClientApp',
@@ -142,4 +147,14 @@ function initResolvedApps(result: QueryResults): Map<string, ConnectedApp> {
     });
   }
   return apps;
+}
+
+function buildMapIdIndex(apps: Map<string, ConnectedApp>): Map<string, ConnectedApp> {
+  const byId = new Map<string, ConnectedApp>();
+  for (const app of apps.values()) {
+    if (app.id) {
+      byId.set(app.id, app);
+    }
+  }
+  return byId;
 }

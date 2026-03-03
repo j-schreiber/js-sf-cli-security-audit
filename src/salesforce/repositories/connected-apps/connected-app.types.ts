@@ -26,6 +26,9 @@ export type SfOauthToken = Record & {
   Id: string;
   User: { Username: string };
   AppName: string;
+  AppMenuItem?: {
+    ApplicationId: string;
+  };
   UseCount: number;
 };
 
@@ -34,6 +37,7 @@ export type SfMinimalUser = Record & {
 };
 
 export type ConnectedApp = {
+  id?: string;
   name: string;
   origin: 'Installed' | 'OauthToken' | 'Owned';
   type: 'ConnectedApp' | 'ExternalClientApp' | 'Unknown';
@@ -44,7 +48,7 @@ export type ConnectedApp = {
 };
 
 export const ResolveAppsOptionsSchema = z.object({
-  withOAuthToken: z.boolean().default(false),
+  withTokenUsage: z.boolean().default(false),
   withOrgOwned: z.boolean().default(false),
 });
 

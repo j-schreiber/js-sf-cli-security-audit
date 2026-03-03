@@ -59,7 +59,7 @@ describe('connected apps resolve', () => {
 
     // Act
     const repo = new ConnectedApps($$.targetOrgConnection);
-    const apps = await repo.resolve({ withOAuthToken: true });
+    const apps = await repo.resolve({ withTokenUsage: true });
 
     // Assert
     expect(apps.size).to.equal(3);
@@ -142,6 +142,27 @@ describe('connected apps resolve', () => {
       },
     ]);
     expect(queriedTokens).to.have.lengthOf(expectedTokenCount);
+  });
+
+  it('matches token to app by Id even if app names do not match', async () => {
+    // Arrange
+    // there appear to be rare cases where label of connectedApp does not
+    // match the "AppName" in token usage. Since AppMenuItem is only populated
+    // for installed connected apps, we still need to match by AppName as fallback
+    $$.mocks.mockOAuthTokens('oauth-usage-name-mismatch');
+    $$.mocks.mockConnectedApps('connected-apps');
+
+    // Act
+    const appsRepo = new ConnectedApps($$.targetOrgConnection);
+    const apps = await appsRepo.resolve({ withTokenUsage: true });
+
+    // Assert
+    expect(apps.size).to.equal(6);
+    assert.isUndefined(apps.get('Should be Test App 1'));
+    const app1 = apps.get('Test App 1');
+    assert.isDefined(app1);
+    expect(app1.useCount).to.equal(1);
+    expect(app1.origin).to.equal('Installed');
   });
 });
 

@@ -14,7 +14,7 @@ export default class ConnectedAppsPolicy extends Policy<ConnectedApp> {
     const resolvedEntities: Record<string, ConnectedApp> = {};
     const appsRepo = new ConnectedApps(context.targetOrgConnection);
     appsRepo.addListener('entityresolve', (resolveEvt) => this.emit('entityresolve', resolveEvt));
-    const apps = await appsRepo.resolve({ withOAuthToken: true });
+    const apps = await appsRepo.resolve({ withTokenUsage: true });
     for (const app of apps.values()) {
       resolvedEntities[app.name] = app;
     }

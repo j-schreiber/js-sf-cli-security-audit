@@ -52,6 +52,7 @@ export default class SfConnectionMocks {
   public prepareMocks(config: SfConnectionMockConfig) {
     this.describes = {};
     this.queries = {};
+    this.fullQueryResults = {};
     if (config.describes) {
       for (const [sobjectName, describePath] of Object.entries(config.describes)) {
         this.setDescribeMock(sobjectName, describePath);
