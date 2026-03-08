@@ -52,10 +52,6 @@ Audit config has %s accepted risks documented. %s violations were muted.
 
 Full report was written to: %s.
 
-# NoAuditConfigFound
-
-The target directory %s is empty or no valid audit config was found. A valid audit config must contain at least one policy.
-
 # UserPermClassificationRequiredForProfiles
 
 The "Profiles" policy requires at least userPermissions to be initialised, but none were found at the target directory.
@@ -75,6 +71,10 @@ Failed to parse %s: %s.
 # error.InvalidConfigFileSchema.actions
 
 Verify that your config matches the expected schema.
+
+# error.FailedToValidateAuditConfig
+
+Failed to validate audit config at location %s: Error "%s" at %s.
 
 # info.RemovedViolationRows
 

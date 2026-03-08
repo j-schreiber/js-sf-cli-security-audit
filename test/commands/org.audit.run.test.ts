@@ -51,7 +51,7 @@ describe('org audit run', () => {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertSfError(error, 'NoAuditConfigFound', 'The target directory <root-dir> is empty');
+        assertSfError(error, 'FailedToValidateAuditConfig', '<root-dir>');
       }
     });
 
@@ -62,7 +62,7 @@ describe('org audit run', () => {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', sourceDirPath]);
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
-        assertSfError(error, 'NoAuditConfigFound', `The target directory ${sourceDirPath} is empty`);
+        assertSfError(error, 'FailedToValidateAuditConfig', sourceDirPath);
       }
     });
 

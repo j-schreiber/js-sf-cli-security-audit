@@ -1,0 +1,9 @@
+profiles:
+  API Only Deploy:
+    role: DeployEntity
+  Minimum Access - Salesforce:
+    role: IntegrationUser
+  System Administrator:
+    role: Admin
+  Standard User:
+    role: Standard

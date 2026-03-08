@@ -1,6 +1,7 @@
 import AuditRun from './auditRun.js';
 import FileManager from './file-manager/fileManager.js';
 import { AuditConfigShape, AuditRunConfig } from './registry/definitions.js';
+import { validator } from './registry/shape/shapeValidation.js';
 
 export { default as AuditRun } from './auditRun.js';
 export { AuditConfigShape } from './registry/definitions.js';
@@ -12,7 +13,7 @@ export type { PolicyConfig } from './registry/shape/schema.js';
 export type { EntityResolveEvent } from './auditRun.js';
 export type { AuditResult } from './registry/result.types.js';
 
-export const ConfigFileManager = new FileManager(AuditConfigShape);
+export const ConfigFileManager = new FileManager(AuditConfigShape, validator);
 export { PolicyDefinitions, loadPolicy } from './registry/definitions.js';
 
 /**

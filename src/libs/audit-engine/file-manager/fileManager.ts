@@ -15,6 +15,7 @@ import {
   ExtractAuditConfigTypes,
   FileResult,
   NestedConfigDir,
+  RefineError,
 } from './fileManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -27,7 +28,10 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'or
  * will be enough.
  */
 export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
-  public constructor(private schema: ConfShape) {}
+  public constructor(
+    private schema: ConfShape,
+    private refine?: (parseResult: ExtractAuditConfigTypes<ConfShape>) => RefineError[]
+  ) {}
 
   /**
    * Parses a directory path for policy and classification files
@@ -43,8 +47,18 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
     for (const dirName of typedKeys(this.schema)) {
       parseResult[dirName] = this.parseSubdir(dirName, dirPath);
     }
-    assertIsMinimalConfig(parseResult, dirPath);
     this.validateDependencies(parseResult);
+    if (this.refine) {
+      const errs = this.refine(parseResult);
+      if (errs.length > 0) {
+        const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
+        throw messages.createError('error.FailedToValidateAuditConfig', [
+          formattedDirPath,
+          errs[0].message,
+          errs[0].path.join('.'),
+        ]);
+      }
+    }
     return parseResult as ExtractAuditConfigTypes<ConfShape>;
   }
 
@@ -175,13 +189,6 @@ function countEntities(content: unknown): number {
     return Object.entries(content).length;
   } else {
     return 0;
-  }
-}
-
-function assertIsMinimalConfig(conf: any, dirPath: PathLike): void {
-  if (Object.keys(conf.policies).length === 0) {
-    const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
-    throw messages.createError('NoAuditConfigFound', [formattedDirPath]);
   }
 }
 
