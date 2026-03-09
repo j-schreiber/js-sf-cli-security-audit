@@ -1,3 +1,7 @@
+# DuplicateRoleAfterNormalization
+
+Duplicate role identifier after normalization found: %s was already defined, %s will be ignored.
+
 # violations.classification-preset-mismatch
 
 Permission is classified as "%s" and not allowed in role "%s".

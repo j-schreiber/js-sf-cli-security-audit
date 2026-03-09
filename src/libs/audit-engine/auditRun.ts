@@ -33,7 +33,7 @@ export default class AuditRun extends EventEmitter {
 
   public constructor(config: Partial<AuditRunConfig>) {
     super();
-    this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {} }, ...config };
+    this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {}, definitions: {} }, ...config };
     ResolveLifecycle.on('resolvewarning', (warning) => this.emit('resolvewarning', warning));
   }
 
