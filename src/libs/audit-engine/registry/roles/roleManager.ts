@@ -14,6 +14,7 @@ import {
   PermissionsListKey,
   ResolvedProfileLike,
   ScanResult,
+  UserRoleCompareResult,
 } from './roleManager.types.js';
 import LegacyRole from './legacyRole.js';
 import ModernRole from './modernRole.js';
@@ -121,11 +122,49 @@ export default class RoleManager extends EventEmitter {
    * @returns
    */
   public allowsPermission(roleName: string, permission: Partial<NamedPermissionClassification>): boolean {
-    const normalisedRoleName = normalize(roleName);
-    if (this.roles[normalisedRoleName]) {
-      return this.roles[normalisedRoleName].isAllowed(permission);
+    if (this.isValidRole(roleName)) {
+      return this.roles[normalize(roleName)].isAllowed(permission);
     }
     return false;
+  }
+
+  /**
+   * Checks if a given role name is a valid role for the context
+   * of the current audit run.
+   *
+   * @param roleName
+   * @returns
+   */
+  public isValidRole(roleName: string): boolean {
+    const normalisedRoleName = normalize(roleName);
+    return Boolean(this.roles[normalisedRoleName]);
+  }
+
+  /**
+   * Compares two roles (both must exist)
+   *
+   * @param baseRoleName
+   * @param compareWithName
+   * @returns
+   */
+  public compare(baseRoleName: string, compareWithName: string): UserRoleCompareResult {
+    const baseRole = this.getRole(baseRoleName);
+    const otherRole = this.getRole(compareWithName);
+    return baseRole.compareWith(otherRole);
+  }
+
+  /**
+   * Returns the role or throws an error, if role name is invalid.
+   *
+   * @param roleName
+   * @returns
+   */
+  public getRole(roleName: string): IUserRole {
+    const normalisedRoleName = normalize(roleName);
+    if (this.roles[normalisedRoleName]) {
+      return this.roles[normalisedRoleName];
+    }
+    throw messages.createError('TriedToAccessRoleThatDoesNotExist', [roleName]);
   }
 }
 

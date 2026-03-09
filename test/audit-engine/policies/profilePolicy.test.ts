@@ -155,6 +155,71 @@ describe('policy - profiles', () => {
           },
         ]);
       });
+
+      it('audits permissions based on custom role definition', async () => {
+        // Arrange
+        defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
+        $$.mockAuditConfig.classifications.userPermissions = {
+          permissions: {
+            ApiEnabled: { classification: PermissionRiskLevel.CRITICAL },
+          },
+        };
+        $$.mockRoleDefinitions({
+          Dev: {
+            allowedClassifications: [PermissionRiskLevel.CRITICAL],
+          },
+          Standard: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
+        });
+        $$.mockProfileClassifications({
+          'System Administrator': {
+            role: 'Dev',
+          },
+          'Standard User': {
+            role: 'Standard',
+          },
+        });
+
+        // Act
+        const policyResult = await resolveAndRun('profiles', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['Standard User', 'ApiEnabled'],
+            message: ruleMessages.getMessage('violations.classification-preset-mismatch', ['Critical', 'Standard']),
+          },
+        ]);
+      });
+
+      it('reports error if profile role is not an actual defined role in audit config', async () => {
+        // Arrange
+        $$.mockRoleDefinitions({
+          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        });
+        $$.mockProfileClassifications({
+          'System Administrator': {
+            role: 'Dev',
+          },
+          'Standard User': {
+            role: 'Standard',
+          },
+        });
+
+        // Act
+        const result = await resolveAndRun('profiles', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.errors).to.deep.equal([
+          {
+            identifier: ['System Administrator'],
+            message: ruleMessages.getMessage('error.failed-to-resolve-role', ['Dev']),
+          },
+        ]);
+      });
     });
 
     describe('EnforceLoginIpRanges', () => {

@@ -2,6 +2,10 @@
 
 Duplicate role identifier after normalization found: %s was already defined, %s will be ignored.
 
+# TriedToAccessRoleThatDoesNotExist
+
+Tried to access a role that does not exist: %s.
+
 # violations.classification-preset-mismatch
 
 Permission is classified as "%s" and not allowed in role "%s".
@@ -25,3 +29,7 @@ Profile assigns the permission, but it was not found in classification. Refresh 
 # warnings.permission-not-classified-in-permission-set
 
 PermissionSet assigns the permission, but it was not found in classification. Refresh or add manually.
+
+# error.failed-to-resolve-role
+
+The assigned role "%s" was not valid for this audit. Check your role definitions.

@@ -8,6 +8,7 @@ import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
   ProfileClassifications,
+  RoleDefinitions,
   UserClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
@@ -68,6 +69,15 @@ export default class AuditTestContext {
     MDAPI.clearCache();
     initDefaultMocks(this.mocks);
     resetAllEnvironmentVars();
+  }
+
+  /**
+   * Replaces the entire role definitions
+   *
+   * @param roles
+   */
+  public mockRoleDefinitions(roles?: RoleDefinitions): void {
+    this.mockAuditConfig.definitions.roles = roles;
   }
 
   /**

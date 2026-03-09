@@ -11,7 +11,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 export type ResolvedUser = User & {
-  role: UserPrivilegeLevel;
+  role: string;
 };
 
 export default class UsersPolicy extends Policy<ResolvedUser> {
@@ -54,7 +54,7 @@ export default class UsersPolicy extends Policy<ResolvedUser> {
         ...user,
         role: this.classifications[user.username]?.role ?? this.config.options.defaultRoleForMissingUsers,
       };
-      if (finalUser.role === UserPrivilegeLevel.UNKNOWN) {
+      if (finalUser.role === UserPrivilegeLevel.UNKNOWN.toString()) {
         ignoredEntities[user.username] = {
           name: user.username,
           message: messages.getMessage('user-with-role-unknown'),
