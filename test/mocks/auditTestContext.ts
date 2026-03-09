@@ -32,7 +32,7 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -64,7 +64,7 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
     MDAPI.clearCache();
     initDefaultMocks(this.mocks);
     resetAllEnvironmentVars();
