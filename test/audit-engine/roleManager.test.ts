@@ -4,14 +4,25 @@ import { Messages } from '@salesforce/core';
 import { AuditRunLifecycleBus } from '../../src/libs/audit-engine/auditRunLifecycle.js';
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
 import RoleManager from '../../src/libs/audit-engine/registry/roles/roleManager.js';
-import LegacyRole from '../../src/libs/audit-engine/registry/roles/legacyRole.js';
-import ModernRole from '../../src/libs/audit-engine/registry/roles/modernRole.js';
+import { PermissionClassifications } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
 describe('role manager', () => {
   const SANDBOX: SinonSandbox = Sinon.createSandbox();
+  let userPermissions: PermissionClassifications;
+
+  beforeEach(() => {
+    userPermissions = {
+      UnknownPermName: { classification: PermissionRiskLevel.UNKNOWN },
+      LowPermName: { classification: PermissionRiskLevel.LOW },
+      MediumPermName: { classification: PermissionRiskLevel.MEDIUM },
+      HighPermName: { classification: PermissionRiskLevel.HIGH },
+      CriticalPermName: { classification: PermissionRiskLevel.CRITICAL },
+      BlockedPermName: { classification: PermissionRiskLevel.BLOCKED },
+    };
+  });
 
   afterEach(() => {
     SANDBOX.reset();
@@ -20,33 +31,29 @@ describe('role manager', () => {
   describe('allows permission', () => {
     it('falls back to legacy role when no definition is provided', () => {
       // Act
-      const rm = new RoleManager(undefined);
+      const rm = new RoleManager(undefined, { userPermissions });
 
       // Assert
-      const lowPerm = { classification: PermissionRiskLevel.LOW };
-      const critPerm = { classification: PermissionRiskLevel.CRITICAL };
-      const unknownPerm = { classification: PermissionRiskLevel.UNKNOWN };
-      expect(rm.allowsPermission(UserPrivilegeLevel.STANDARD_USER, lowPerm)).to.be.true;
-      expect(rm.allowsPermission(UserPrivilegeLevel.POWER_USER, lowPerm)).to.be.true;
-      expect(rm.allowsPermission(UserPrivilegeLevel.ADMIN, lowPerm)).to.be.true;
-      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, lowPerm)).to.be.true;
-      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, lowPerm)).to.be.false;
-      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, unknownPerm)).to.be.false;
-      expect(rm.allowsPermission(UserPrivilegeLevel.STANDARD_USER, critPerm)).to.be.false;
-      expect(rm.allowsPermission(UserPrivilegeLevel.POWER_USER, critPerm)).to.be.false;
-      expect(rm.allowsPermission(UserPrivilegeLevel.ADMIN, critPerm)).to.be.false;
-      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, critPerm)).to.be.true;
-      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, critPerm)).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.STANDARD_USER, 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission(UserPrivilegeLevel.POWER_USER, 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission(UserPrivilegeLevel.ADMIN, 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, 'LowPermName')).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, 'UnknownPermName')).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.STANDARD_USER, 'CriticalPermName')).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.POWER_USER, 'CriticalPermName')).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.ADMIN, 'CriticalPermName')).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, 'CriticalPermName')).to.be.true;
+      expect(rm.allowsPermission(UserPrivilegeLevel.UNKNOWN, 'CriticalPermName')).to.be.false;
     });
 
-    it('denies role that is not in UserPrivilegeLevel for legacy role', () => {
+    it('throws exception if role is accessed that does not exist', () => {
       // Act
       const rm = new RoleManager(undefined);
 
       // Assert
-      const lowPerm = { classification: PermissionRiskLevel.LOW, name: 'AnyPermName' };
-      expect(rm.allowsPermission('SOME_CUSTOM_ROLE', lowPerm)).to.be.false;
-      expect(rm.allowsPermission('another custom role', lowPerm)).to.be.false;
+      expect(() => rm.allowsPermission('SOME_CUSTOM_ROLE', 'LowPermName')).to.throw('SOME_CUSTOM_ROLE');
+      expect(() => rm.allowsPermission('another custom role', 'LowPermName')).to.throw('another custom role');
     });
 
     it('denies permission for legacy role that has no classification', () => {
@@ -54,28 +61,26 @@ describe('role manager', () => {
       const rm = new RoleManager(undefined);
 
       // Assert
-      const undefPerm = { classification: undefined, name: 'AnyPermName' };
-      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, undefPerm)).to.be.false;
+      expect(rm.allowsPermission(UserPrivilegeLevel.DEVELOPER, 'AnyPermName')).to.be.false;
     });
 
-    it('allows explicitly configured classification in modern role', () => {
+    it('allows permissions of configured classifications from role definition', () => {
       // Act
-      const rm = new RoleManager({
-        'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
-        'My Ops Role': { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
-      });
+      const rm = new RoleManager(
+        {
+          'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
+          'My Ops Role': { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
+        },
+        { userPermissions }
+      );
 
       // Assert
-      const lowPerm = { classification: PermissionRiskLevel.LOW, name: 'PermName' };
-      const mediumPerm = { classification: PermissionRiskLevel.MEDIUM, name: 'PermName' };
-      const highPerm = { classification: PermissionRiskLevel.HIGH, name: 'PermName' };
-      const criticalPerm = { classification: PermissionRiskLevel.CRITICAL, name: 'PermName' };
-      expect(rm.allowsPermission('My Custom Role', lowPerm)).to.be.true;
-      expect(rm.allowsPermission('My Custom Role', mediumPerm)).to.be.true;
-      expect(rm.allowsPermission('My Custom Role', highPerm)).to.be.false;
-      expect(rm.allowsPermission('My Custom Role', criticalPerm)).to.be.false;
-      expect(rm.allowsPermission('My Ops Role', criticalPerm)).to.be.true;
-      expect(rm.allowsPermission('My Ops Role', highPerm)).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'MediumPermName')).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'HighPermName')).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'CriticalPermName')).to.be.false;
+      expect(rm.allowsPermission('My Ops Role', 'CriticalPermName')).to.be.true;
+      expect(rm.allowsPermission('My Ops Role', 'HighPermName')).to.be.false;
     });
 
     it('ignores duplicate role definitions after normalisation', () => {
@@ -84,171 +89,137 @@ describe('role manager', () => {
       AuditRunLifecycleBus.on('resolvewarning', resolveListener);
 
       // Act
-      const rm = new RoleManager({
-        'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
-        MY_CUSTOM_ROLE: { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
-      });
+      const rm = new RoleManager(
+        {
+          'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
+          MY_CUSTOM_ROLE: { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
+        },
+        { userPermissions }
+      );
 
       // Assert
-      const lowPerm = { classification: PermissionRiskLevel.LOW, name: 'PermName' };
-      const criticalPerm = { classification: PermissionRiskLevel.CRITICAL, name: 'PermName' };
       expect(resolveListener.args.flat()).to.deep.equal([
         {
           message: messages.getMessage('DuplicateRoleAfterNormalization', ['My Custom Role', 'MY_CUSTOM_ROLE']),
         },
       ]);
-      expect(rm.allowsPermission('My Custom Role', lowPerm)).to.be.true;
-      expect(rm.allowsPermission('My Custom Role', criticalPerm)).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'LowPermName')).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'CriticalPermName')).to.be.false;
     });
 
     it('allows whitelisted permission even though classification does not include', () => {
       // Act
-      const rm = new RoleManager({
-        'My Custom Role': {
-          allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-          allowedPermissions: ['ViewAllData', 'CustomizeApplication'],
+      const rm = new RoleManager(
+        {
+          'My Custom Role': {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
+            allowedPermissions: ['ViewAllData', 'CustomizeApplication'],
+          },
         },
-      });
+        { userPermissions }
+      );
 
       // Assert
-      const allowsViewAllData = rm.allowsPermission('My Custom Role', {
-        name: 'ViewAllData',
-        classification: PermissionRiskLevel.HIGH,
-      });
-      expect(allowsViewAllData).to.be.true;
-      const allowsCustomizeApp = rm.allowsPermission('My Custom Role', {
-        name: 'CustomizeApplication',
-        classification: PermissionRiskLevel.CRITICAL,
-      });
-      expect(allowsCustomizeApp).to.be.true;
-    });
-
-    it('allows non-whitelisted permission by classification', () => {
-      // Act
-      const rm = new RoleManager({
-        'My Custom Role': {
-          allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-          allowedPermissions: ['ViewAllData', 'CustomizeApplication'],
-        },
-      });
-
-      // Assert
-      const viewListViews = { classification: PermissionRiskLevel.MEDIUM, name: 'ViewPublicListViews' };
-      expect(rm.allowsPermission('My Custom Role', viewListViews)).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'HighPermName')).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'CriticalPermName')).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'MediumPermName')).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'ViewAllData')).to.be.true;
+      expect(rm.allowsPermission('My Custom Role', 'CustomizeApplication')).to.be.true;
     });
 
     it('denies blacklisted permission that would be allowed by classification', () => {
       // Act
-      const rm = new RoleManager({
-        'My Custom Role': {
-          allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-          deniedPermissions: ['ViewPublicListViews'],
+      const rm = new RoleManager(
+        {
+          'My Custom Role': {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
+            deniedPermissions: ['MediumPermName'],
+          },
         },
-      });
+        { userPermissions }
+      );
 
       // Assert
-      const viewListViews = { classification: PermissionRiskLevel.MEDIUM, name: 'ViewPublicListViews' };
-      expect(rm.allowsPermission('My Custom Role', viewListViews)).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'MediumPermName')).to.be.false;
     });
 
     it('overrides deny permission with allow permission when both are set', () => {
       // Act
-      const rm = new RoleManager({
-        'My Custom Role': {
-          allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-          deniedPermissions: ['ViewPublicListViews'],
-          allowedPermissions: ['ViewPublicListViews'],
+      const rm = new RoleManager(
+        {
+          'My Custom Role': {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
+            deniedPermissions: ['ViewPublicListViews'],
+            allowedPermissions: ['ViewPublicListViews'],
+          },
         },
-      });
+        { userPermissions }
+      );
 
       // Assert
-      const viewListViews = { classification: PermissionRiskLevel.MEDIUM, name: 'ViewPublicListViews' };
-      expect(rm.allowsPermission('My Custom Role', viewListViews)).to.be.false;
+      expect(rm.allowsPermission('My Custom Role', 'ViewPublicListViews')).to.be.false;
     });
   });
 
-  describe('compares with', () => {
-    it('compares legacy roles by their ordinal value', () => {
-      // Act
-      const devRole = new LegacyRole('Developer');
-      const adminRole = new LegacyRole('Admin');
-      const adminRole2 = new LegacyRole('Admin');
-
-      // Assert
-      const devWithAdmin = devRole.compareWith(adminRole);
-      expect(devWithAdmin.isSuperset).to.be.true;
-      const adminWithDev = adminRole.compareWith(devRole);
-      expect(adminWithDev.isSuperset).to.be.false;
-      const adminWithAdmin = adminRole.compareWith(adminRole2);
-      expect(adminWithAdmin.isSuperset).to.be.true;
-    });
-
+  describe('compare', () => {
     it('compares modern roles by config and is superset if all allowed are included', () => {
       // Act
-      const powerUser = new ModernRole('PowerUser', {
-        allowedClassifications: [PermissionRiskLevel.MEDIUM, PermissionRiskLevel.LOW],
-      });
-      const regularUser = new ModernRole('RegularUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-      });
+      const rm = new RoleManager(
+        {
+          PowerUser: {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
+            allowedPermissions: ['HighPermName'],
+          },
+          RegularUser: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
+        },
+        { userPermissions }
+      );
 
       // Assert
-      const powerWithRegular = powerUser.compareWith(regularUser);
+      const powerWithRegular = rm.compare('PowerUser', 'RegularUser');
       expect(powerWithRegular.isSuperset).to.be.true;
-      const regularWithPower = regularUser.compareWith(powerUser);
+      expect(powerWithRegular.missingPermsInOther).to.have.deep.members(['MediumPermName', 'HighPermName']);
+      expect(powerWithRegular.missingPermsInThis).to.deep.equal([]);
+      const regularWithPower = rm.compare('RegularUser', 'PowerUser');
       expect(regularWithPower.isSuperset).to.be.false;
+      expect(regularWithPower.missingPermsInThis).to.have.deep.members(['MediumPermName', 'HighPermName']);
+      expect(regularWithPower.missingPermsInOther).to.deep.equal([]);
     });
 
-    it('evaluates modern role as superset if it contains more allowedPermissions', () => {
+    it('compares legacy role by ordinal values of allowed permissions', () => {
       // Act
-      const powerUser = new ModernRole('PowerUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-        allowedPermissions: ['ApiEnabled'],
-      });
-      const regularUser = new ModernRole('RegularUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-      });
+      const rm = new RoleManager(undefined, { userPermissions });
 
       // Assert
-      const powerWithRegular = powerUser.compareWith(regularUser);
+      const powerWithRegular = rm.compare('Admin', 'Power User');
       expect(powerWithRegular.isSuperset).to.be.true;
-      const regularWithPower = regularUser.compareWith(powerUser);
+      expect(powerWithRegular.missingPermsInOther).to.have.deep.members(['HighPermName']);
+      expect(powerWithRegular.missingPermsInThis).to.deep.equal([]);
+      const regularWithPower = rm.compare('Standard User', 'Admin');
       expect(regularWithPower.isSuperset).to.be.false;
+      expect(regularWithPower.missingPermsInThis).to.have.deep.members(['MediumPermName', 'HighPermName']);
+      expect(regularWithPower.missingPermsInOther).to.deep.equal([]);
     });
 
-    it('evaluates modern role as superset if it contains fewer deniedPermissions', () => {
+    it('compares legacy role by ordinal values even if permissions are identical', () => {
+      // Arrange
+      // if no "high" perm is present, Admin and Power User are identical
+      delete userPermissions['HighPermName'];
+
       // Act
-      const powerUser = new ModernRole('PowerUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-        deniedPermissions: [],
-      });
-      const regularUser = new ModernRole('RegularUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-        deniedPermissions: ['ApiEnabled'],
-      });
+      const rm = new RoleManager(undefined, { userPermissions });
 
       // Assert
-      const powerWithRegular = powerUser.compareWith(regularUser);
+      const powerWithRegular = rm.compare('Admin', 'Power User');
       expect(powerWithRegular.isSuperset).to.be.true;
-      const regularWithPower = regularUser.compareWith(powerUser);
+      expect(powerWithRegular.missingPermsInOther).to.deep.equal([]);
+      expect(powerWithRegular.missingPermsInThis).to.deep.equal([]);
+      const regularWithPower = rm.compare('Power User', 'Admin');
       expect(regularWithPower.isSuperset).to.be.false;
-    });
-
-    it('evaluates modern role against a role that has undefined denied permissions', () => {
-      // Act
-      const powerUser = new ModernRole('PowerUser', {
-        allowedClassifications: [PermissionRiskLevel.MEDIUM, PermissionRiskLevel.LOW],
-      });
-      const regularUser = new ModernRole('RegularUser', {
-        allowedClassifications: [PermissionRiskLevel.LOW],
-        deniedPermissions: ['ApiEnabled'],
-      });
-
-      // Assert
-      const powerWithRegular = powerUser.compareWith(regularUser);
-      expect(powerWithRegular.isSuperset).to.be.true;
-      const regularWithPower = regularUser.compareWith(powerUser);
-      expect(regularWithPower.isSuperset).to.be.false;
+      expect(regularWithPower.missingPermsInThis).to.deep.equal([]);
+      expect(regularWithPower.missingPermsInOther).to.deep.equal([]);
     });
   });
 });

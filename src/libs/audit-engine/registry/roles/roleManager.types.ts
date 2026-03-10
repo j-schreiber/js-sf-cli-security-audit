@@ -20,6 +20,16 @@ export type UserRoleCompareResult = {
    * fewer denied permissions as the "other role".
    */
   isSuperset: boolean;
+  /**
+   * List of permissions that are present in "this" role and
+   * missing in the compared "other" role.
+   */
+  missingPermsInOther: string[];
+  /**
+   * List of permissions that are present in compared "other"
+   * role and missing in this role.
+   */
+  missingPermsInThis: string[];
 };
 
 export type IUserRole = {

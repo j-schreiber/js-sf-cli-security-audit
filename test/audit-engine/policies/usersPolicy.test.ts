@@ -730,6 +730,39 @@ describe('policy - users', () => {
           },
         ]);
       });
+
+      it('ignores denied permissions when classification already covers denied permission', async () => {
+        // Arrange
+        // The denied permission by Operations (ApiEnabled) is already covered by the lower classification
+        // in standard. So we expect that Operations is a true superset of Standard
+        $$.mockAuditConfig.definitions.roles = {
+          Operations: {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+            deniedPermissions: ['ApiEnabled'],
+          },
+          Standard: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
+        };
+        $$.mockAuditConfig.classifications.userPermissions = {
+          permissions: {
+            ApiEnabled: {
+              classification: PermissionRiskLevel.HIGH,
+            },
+            ViewSetup: {
+              classification: PermissionRiskLevel.CRITICAL,
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
     });
 
     describe('NoStandardProfilesOnActiveUsers', () => {

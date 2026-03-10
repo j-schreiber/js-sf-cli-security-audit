@@ -14,7 +14,9 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
 
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles);
+    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
+      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+    });
   }
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
