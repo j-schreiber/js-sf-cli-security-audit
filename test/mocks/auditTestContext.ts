@@ -8,6 +8,7 @@ import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
   ProfileClassifications,
+  RoleDefinitions,
   UserClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
@@ -32,7 +33,7 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -64,10 +65,19 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
     MDAPI.clearCache();
     initDefaultMocks(this.mocks);
     resetAllEnvironmentVars();
+  }
+
+  /**
+   * Replaces the entire role definitions
+   *
+   * @param roles
+   */
+  public mockRoleDefinitions(roles?: RoleDefinitions): void {
+    this.mockAuditConfig.definitions.roles = roles;
   }
 
   /**

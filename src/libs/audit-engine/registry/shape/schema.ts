@@ -56,7 +56,7 @@ const PolicyRuleConfigSchema = z.object({
 const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
 
 const PermSetConfig = z.strictObject({
-  role: z.enum(UserPrivilegeLevel),
+  role: z.string(),
 });
 
 const ProfileConfig = PermSetConfig.extend({
@@ -67,14 +67,24 @@ const PermSetMap = z.record(z.string(), PermSetConfig);
 
 const ProfilesMap = z.record(z.string(), ProfileConfig);
 
-const UserConfig = z.object({ role: z.enum(UserPrivilegeLevel) });
+const UserConfig = z.object({ role: z.string() });
 
 const UsersMap = z.record(z.string(), UserConfig);
 
 const UsersPolicyOptions = z.strictObject({
-  defaultRoleForMissingUsers: z.enum(UserPrivilegeLevel).default(UserPrivilegeLevel.STANDARD_USER),
+  defaultRoleForMissingUsers: z.string().default(UserPrivilegeLevel.STANDARD_USER),
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
+
+const RoleDefinition = z.object({
+  allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
+  allowedPermissions: z.array(z.string()).optional(),
+  deniedPermissions: z.array(z.string()).optional(),
+});
+
+// Definition File Schemata
+
+export const RoleDefinitionsFileSchema = z.record(z.string(), RoleDefinition);
 
 // Classification File Schemata
 
@@ -136,3 +146,7 @@ export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
 
 // Accepted Risks
 export type AcceptedRuleRisks = z.infer<typeof AcceptedRisksSchema>;
+
+// Definitions
+export type RoleDefinitions = z.infer<typeof RoleDefinitionsFileSchema>;
+export type RoledEntityMap = z.infer<typeof PermSetMap>;

@@ -6,11 +6,13 @@ import { assert, expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import FileManager from '../../src/libs/audit-engine/file-manager/fileManager.js';
 import {
+  RefineError,
   AuditConfigShapeDefinition,
   ConfigFileDependency,
+  ExtractAuditConfigTypes,
 } from '../../src/libs/audit-engine/file-manager/fileManager.types.js';
 import { MOCK_DATA_BASE_PATH } from '../mocks/data/paths.js';
-import { AcceptedRisksSchema } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { AcceptedRisksSchema, RoleDefinitionsFileSchema } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -41,6 +43,11 @@ function buildPath(dirName: string) {
  * does not work.
  */
 const baseShape = {
+  definitions: {
+    files: {
+      roles: { schema: RoleDefinitionsFileSchema },
+    },
+  },
   classifications: {
     files: {
       userPermissions: {
@@ -112,6 +119,24 @@ const extendedShape = {
   },
 } satisfies AuditConfigShapeDefinition;
 
+const validator = (parseResult: ExtractAuditConfigTypes<typeof baseShape>) => {
+  const errors: RefineError[] = [];
+  if (parseResult.definitions.roles && parseResult.classifications.profiles) {
+    for (const [profileName, profile] of Object.entries(parseResult.classifications.profiles.profiles)) {
+      if (!parseResult.definitions.roles[profile.role]) {
+        errors.push({ message: `Invalid role ${profile.role} for profile`, path: ['profiles', profileName] });
+      }
+    }
+  }
+  if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
+    errors.push({
+      message: 'Config invalid or empty. Needs one policy.',
+      path: ['policies'],
+    });
+  }
+  return errors;
+};
+
 describe('file manager', () => {
   describe('parsing', () => {
     it('parses audit config from directory that matches shape', () => {
@@ -147,12 +172,16 @@ describe('file manager', () => {
     it('throws error if config does not satisfy minimum criteria', () => {
       // Act
       const dirPath = buildPath('empty');
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(baseShape, validator);
 
       // Assert
       // assert against the message, not the complete error. Otherwise, stack will
       // always be different and assert will fail
-      const expectedError = messages.getMessage('NoAuditConfigFound', [dirPath]);
+      const expectedError = messages.getMessage('error.FailedToValidateAuditConfig', [
+        dirPath,
+        'Config invalid or empty. Needs one policy.',
+        'policies',
+      ]);
       expect(() => fm.parse(dirPath)).to.throw(expectedError);
     });
 
@@ -228,6 +257,33 @@ describe('file manager', () => {
       assert.isDefined(conf.acceptedRisks.users);
       assert.isDefined(conf.acceptedRisks.users.EnforcePermissionClassifications);
       assert.isDefined(conf.acceptedRisks.users.NoInactiveUsers);
+    });
+
+    it('parses role definition from config file if it exists', () => {
+      // Act
+      const fm = new FileManager(baseShape, validator);
+      const conf = fm.parse(buildPath('custom-roles'));
+
+      // Assert
+      assert.isDefined(conf.definitions.roles);
+      expect(Object.keys(conf.definitions.roles)).to.deep.equal([
+        'DeployEntity',
+        'IntegrationUser',
+        'Developer',
+        'Ops',
+        'Standard',
+      ]);
+      expect(conf.definitions.roles.DeployEntity.deniedPermissions).to.deep.equal(['ViewAllData', 'ModifyAllData']);
+      assert.isDefined(conf.classifications.profiles);
+      expect(conf.classifications.profiles.profiles['API Only Deploy'].role).to.equal('DeployEntity');
+    });
+
+    it('runs custom validation logic on profiles classification', () => {
+      // Arrange
+      const fm = new FileManager(baseShape, validator);
+
+      // Assert
+      expect(() => fm.parse(buildPath('custom-roles-invalid'))).to.throw('Invalid role Admin for profile');
     });
   });
 

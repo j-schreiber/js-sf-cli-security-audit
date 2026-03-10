@@ -34,7 +34,7 @@ export default class ProfilesPolicy extends Policy<ResolvedProfile> {
     const ignoredEntities: Record<string, EntityResolveError> = {};
     const classifiedProfiles: string[] = [];
     for (const [profileName, profileDef] of Object.entries(this.classifications)) {
-      if (profileDef.role === UserPrivilegeLevel.UNKNOWN) {
+      if (profileDef.role === UserPrivilegeLevel.UNKNOWN.toString()) {
         ignoredEntities[profileName] = {
           name: profileName,
           message: messages.getMessage('preset-unknown', ['Profile']),

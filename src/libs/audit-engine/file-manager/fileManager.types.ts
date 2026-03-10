@@ -1,5 +1,10 @@
 import z from 'zod';
 
+export type RefineError = {
+  message: string;
+  path: string[];
+};
+
 // ACTUAL TYPES - THESE DEFINE THE SHAPE
 
 /**

@@ -340,9 +340,10 @@ describe('policy - users', () => {
 
     describe('EnforcePermissionClassifications', () => {
       const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+      let localUsersPolicyConfig: UserPolicyConfig;
 
       beforeEach(() => {
-        $$.mockAuditConfig.policies.users = {
+        localUsersPolicyConfig = {
           enabled: true,
           rules: {
             EnforcePermissionClassifications: { enabled: true },
@@ -351,7 +352,8 @@ describe('policy - users', () => {
             defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
           },
         };
-        // no assignments for guest user and user 1, only for test-user-2 (admin)
+        $$.mockAuditConfig.policies.users = localUsersPolicyConfig;
+        // no assignments for guest user and test-user-1, only for test-user-2 (admin)
         $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
       });
 
@@ -418,6 +420,31 @@ describe('policy - users', () => {
         ]);
       });
 
+      it('reports violation if user has a custom permission that is not allowed', async () => {
+        // Arrange
+        $$.mockAuditConfig.classifications.customPermissions = {
+          permissions: {
+            My_Critical_Custom_Perm: {
+              classification: PermissionRiskLevel.CRITICAL,
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'My_Critical_Custom_Perm'],
+            message: criticalMismatchMsg('Admin'),
+          },
+        ]);
+      });
+
       it('skips users with a profile that cannot be resolved to metadata', async () => {
         // Arrange
         mockSingleUser('Custom Profile');
@@ -430,9 +457,72 @@ describe('policy - users', () => {
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
         expect(ruleResult.isCompliant).to.be.true;
       });
+
+      it('reports error if default role is not compatible with actual roles', async () => {
+        // Arrange
+        $$.mockRoleDefinitions({
+          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        });
+        $$.mockUserClassification('guest-user@example.de', {
+          role: 'Standard',
+        });
+        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.errors).to.deep.equal([
+          {
+            identifier: ['test-user-2@example.de'],
+            message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
+          },
+        ]);
+      });
+
+      it('audits users based role definitions if they exist', async () => {
+        // Arrange
+        // all users will be assigned the default role
+        $$.mockAuditConfig.classifications.users = { users: {} };
+        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
+        $$.mockRoleDefinitions({
+          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        });
+        $$.mockAuditConfig.classifications.userPermissions = {
+          permissions: {
+            ViewSetup: {
+              classification: PermissionRiskLevel.CRITICAL,
+            },
+            ApiEnabled: {
+              classification: PermissionRiskLevel.LOW,
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-1@example.de', 'Standard User', 'ViewSetup'],
+            message: criticalMismatchMsg('Standard'),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
+            message: criticalMismatchMsg('Standard'),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
+            message: criticalMismatchMsg('Standard'),
+          },
+        ]);
+      });
     });
 
-    describe('EnforcePermissionPresets', () => {
+    describe('EnforcePermissionPresets (Legacy Roles)', () => {
       const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
 
       beforeEach(() => {
@@ -563,6 +653,140 @@ describe('policy - users', () => {
             identifier: ['test-user-2@example.de', 'System Administrator'],
           },
         ]);
+      });
+    });
+
+    describe('EnforcePermissionPresets (Modern Roles)', () => {
+      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
+      let localPolicyConfig: UserPolicyConfig;
+
+      beforeEach(() => {
+        // First role is assigned to user and is more permissive than
+        // second role (which is assigned to permission set)
+        // permissiveness is calculated by merging all "allows" and substracting all "denies"
+        $$.mockAuditConfig.definitions.roles = {
+          Operations: {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+            allowedPermissions: ['CustomizeApplication', 'ViewAllData'],
+            deniedPermissions: ['ApiEnabled'],
+          },
+          Standard: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+            deniedPermissions: ['ApiEnabled'],
+          },
+        };
+        localPolicyConfig = {
+          enabled: true,
+          rules: {
+            EnforcePermissionPresets: { enabled: true },
+          },
+          options: {
+            defaultRoleForMissingUsers: 'Standard',
+          },
+        };
+        $$.mockAuditConfig.policies.users = localPolicyConfig;
+        $$.mockAuditConfig.classifications.users = { users: {} };
+
+        // no assignments for guest user and user 1, only for test-user-2 (admin)
+        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
+
+        // default classifications for the permission sets and profiles that are used
+        // throughout the tests of this particular rule
+        $$.mockPermSetClassifications({
+          Test_Admin_Permission_Set_1: {
+            role: 'Operations',
+          },
+          Test_Power_User_Permission_Set_1: {
+            role: 'Standard',
+          },
+        });
+        $$.mockProfileClassifications({
+          'System Administrator': {
+            role: 'Operations',
+          },
+          'Standard User': {
+            role: 'Standard',
+          },
+          'Guest User Profile': {
+            role: 'Standard',
+          },
+        });
+      });
+
+      it('reports compliance if user has assignments that are included in custom role', async () => {
+        // Arrange
+        localPolicyConfig.options.defaultRoleForMissingUsers = 'Operations';
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('reports violation if user has assignments that are not included in custom role', async () => {
+        // Arrange
+        localPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.have.deep.members([
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator'],
+            message: messages.getMessage('violations.entity-not-allowed-for-user-role', [
+              'Standard',
+              'profile',
+              'Operations',
+            ]),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1'],
+            message: messages.getMessage('violations.entity-not-allowed-for-user-role', [
+              'Standard',
+              'permission set',
+              'Operations',
+            ]),
+          },
+        ]);
+      });
+
+      it('ignores denied permissions when classification already covers denied permission', async () => {
+        // Arrange
+        // The denied permission by Operations (ApiEnabled) is already covered by the lower classification
+        // in standard. So we expect that Operations is a true superset of Standard
+        $$.mockAuditConfig.definitions.roles = {
+          Operations: {
+            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+            deniedPermissions: ['ApiEnabled'],
+          },
+          Standard: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
+        };
+        $$.mockAuditConfig.classifications.userPermissions = {
+          permissions: {
+            ApiEnabled: {
+              classification: PermissionRiskLevel.HIGH,
+            },
+            ViewSetup: {
+              classification: PermissionRiskLevel.CRITICAL,
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionPresets;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.deep.equal([]);
       });
     });
 

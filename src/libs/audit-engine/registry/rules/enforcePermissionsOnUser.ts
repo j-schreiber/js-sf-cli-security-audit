@@ -1,24 +1,41 @@
-import { scanProfileLike, ScanResult } from '../helpers/permissionsScanning.js';
+import { Messages } from '@salesforce/core';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../context.types.js';
+import RoleManager from '../roles/roleManager.js';
+import { ScanResult } from '../roles/roleManager.types.js';
 import { ResolvedUser } from '../policies/users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
+Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
+const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
+
 export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
+  private readonly roleManager;
+
   public constructor(opts: RuleOptions) {
     super(opts);
+    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
+      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+      customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
+    });
   }
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const users = context.resolvedEntities;
     for (const user of Object.values(users)) {
+      if (!this.roleManager.isValidRole(user.role)) {
+        result.errors.push({
+          identifier: [user.username],
+          message: messages.getMessage('error.failed-to-resolve-role', [user.role]),
+        });
+        continue;
+      }
       const { violations, warnings } = this.scanAssignedPermissionSets(user, user.assignments);
       result.violations.push(...violations);
       result.warnings.push(...warnings);
       if (user.profileMetadata) {
-        const profileResult = scanProfileLike(
+        const profileResult = this.roleManager.scanProfileLike(
           { role: user.role, metadata: user.profileMetadata, name: user.profileName },
-          this.auditConfig,
           [user.username]
         );
         result.violations.push(...profileResult.violations);
@@ -37,9 +54,8 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       if (!assignedPermSet.metadata) {
         continue;
       }
-      const permsetScan = scanProfileLike(
+      const permsetScan = this.roleManager.scanProfileLike(
         { role: user.role, metadata: assignedPermSet.metadata, name: assignedPermSet.permissionSetIdentifier },
-        this.auditConfig,
         [user.username]
       );
       result.violations.push(...permsetScan.violations);

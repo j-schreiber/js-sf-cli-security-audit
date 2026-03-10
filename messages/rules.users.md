@@ -14,6 +14,10 @@ User was created %s (%s days ago), but never logged in.
 
 %s is used, but classified as UNKNOWN. Cannot audit user role.
 
+# violations.invalid-entity-role
+
+%s is classified with invalid role "%s". Cannot audit user role.
+
 # violations.entity-not-classified-but-used
 
 %s is used, but not classified in %ss policy.

@@ -11,7 +11,7 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
 export type ClassifiedPermissionSet = PermissionSet & {
-  role: UserPrivilegeLevel;
+  role: string;
 };
 
 export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet> {
@@ -67,7 +67,7 @@ export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet
   private buildIgnoredEntities(allPermsets: Map<string, PermissionSet>): Record<string, EntityResolveError> {
     const ignoredEntities: Record<string, EntityResolveError> = {};
     for (const [permsetName, permsetDef] of Object.entries(this.classifications)) {
-      if (permsetDef.role === UserPrivilegeLevel.UNKNOWN) {
+      if (permsetDef.role === UserPrivilegeLevel.UNKNOWN.toString()) {
         ignoredEntities[permsetName] = {
           name: permsetName,
           message: messages.getMessage('preset-unknown', ['Permission Set']),
