@@ -15,6 +15,7 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
     super(opts);
     this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
       userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+      customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
     });
   }
 
@@ -29,15 +30,10 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
         });
         continue;
       }
-      if (!isNullish(profile.metadata.userPermissions)) {
-        const userPermsScan = this.roleManager.scanPermissions(profile, 'userPermissions', this.auditConfig);
-        result.violations.push(...userPermsScan.violations);
-        result.warnings.push(...userPermsScan.warnings);
-      }
-      if (!isNullish(profile.metadata.customPermissions)) {
-        const customPermsScan = this.roleManager.scanPermissions(profile, 'customPermissions', this.auditConfig);
-        result.violations.push(...customPermsScan.violations);
-        result.warnings.push(...customPermsScan.warnings);
+      if (!isNullish(profile.metadata)) {
+        const profileScanResult = this.roleManager.scanProfileLike(profile);
+        result.violations.push(...profileScanResult.violations);
+        result.warnings.push(...profileScanResult.warnings);
       }
     }
     return Promise.resolve(result);

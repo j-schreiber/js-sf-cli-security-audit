@@ -2,6 +2,10 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <hasActivationRequired>false</hasActivationRequired>
     <label>Test_Admin_Permission_Set_1</label>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>My_Critical_Custom_Perm</name>
+    </customPermissions>
     <userPermissions>
         <enabled>true</enabled>
         <name>ViewSetup</name>

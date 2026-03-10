@@ -15,6 +15,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     super(opts);
     this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
       userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+      customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
     });
   }
 
@@ -35,7 +36,6 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       if (user.profileMetadata) {
         const profileResult = this.roleManager.scanProfileLike(
           { role: user.role, metadata: user.profileMetadata, name: user.profileName },
-          this.auditConfig,
           [user.username]
         );
         result.violations.push(...profileResult.violations);
@@ -56,7 +56,6 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
       }
       const permsetScan = this.roleManager.scanProfileLike(
         { role: user.role, metadata: assignedPermSet.metadata, name: assignedPermSet.permissionSetIdentifier },
-        this.auditConfig,
         [user.username]
       );
       result.violations.push(...permsetScan.violations);

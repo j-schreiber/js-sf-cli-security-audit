@@ -420,6 +420,31 @@ describe('policy - users', () => {
         ]);
       });
 
+      it('reports violation if user has a custom permission that is not allowed', async () => {
+        // Arrange
+        $$.mockAuditConfig.classifications.customPermissions = {
+          permissions: {
+            My_Critical_Custom_Perm: {
+              classification: PermissionRiskLevel.CRITICAL,
+            },
+          },
+        };
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        assert.isDefined(result.executedRules.EnforcePermissionClassifications);
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.violatedEntities).to.deep.equal(['test-user-2@example.de']);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'My_Critical_Custom_Perm'],
+            message: criticalMismatchMsg('Admin'),
+          },
+        ]);
+      });
+
       it('skips users with a profile that cannot be resolved to metadata', async () => {
         // Arrange
         mockSingleUser('Custom Profile');

@@ -7,7 +7,6 @@ import {
   UserPrivilegeLevel,
 } from '../shape/schema.js';
 import { AuditRunLifecycleBus } from '../../auditRunLifecycle.js';
-import { AuditRunConfig } from '../definitions.js';
 import {
   NamedPermissionClassification,
   PermissionsListKey,
@@ -21,14 +20,14 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
 type Classifications = {
-  userPermissions?: PermissionClassifications;
-  customPermissions?: PermissionClassifications;
+  userPermissions: PermissionClassifications;
+  customPermissions: PermissionClassifications;
 };
 
 export default class RoleManager extends EventEmitter {
   private roles: Record<string, UserRole> = {};
 
-  public constructor(private definitions?: RoleDefinitions, private classifications?: Classifications) {
+  public constructor(private definitions?: RoleDefinitions, private classifications?: Partial<Classifications>) {
     super();
     if (this.definitions) {
       for (const [roleName, roleDef] of Object.entries(this.definitions)) {
@@ -61,59 +60,15 @@ export default class RoleManager extends EventEmitter {
    * @param rootIdentifier Optional root identifier for messages to prepend.
    * @returns
    */
-  public scanProfileLike(
-    profileLike: ResolvedProfileLike,
-    auditRun: AuditRunConfig,
-    rootIdentifier?: string[]
-  ): ScanResult {
+  public scanProfileLike(profileLike: ResolvedProfileLike, rootIdentifier?: string[]): ScanResult {
     if (!profileLike.metadata) {
       return { violations: [], warnings: [] };
     }
-    const userPermsResult = this.scanPermissions(profileLike, 'userPermissions', auditRun, rootIdentifier);
-    const customPermsResult = this.scanPermissions(profileLike, 'customPermissions', auditRun, rootIdentifier);
+    const userPermsResult = this.scanPermissions(profileLike, 'userPermissions', rootIdentifier);
+    const customPermsResult = this.scanPermissions(profileLike, 'customPermissions', rootIdentifier);
     userPermsResult.violations.push(...customPermsResult.violations);
     userPermsResult.warnings.push(...customPermsResult.warnings);
     return userPermsResult;
-  }
-
-  public scanPermissions(
-    profile: ResolvedProfileLike,
-    permissionListName: PermissionsListKey,
-    auditRun: AuditRunConfig,
-    rootIdentifier?: string[]
-  ): ScanResult {
-    const result: ScanResult = { warnings: [], violations: [] };
-    for (const perm of profile.metadata[permissionListName]) {
-      const identifier = rootIdentifier ? [...rootIdentifier, profile.name, perm.name] : [profile.name, perm.name];
-      const permClassification = resolvePerm(perm.name, auditRun, permissionListName);
-      if (permClassification) {
-        if (permClassification.classification === PermissionRiskLevel.BLOCKED) {
-          result.violations.push({
-            identifier,
-            message: messages.getMessage('violations.permission-is-blocked'),
-          });
-        } else if (!this.allowsPermission(profile.role, permClassification.name)) {
-          result.violations.push({
-            identifier,
-            message: messages.getMessage('violations.classification-preset-mismatch', [
-              permClassification.classification,
-              profile.role,
-            ]),
-          });
-        } else if (permClassification.classification === PermissionRiskLevel.UNKNOWN) {
-          result.warnings.push({
-            identifier,
-            message: messages.getMessage('warnings.permission-unknown'),
-          });
-        }
-      } else {
-        result.warnings.push({
-          identifier,
-          message: messages.getMessage('warnings.permission-not-classified'),
-        });
-      }
-    }
-    return result;
   }
 
   /**
@@ -166,14 +121,69 @@ export default class RoleManager extends EventEmitter {
     }
     throw messages.createError('TriedToAccessRoleThatDoesNotExist', [roleName]);
   }
-}
 
-function resolvePerm(
-  permName: string,
-  auditRun: AuditRunConfig,
-  type: PermissionsListKey
-): NamedPermissionClassification | undefined {
-  return nameClassification(permName, auditRun.classifications[type]?.permissions[permName]);
+  //          PRIVATE ZONE
+
+  private scanPermissions(
+    profile: ResolvedProfileLike,
+    permissionListName: PermissionsListKey,
+    rootIdentifier?: string[]
+  ): ScanResult {
+    const result: ScanResult = { warnings: [], violations: [] };
+    for (const perm of profile.metadata[permissionListName]) {
+      const identifier = rootIdentifier ? [...rootIdentifier, profile.name, perm.name] : [profile.name, perm.name];
+      const permClassification = this.resolvePerm(perm.name, permissionListName);
+      if (permClassification) {
+        if (permClassification.classification === PermissionRiskLevel.BLOCKED) {
+          result.violations.push({
+            identifier,
+            message: messages.getMessage('violations.permission-is-blocked'),
+          });
+        } else if (!this.allowsPermission(profile.role, permClassification.name)) {
+          result.violations.push({
+            identifier,
+            message: messages.getMessage('violations.classification-preset-mismatch', [
+              permClassification.classification,
+              profile.role,
+            ]),
+          });
+        } else if (permClassification.classification === PermissionRiskLevel.UNKNOWN) {
+          result.warnings.push({
+            identifier,
+            message: messages.getMessage('warnings.permission-unknown'),
+          });
+        }
+      } else {
+        result.warnings.push({
+          identifier,
+          message: messages.getMessage('warnings.permission-not-classified'),
+        });
+      }
+    }
+    return result;
+  }
+
+  private resolvePerm(permName: string, listName: PermissionsListKey): NamedPermissionClassification | undefined {
+    if (listName === 'userPermissions') {
+      return this.resolveUserPerm(permName);
+    } else if (listName === 'customPermissions') {
+      return this.resolveCustomPerm(permName);
+    }
+  }
+
+  private resolveUserPerm(permName: string): NamedPermissionClassification | undefined {
+    if (this.classifications?.userPermissions) {
+      return nameClassification(permName, this.classifications.userPermissions[permName]);
+    }
+    return undefined;
+  }
+
+  private resolveCustomPerm(permName: string): NamedPermissionClassification | undefined {
+    if (this.classifications?.customPermissions) {
+      return nameClassification(permName, this.classifications.customPermissions[permName]);
+    }
+    return undefined;
+  }
 }
 
 function nameClassification(
