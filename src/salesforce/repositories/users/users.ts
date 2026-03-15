@@ -4,6 +4,7 @@ import { isNullish } from '../../../utils.js';
 import MDAPI from '../../mdapi/mdapi.js';
 import { envVars } from '../../../ux/environment.js';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
+import { chunkArray } from '../../utils.js';
 import {
   PermissionSetAssignment,
   ResolveUsersOptions,
@@ -14,8 +15,8 @@ import {
 import {
   ACTIVE_USERS_DETAILS_QUERY,
   ALL_USERS_DETAILS_QUERY,
-  buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
+  buildScopedLoginHistoryQuery,
 } from './queries.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -24,10 +25,12 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'me
 export default class Users {
   private readonly mdapiRepo: MDAPI;
   private readonly usersMaxFetch;
+  private readonly startingBatchSize;
 
   public constructor(private readonly connection: Connection) {
     this.mdapiRepo = MDAPI.create(this.connection);
     this.usersMaxFetch = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
+    this.startingBatchSize = 256;
   }
 
   /**
@@ -79,7 +82,11 @@ export default class Users {
   }
 
   private async resolveLogins(users: Map<string, User>, daysToAnalyse?: number): Promise<void> {
-    const userLogins = await this.fetchLoginData(daysToAnalyse);
+    const loginAggregates = await this.fetchLoginAggregates(
+      Array.from(users.values()).map((user) => user.userId),
+      daysToAnalyse
+    );
+    const userLogins = indexLoginData(loginAggregates.flat());
     for (const user of users.values()) {
       if (userLogins.has(user.userId)) {
         user.logins = userLogins.get(user.userId);
@@ -97,23 +104,31 @@ export default class Users {
     }
   }
 
-  private async fetchLoginData(daysToAnalyse?: number): Promise<Map<string, UserLogins[]>> {
-    const loginHistory = await this.connection.query<SfUserLoginsAggregate>(buildLoginHistoryQuery(daysToAnalyse), {
-      autoFetch: true,
-    });
-    const partialUsers = new Map<string, UserLogins[]>();
-    for (const loginHistoryRow of loginHistory.records) {
-      if (!partialUsers.has(loginHistoryRow.UserId)) {
-        partialUsers.set(loginHistoryRow.UserId, []);
+  private async fetchLoginAggregates(userIds: string[], daysToAnalyse?: number): Promise<SfUserLoginsAggregate[]> {
+    try {
+      return await this.fetchLoginAggregateChunks(userIds, this.startingBatchSize, daysToAnalyse);
+    } catch (error) {
+      if (typeof error === 'object' && error != null && 'errorCode' in error) {
+        // only split if it's aggregate queryMore() problem and we can still drill down
+        if (error.errorCode === 'EXCEEDED_ID_LIMIT' && userIds.length >= 2) {
+          return await this.fetchLoginAggregateChunks(userIds, Math.floor(userIds.length / 2), daysToAnalyse);
+        }
       }
-      partialUsers.get(loginHistoryRow.UserId)!.push({
-        loginType: loginHistoryRow.LoginType,
-        loginCount: loginHistoryRow.LoginCount,
-        application: loginHistoryRow.Application,
-        lastLogin: Date.parse(loginHistoryRow.LastLogin),
-      });
+      throw error;
     }
-    return partialUsers;
+  }
+
+  private async fetchLoginAggregateChunks(
+    userIds: string[],
+    chunkSize: number,
+    daysToAnalyse?: number
+  ): Promise<SfUserLoginsAggregate[]> {
+    const initialIdChunks = chunkArray(userIds, chunkSize);
+    const loginAggregateProms = initialIdChunks.map((idChunk) =>
+      this.connection.query<SfUserLoginsAggregate>(buildScopedLoginHistoryQuery(idChunk, daysToAnalyse))
+    );
+    const loginAggregates = await Promise.all(loginAggregateProms);
+    return loginAggregates.map((queryResult) => queryResult.records).flat();
   }
 
   private async resolvePermSetAssignments(users: Map<string, User>): Promise<void> {
@@ -161,6 +176,22 @@ export default class Users {
     }
     return assignments;
   }
+}
+
+function indexLoginData(rawLogins: SfUserLoginsAggregate[]): Map<string, UserLogins[]> {
+  const loginData = new Map<string, UserLogins[]>();
+  for (const loginHistoryRow of rawLogins) {
+    if (!loginData.has(loginHistoryRow.UserId)) {
+      loginData.set(loginHistoryRow.UserId, []);
+    }
+    loginData.get(loginHistoryRow.UserId)!.push({
+      loginType: loginHistoryRow.LoginType,
+      loginCount: loginHistoryRow.LoginCount,
+      application: loginHistoryRow.Application,
+      lastLogin: Date.parse(loginHistoryRow.LastLogin),
+    });
+  }
+  return loginData;
 }
 
 function uniquePermissionSetNames(users: Iterable<User>): string[] {

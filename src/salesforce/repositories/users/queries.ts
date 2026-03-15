@@ -1,3 +1,5 @@
+import { joinToSoqlIN } from '../../utils.js';
+
 export const ACTIVE_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive FROM User WHERE IsActive = TRUE AND UserType IN ('Standard')";
 export const ALL_USERS_DETAILS_QUERY =
@@ -7,10 +9,13 @@ export const ALL_USERS_DETAILS_QUERY =
 export const buildPermsetAssignmentsQuery = (userIds: string[]): string =>
   `${USERS_PERMSET_ASSIGNMENTS_QUERY} AND AssigneeId IN (${userIds.map((userId) => `'${userId}'`).join(',')})`;
 
-export const buildLoginHistoryQuery = (daysToAnalayse?: number): string =>
-  daysToAnalayse
-    ? `${USERS_LOGIN_HISTORY_QUERY} WHERE LoginTime >= LAST_N_DAYS:${daysToAnalayse} GROUP BY LoginType,Application,UserId`
-    : `${USERS_LOGIN_HISTORY_QUERY} GROUP BY LoginType,Application,UserId`;
+export const buildScopedLoginHistoryQuery = (userIds: string[], daysToAnalayse?: number): string => {
+  const groupBy = 'LoginType,Application,UserId';
+  const where = daysToAnalayse
+    ? `UserId IN (${joinToSoqlIN(userIds)}) AND LoginTime >= LAST_N_DAYS:${daysToAnalayse}`
+    : `UserId IN (${joinToSoqlIN(userIds)})`;
+  return `${USERS_LOGIN_HISTORY_QUERY} WHERE ${where} GROUP BY ${groupBy}`;
+};
 
 // BASE QUERIES
 const USERS_LOGIN_HISTORY_QUERY =

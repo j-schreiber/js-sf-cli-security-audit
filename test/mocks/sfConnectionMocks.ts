@@ -6,10 +6,10 @@ import { TestContext } from '@salesforce/core/testSetup';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import {
-  buildLoginHistoryQuery,
   buildPermsetAssignmentsQuery,
   ACTIVE_USERS_DETAILS_QUERY,
   ALL_USERS_DETAILS_QUERY,
+  buildScopedLoginHistoryQuery,
 } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
@@ -36,11 +36,13 @@ export default class SfConnectionMocks {
   public queries: Record<string, JsForceRecord[]>;
   public retrieveStub?: sinon.SinonStub;
   public fullQueryResults: Record<string, AnyJson>;
+  public mockedUsers: Record<string, SfMinimalUser>;
 
   public constructor(private readonly context: TestContext) {
     this.describes = {};
     this.queries = {};
     this.fullQueryResults = {};
+    this.mockedUsers = {};
     this.context.fakeConnectionRequest = this.fakeConnectionRequest;
   }
 
@@ -129,13 +131,14 @@ export default class SfConnectionMocks {
   }
 
   /**
-   * Mock login history queries
+   * Mock login history queries for all users that were
+   * mocked by "mockUsers".
    *
    * @param resultFile
    * @param daysToAnalyse
    */
   public mockLoginHistory(resultFile: string, daysToAnalyse?: number): void {
-    this.setQueryMock(buildLoginHistoryQuery(daysToAnalyse), resultFile);
+    this.setQueryMock(buildScopedLoginHistoryQuery(Object.keys(this.mockedUsers), daysToAnalyse), resultFile);
   }
 
   /**
@@ -164,10 +167,16 @@ export default class SfConnectionMocks {
     delete this.queries[ACTIVE_USERS_DETAILS_QUERY];
     delete this.queries[ALL_USERS_DETAILS_QUERY];
     // only initialise one query
+    let users;
     if (activeOnly) {
-      this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
+      users = this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
     } else {
-      this.setQueryMock(ALL_USERS_DETAILS_QUERY, resultFile, transformer);
+      users = this.setQueryMock(ALL_USERS_DETAILS_QUERY, resultFile, transformer);
+    }
+    for (const user of users) {
+      if (user.Id) {
+        this.mockedUsers[user.Id] = user as SfMinimalUser;
+      }
     }
   }
 

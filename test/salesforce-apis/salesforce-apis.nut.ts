@@ -4,6 +4,7 @@ import Sinon, { SinonSandbox } from 'sinon';
 import { AuthInfo, Connection } from '@salesforce/core';
 import { TestSession } from '@salesforce/cli-plugins-testkit';
 import OAuthTokens from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
+import { Users } from '../../src/salesforce/index.js';
 
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 
@@ -44,5 +45,17 @@ describe('salesforce APIs', () => {
     // Assert
     expect(batchedTokens).to.have.lengthOf(allTokens.length);
     expect(warningListener.callCount).to.equal(0);
+  });
+
+  it('fetches all users with login history from org', async () => {
+    // Act
+    const usersRepo = new Users(orgConnection);
+    const allUsers = await usersRepo.resolve({ withLoginHistory: true });
+
+    // Assert
+    expect(allUsers.size).to.not.equal(0);
+    for (const user of allUsers.values()) {
+      expect(user.logins).not.to.be.undefined;
+    }
   });
 });
