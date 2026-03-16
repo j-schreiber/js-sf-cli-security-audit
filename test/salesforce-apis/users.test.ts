@@ -146,4 +146,27 @@ describe('users resolve', () => {
     assert.isDefined(inactiveUser);
     expect(inactiveUser.isActive).to.be.false;
   });
+
+  it('reduces users batch size for logins when initial query throws EXCEEDED_ID_LIMIT', async () => {
+    // Arrange
+    // default query with all users in context
+    const { queryString } = $$.mocks.mockLoginHistory('logins-with-browser-only');
+    $$.mocks.queryErrors[queryString] = { errorCode: 'EXCEEDED_ID_LIMIT' };
+    // recursive batch-reduce uses Math.floor(), so 3 users create chunkSize = 1
+    for (const userId of Object.keys($$.mocks.mockedUsers)) {
+      $$.mocks.mockLoginHistory('empty', undefined, [userId]);
+    }
+
+    // Act
+    const repo = new Users($$.targetOrgConnection);
+    const users = await repo.resolve({ withLoginHistory: true });
+
+    // Assert
+    expect(users.size).to.equal(3);
+    for (const user of users.values()) {
+      // explicitly mocked results for each user id was "empty"
+      // the initial mock for all users is not used
+      expect(user.logins).to.deep.equal([]);
+    }
+  });
 });

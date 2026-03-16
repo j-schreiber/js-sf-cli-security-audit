@@ -31,9 +31,24 @@ export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
   queries?: Record<string, string>;
 };
+
+export type SfQueryError = {
+  errorCode: string;
+  data?: {
+    message: string;
+    errorCode: string;
+  };
+};
+
+export type MockResult = {
+  queryString: string;
+  records: JsForceRecord[];
+};
+
 export default class SfConnectionMocks {
   public describes: Record<string, Partial<DescribeSObjectResult>>;
   public queries: Record<string, JsForceRecord[]>;
+  public queryErrors: Record<string, SfQueryError>;
   public retrieveStub?: sinon.SinonStub;
   public fullQueryResults: Record<string, AnyJson>;
   public mockedUsers: Record<string, SfMinimalUser>;
@@ -43,6 +58,7 @@ export default class SfConnectionMocks {
     this.queries = {};
     this.fullQueryResults = {};
     this.mockedUsers = {};
+    this.queryErrors = {};
     this.context.fakeConnectionRequest = this.fakeConnectionRequest;
   }
 
@@ -135,10 +151,14 @@ export default class SfConnectionMocks {
    * mocked by "mockUsers".
    *
    * @param resultFile
+   * @param userIds If blank, uses the currently mocked users
    * @param daysToAnalyse
    */
-  public mockLoginHistory(resultFile: string, daysToAnalyse?: number): void {
-    this.setQueryMock(buildScopedLoginHistoryQuery(Object.keys(this.mockedUsers), daysToAnalyse), resultFile);
+  public mockLoginHistory(resultFile: string, daysToAnalyse?: number, userIds?: string[]): MockResult {
+    const definitiveUserIds = userIds ?? Object.keys(this.mockedUsers) ?? [];
+    const queryString = buildScopedLoginHistoryQuery(definitiveUserIds, daysToAnalyse);
+    const records = this.setQueryMock(queryString, resultFile);
+    return { queryString, records };
   }
 
   /**
@@ -279,6 +299,10 @@ export default class SfConnectionMocks {
     const url = (request as { url: string }).url;
     if (url.includes('/query?q=')) {
       const queryParam = extractDecodedQueryParam(url);
+      // if we mocked an error, throw it
+      if (this.queryErrors[queryParam]) {
+        return Promise.reject(this.queryErrors[queryParam]);
+      }
       // if we mocked a full query result, use this mock
       if (this.fullQueryResults[queryParam]) {
         return Promise.resolve(this.fullQueryResults[queryParam]);
