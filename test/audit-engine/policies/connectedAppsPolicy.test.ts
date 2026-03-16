@@ -13,6 +13,7 @@ describe('policy - connected apps', () => {
   let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
+    await $$.init();
     $$.mocks.mockConnectedApps('connected-apps');
     defaultConfig = {
       enabled: true,
@@ -26,7 +27,6 @@ describe('policy - connected apps', () => {
       },
     };
     $$.mockAuditConfig.policies.connectedApps = defaultConfig;
-    await $$.init();
   });
 
   afterEach(async () => {

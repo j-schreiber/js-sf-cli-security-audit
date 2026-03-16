@@ -39,9 +39,9 @@ describe('connected apps resolve', () => {
   }
 
   beforeEach(async () => {
+    await $$.init();
     $$.mocks.mockOAuthTokenRecords(mockTokens);
     $$.mocks.mockUserRecords(mockUsers);
-    await $$.init();
   });
 
   afterEach(async () => {

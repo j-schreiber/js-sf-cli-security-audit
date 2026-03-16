@@ -4,6 +4,7 @@ export const ACTIVE_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive FROM User WHERE IsActive = TRUE AND UserType IN ('Standard')";
 export const ALL_USERS_DETAILS_QUERY =
   "SELECT Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive FROM User WHERE UserType IN ('Standard')";
+export const USERS_DETAILS_FIELDS = 'Id,Username,Profile.Name,CreatedDate,LastLoginDate,IsActive';
 
 // DYNAMIC QUERIES
 export const buildPermsetAssignmentsQuery = (userIds: string[]): string =>
@@ -24,6 +25,14 @@ export const buildScopedLoginHistoryQuery = (userIds: string[], daysToAnalayse?:
     ? `UserId IN (${joinToSoqlIN(userIds)}) AND LoginTime >= LAST_N_DAYS:${daysToAnalayse}`
     : `UserId IN (${joinToSoqlIN(userIds)})`;
   return `${USERS_LOGIN_HISTORY_QUERY} WHERE ${where} GROUP BY ${groupBy}`;
+};
+
+export const buildUsersQuery = (includeInactive: boolean, includeAssignments: boolean): string => {
+  const assignmentsSubselect = includeAssignments
+    ? ',(SELECT PermissionSet.Name FROM PermissionSetAssignments WHERE PermissionSet.IsOwnedByProfile = FALSE AND PermissionSet.NamespacePrefix = NULL)'
+    : '';
+  const where = includeInactive ? "UserType IN ('Standard')" : "IsActive = TRUE AND UserType IN ('Standard')";
+  return `SELECT ${USERS_DETAILS_FIELDS}${assignmentsSubselect} FROM User WHERE ${where}`;
 };
 
 // BASE QUERIES

@@ -58,4 +58,16 @@ describe('salesforce APIs', () => {
       expect(user.logins).not.to.be.undefined;
     }
   });
+
+  it('fetches all users with permission set assignments from org', async () => {
+    // Act
+    const usersRepo = new Users(orgConnection);
+    const allUsers = await usersRepo.resolve({ withPermissions: true });
+
+    // Assert
+    expect(allUsers.size).to.not.equal(0);
+    for (const user of allUsers.values()) {
+      expect(user.assignments, `assignments for ${user.username}`).not.to.be.undefined;
+    }
+  });
 });

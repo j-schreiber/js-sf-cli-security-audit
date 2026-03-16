@@ -7,9 +7,8 @@ import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import {
   buildPermsetAssignmentsQuery,
-  ACTIVE_USERS_DETAILS_QUERY,
-  ALL_USERS_DETAILS_QUERY,
   buildScopedLoginHistoryQuery,
+  buildUsersQuery,
 } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
@@ -173,26 +172,17 @@ export default class SfConnectionMocks {
   }
 
   /**
-   * Results for (standard) users query
+   * Results for (standard) users queries. Includes all variants with/without
+   * permissions and with/without inactives.
    *
    * @param resultFile
    * @param activeOnly Only include active users
    */
-  public mockUsers(
-    resultFile: string,
-    transformer?: (a: JsForceRecord) => JsForceRecord,
-    activeOnly: boolean = true
-  ): void {
-    // reset both queries to avoid unexpected results
-    delete this.queries[ACTIVE_USERS_DETAILS_QUERY];
-    delete this.queries[ALL_USERS_DETAILS_QUERY];
-    // only initialise one query
-    let users;
-    if (activeOnly) {
-      users = this.setQueryMock(ACTIVE_USERS_DETAILS_QUERY, resultFile, transformer);
-    } else {
-      users = this.setQueryMock(ALL_USERS_DETAILS_QUERY, resultFile, transformer);
-    }
+  public mockUsers(resultFile: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
+    const users = this.setQueryMock(buildUsersQuery(true, true), resultFile, transformer);
+    this.setQueryMock(buildUsersQuery(true, false), resultFile, transformer);
+    this.setQueryMock(buildUsersQuery(false, false), resultFile, transformer);
+    this.setQueryMock(buildUsersQuery(false, true), resultFile, transformer);
     for (const user of users) {
       if (user.Id) {
         this.mockedUsers[user.Id] = user as SfMinimalUser;

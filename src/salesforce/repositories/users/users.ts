@@ -1,23 +1,11 @@
 import { Connection, Messages } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
-import { isNullish } from '../../../utils.js';
 import MDAPI from '../../mdapi/mdapi.js';
 import { envVars } from '../../../ux/environment.js';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { chunkArray } from '../../utils.js';
-import {
-  PermissionSetAssignment,
-  ResolveUsersOptions,
-  ResolveUsersOptionsSchema,
-  User,
-  UserLogins,
-} from './user.types.js';
-import {
-  ACTIVE_USERS_DETAILS_QUERY,
-  ALL_USERS_DETAILS_QUERY,
-  buildPermsetAssignmentsQuery,
-  buildScopedLoginHistoryQuery,
-} from './queries.js';
+import { ResolveUsersOptions, ResolveUsersOptionsSchema, User, UserLogins } from './user.types.js';
+import { buildScopedLoginHistoryQuery, buildUsersQuery } from './queries.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'metadataretrieve');
@@ -43,9 +31,9 @@ export default class Users {
   public async resolve(opts?: Partial<ResolveUsersOptions>): Promise<Map<string, User>> {
     const definitiveOpts = ResolveUsersOptionsSchema.parse(opts ?? {});
     const result: Map<string, User> = new Map<string, User>();
-    const usersOnOrg = await this.fetchUsers(definitiveOpts.includeInactive);
+    const usersOnOrg = await this.fetchUsers(definitiveOpts);
     for (const user of usersOnOrg) {
-      const usr = {
+      const usr: User = {
         userId: user.Id!,
         username: user.Username,
         lastLogin: user.LastLoginDate ? Date.parse(user.LastLoginDate) : undefined,
@@ -53,26 +41,37 @@ export default class Users {
         createdDate: Date.parse(user.CreatedDate),
         profileName: user.Profile.Name,
       };
+      if (definitiveOpts.withPermissions && user.PermissionSetAssignments) {
+        usr.assignments = user.PermissionSetAssignments.records.map((assignment) => ({
+          permissionSetIdentifier: assignment.PermissionSet.Name,
+          permissionSetSource: assignment.PermissionSetGroupId ? 'group' : 'direct',
+          ...(assignment.PermissionSetGroup?.DeveloperName && {
+            groupName: assignment.PermissionSetGroup?.DeveloperName,
+          }),
+        }));
+      } else if (definitiveOpts.withPermissions) {
+        usr.assignments = [];
+      }
       result.set(user.Username, usr);
     }
     if (definitiveOpts.withLoginHistory) {
       await this.resolveLogins(result, definitiveOpts.loginHistoryDaysToAnalyse);
     }
-    if (definitiveOpts.withPermissions) {
-      await this.resolvePermissions(result, definitiveOpts.withPermissionsMetadata);
+    if (definitiveOpts.withPermissionsMetadata) {
+      await this.resolveProfiles(result);
+      await this.resolvePermissionSets(result);
     }
     return result;
   }
 
   //        PRIVATE ZONE
 
-  private async fetchUsers(includeInactive: boolean): Promise<SfUser[]> {
-    const usersOnOrg = includeInactive
-      ? await this.connection.query<SfUser>(ALL_USERS_DETAILS_QUERY, { autoFetch: true, maxFetch: this.usersMaxFetch })
-      : await this.connection.query<SfUser>(ACTIVE_USERS_DETAILS_QUERY, {
-          autoFetch: true,
-          maxFetch: this.usersMaxFetch,
-        });
+  private async fetchUsers(opts: ResolveUsersOptions): Promise<SfUser[]> {
+    const usersQuery = buildUsersQuery(opts.includeInactive, opts.withPermissions);
+    const usersOnOrg = await this.connection.query<SfUser>(usersQuery, {
+      autoFetch: true,
+      maxFetch: this.usersMaxFetch,
+    });
     if (usersOnOrg.totalSize > this.usersMaxFetch) {
       ResolveLifecycle.emitWarn(
         messages.getMessage('warning.TooManyActiveUsersIncreaseLimit', [usersOnOrg.totalSize, this.usersMaxFetch])
@@ -93,14 +92,6 @@ export default class Users {
       } else {
         user.logins = [];
       }
-    }
-  }
-
-  private async resolvePermissions(users: Map<string, User>, withMetadata: boolean): Promise<void> {
-    await this.resolvePermSetAssignments(users);
-    if (withMetadata) {
-      await this.resolveProfiles(users);
-      await this.resolvePermissionSets(users);
     }
   }
 
@@ -134,14 +125,6 @@ export default class Users {
     return loginAggregates.map((queryResult) => queryResult.records).flat();
   }
 
-  private async resolvePermSetAssignments(users: Map<string, User>): Promise<void> {
-    const userIds = Array.from(users.values()).map((usr) => usr.userId);
-    const assignments = await this.fetchAssignments(userIds);
-    for (const user of users.values()) {
-      user.assignments = assignments.get(user.userId) ?? [];
-    }
-  }
-
   private async resolveProfiles(users: Map<string, User>): Promise<void> {
     const profiles = await this.mdapiRepo.resolve('Profile', uniqueProfileNames(users.values()));
     for (const user of users.values()) {
@@ -157,27 +140,6 @@ export default class Users {
         ass.metadata = permsets[ass.permissionSetIdentifier];
       }
     }
-  }
-
-  private async fetchAssignments(userIds: string[]): Promise<Map<string, PermissionSetAssignment[]>> {
-    const assignments = new Map<string, PermissionSetAssignment[]>();
-    const rawAssignment = await this.connection.query<SfPermissionSetAssignment>(
-      buildPermsetAssignmentsQuery(userIds),
-      { autoFetch: true }
-    );
-    for (const assignment of rawAssignment.records) {
-      if (isNullish(assignments.get(assignment.AssigneeId))) {
-        assignments.set(assignment.AssigneeId, []);
-      }
-      assignments.get(assignment.AssigneeId)!.push({
-        permissionSetIdentifier: assignment.PermissionSet.Name,
-        permissionSetSource: assignment.PermissionSetGroupId ? 'group' : 'direct',
-        ...(assignment.PermissionSetGroup?.DeveloperName && {
-          groupName: assignment.PermissionSetGroup?.DeveloperName,
-        }),
-      });
-    }
-    return assignments;
   }
 }
 
@@ -223,6 +185,11 @@ type SfUser = Record & {
   CreatedDate: string;
   Profile: SfProfile;
   IsActive: boolean;
+  PermissionSetAssignments: {
+    done: boolean;
+    totalSize: number;
+    records: SfPermissionSetAssignment[];
+  };
 };
 
 type SfProfile = Record & {

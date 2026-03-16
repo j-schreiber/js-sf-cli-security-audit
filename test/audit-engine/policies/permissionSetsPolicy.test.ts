@@ -41,8 +41,8 @@ describe('policy - permission sets', () => {
       },
     };
     $$.mockAuditConfig.policies.permissionSets = defaultConfig;
-    $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
     await $$.init();
+    $$.mocks.setQueryMock(PERMISSION_SETS_QUERY, 'resolvable-permission-sets');
   });
 
   afterEach(async () => {
