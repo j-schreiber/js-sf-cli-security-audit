@@ -9,6 +9,15 @@ export const ALL_USERS_DETAILS_QUERY =
 export const buildPermsetAssignmentsQuery = (userIds: string[]): string =>
   `${USERS_PERMSET_ASSIGNMENTS_QUERY} AND AssigneeId IN (${userIds.map((userId) => `'${userId}'`).join(',')})`;
 
+/**
+ * Builds aggregate query for login history. Query is expected to
+ * throw an exception, if too many rows are returned. The chunking
+ * logic depends on this exception, so LIMIT in query would BREAK this.
+ *
+ * @param userIds
+ * @param daysToAnalayse
+ * @returns
+ */
 export const buildScopedLoginHistoryQuery = (userIds: string[], daysToAnalayse?: number): string => {
   const groupBy = 'LoginType,Application,UserId';
   const where = daysToAnalayse

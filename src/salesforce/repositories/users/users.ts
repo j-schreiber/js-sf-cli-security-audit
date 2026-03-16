@@ -111,6 +111,9 @@ export default class Users {
       if (typeof error === 'object' && error != null && 'errorCode' in error) {
         // only split if it's aggregate queryMore() problem and we can still drill down
         if (error.errorCode === 'EXCEEDED_ID_LIMIT' && userIds.length >= 2) {
+          // note for future me: This will fail, if a single user exists that has more than 2000 rows
+          // in this aggregate query. This would require more than 2000 combinations of "LoginType"
+          // and "Application" - time will tell if we need to add a dynamic LIMIT 2000 here with resolve warning.
           return await this.fetchLoginAggregateChunks(userIds, Math.floor(userIds.length / 2), daysToAnalyse);
         }
       }
