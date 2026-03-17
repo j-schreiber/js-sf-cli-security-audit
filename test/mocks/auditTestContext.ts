@@ -31,14 +31,15 @@ export default class AuditTestContext {
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
-  public mocks: SfConnectionMocks;
+  public mocks!: SfConnectionMocks;
   public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
     this.targetOrg = new MockTestOrgData();
-    this.mocks = initDefaultMocks(new SfConnectionMocks(this.context));
     this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
+    this.mocks = new SfConnectionMocks(this.context);
+    initDefaultMocks(this.mocks);
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
@@ -66,8 +67,8 @@ export default class AuditTestContext {
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
     this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
     MDAPI.clearCache();
-    initDefaultMocks(this.mocks);
     resetAllEnvironmentVars();
+    initDefaultMocks(this.mocks);
   }
 
   /**
@@ -137,9 +138,8 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
     queries: {} as Record<string, string>,
   };
   mocks.prepareMocks(defaults);
-  mocks.mockPermsetAssignments('empty', ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF']);
   mocks.mockCustomPermissions('custom-permissions');
-  mocks.mockUsers('active-user-details');
+  mocks.mockUsers('active-user-details', (record) => ({ ...record, PermissionSetAssignments: null }));
   mocks.mockProfiles('profiles');
   mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
   mocks.mockProfiles('admin-and-standard-profiles', ['System Administrator', 'Standard User']);

@@ -7,6 +7,7 @@
     "Id": "0054P00000AYPYXQA5",
     "Username": "guest-user@example.de",
     "CreatedDate": "2025-10-10T12:00:00.000+0000",
+    "IsActive": true,
     "Profile": {
       "attributes": {
         "type": "Profile",
@@ -23,14 +24,14 @@
     "Id": "005Pl000001p3HqIAI",
     "Username": "test-user-1@example.de",
     "CreatedDate": "2025-10-09T12:00:00.000+0000",
+    "IsActive": true,
     "Profile": {
       "attributes": {
         "type": "Profile",
         "url": "/services/data/v65.0/sobjects/Profile/00ePl000002dNziIAE"
       },
       "Name": "Standard User"
-    },
-    "IsActive": true
+    }
   },
   {
     "attributes": {
@@ -40,6 +41,7 @@
     "Id": "0054P00000AaGueQAF",
     "Username": "test-user-2@example.de",
     "CreatedDate": "2025-10-08T12:00:00.000+0000",
+    "IsActive": true,
     "Profile": {
       "attributes": {
         "type": "Profile",
@@ -47,6 +49,37 @@
       },
       "Name": "System Administrator"
     },
-    "IsActive": true
+    "PermissionSetAssignments": {
+      "done": true,
+      "totalSize:": 2,
+      "records": [
+        {
+          "attributes": {
+            "type": "PermissionSetAssignment",
+            "url": "/services/data/v65.0/sobjects/PermissionSetAssignment/0Pa4P00000BpdOkSAJ"
+          },
+          "PermissionSet": {
+            "attributes": {
+              "type": "PermissionSet",
+              "url": "/services/data/v65.0/sobjects/PermissionSet/0PS4P000001lD3aWAE"
+            },
+            "Name": "Test_Admin_Permission_Set_1"
+          }
+        },
+        {
+          "attributes": {
+            "type": "PermissionSetAssignment",
+            "url": "/services/data/v65.0/sobjects/PermissionSetAssignment/0Pa4P00000BqELzSAN"
+          },
+          "PermissionSet": {
+            "attributes": {
+              "type": "PermissionSet",
+              "url": "/services/data/v65.0/sobjects/PermissionSet/0PS4P000001lFw1WAE"
+            },
+            "Name": "Test_Power_User_Permission_Set_1"
+          }
+        }
+      ]
+    }
   }
 ]

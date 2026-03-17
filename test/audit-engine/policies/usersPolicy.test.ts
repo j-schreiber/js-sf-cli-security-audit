@@ -339,8 +339,6 @@ describe('policy - users', () => {
     });
 
     describe('EnforcePermissionClassifications', () => {
-      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
-
       beforeEach(() => {
         $$.mockAuditConfig.policies.users = {
           enabled: true,
@@ -351,8 +349,7 @@ describe('policy - users', () => {
             defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
           },
         };
-        // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
+        $$.mocks.mockUsers('active-user-details');
       });
 
       it('reports compliance if user role allows all assigned permissions', async () => {
@@ -433,8 +430,6 @@ describe('policy - users', () => {
     });
 
     describe('EnforcePermissionPresets', () => {
-      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
-
       beforeEach(() => {
         $$.mockAuditConfig.policies.users = {
           enabled: true,
@@ -445,8 +440,6 @@ describe('policy - users', () => {
             defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
           },
         };
-        // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
         $$.mockPermSetClassifications({
@@ -468,6 +461,7 @@ describe('policy - users', () => {
             role: UserPrivilegeLevel.STANDARD_USER,
           },
         });
+        $$.mocks.mockUsers('active-user-details');
       });
 
       it('reports compliance if user has only permission sets assigned that match their role', async () => {

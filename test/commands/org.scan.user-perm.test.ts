@@ -181,7 +181,7 @@ describe('org scan user-perm', () => {
 
   it('includes inactive users and adds info to users table', async () => {
     // Arrange
-    $$.mocks.mockUsers('all-user-details', undefined, false);
+    $$.mocks.mockUsers('all-user-details');
 
     // Act
     const result = await OrgUserPermScan.run([
