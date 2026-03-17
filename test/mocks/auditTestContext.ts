@@ -39,6 +39,7 @@ export default class AuditTestContext {
     this.targetOrg = new MockTestOrgData();
     this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
     this.mocks = new SfConnectionMocks(this.context);
+    initDefaultMocks(this.mocks);
     if (dirPath) {
       this.outputDirectory = path.join(dirPath);
     } else {
@@ -53,7 +54,6 @@ export default class AuditTestContext {
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
     this.sfSpinnerStub = stubSpinner(this.context.SANDBOX);
-    initDefaultMocks(this.mocks);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     await this.mocks.stubMetadataRetrieve('full');
     this.mocks.restoreStubs();
@@ -68,6 +68,7 @@ export default class AuditTestContext {
     this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
     MDAPI.clearCache();
     resetAllEnvironmentVars();
+    initDefaultMocks(this.mocks);
   }
 
   /**

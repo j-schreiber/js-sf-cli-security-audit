@@ -5,7 +5,7 @@ import { envVars } from '../../../ux/environment.js';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { chunkArray } from '../../utils.js';
 import { ResolveUsersOptions, ResolveUsersOptionsSchema, User, UserLogins } from './user.types.js';
-import { buildScopedLoginHistoryQuery, buildUsersQuery } from './queries.js';
+import { buildScopedLoginHistoryQuery, USERS_QUERY } from './queries.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'metadataretrieve');
@@ -67,8 +67,7 @@ export default class Users {
   //        PRIVATE ZONE
 
   private async fetchUsers(opts: ResolveUsersOptions): Promise<SfUser[]> {
-    const usersQuery = buildUsersQuery(opts.includeInactive, opts.withPermissions);
-    const usersOnOrg = await this.connection.query<SfUser>(usersQuery, {
+    const usersOnOrg = await this.connection.query<SfUser>(USERS_QUERY, {
       autoFetch: true,
       maxFetch: this.usersMaxFetch,
     });
@@ -77,7 +76,7 @@ export default class Users {
         messages.getMessage('warning.TooManyActiveUsersIncreaseLimit', [usersOnOrg.totalSize, this.usersMaxFetch])
       );
     }
-    return usersOnOrg.records;
+    return usersOnOrg.records.filter((user) => (opts.includeInactive ? true : user.IsActive));
   }
 
   private async resolveLogins(users: Map<string, User>, daysToAnalyse?: number): Promise<void> {
@@ -185,11 +184,11 @@ type SfUser = Record & {
   CreatedDate: string;
   Profile: SfProfile;
   IsActive: boolean;
-  PermissionSetAssignments: {
+  PermissionSetAssignments?: {
     done: boolean;
     totalSize: number;
     records: SfPermissionSetAssignment[];
-  };
+  } | null;
 };
 
 type SfProfile = Record & {

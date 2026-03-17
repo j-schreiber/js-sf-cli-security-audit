@@ -6,9 +6,9 @@ describe('quick scanners', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    await $$.init();
     $$.mocks.mockPermissionSets('resolvable-permission-sets');
     $$.mocks.mockUsers('active-user-details');
+    await $$.init();
   });
 
   afterEach(async () => {

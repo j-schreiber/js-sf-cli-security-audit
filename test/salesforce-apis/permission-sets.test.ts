@@ -7,8 +7,8 @@ describe('permission sets resolve', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
-    await $$.init();
     $$.mocks.mockPermissionSets('resolvable-permission-sets');
+    await $$.init();
   });
 
   afterEach(async () => {

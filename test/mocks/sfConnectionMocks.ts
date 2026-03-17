@@ -8,7 +8,7 @@ import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
 import {
   buildPermsetAssignmentsQuery,
   buildScopedLoginHistoryQuery,
-  buildUsersQuery,
+  USERS_QUERY,
 } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
@@ -179,10 +179,7 @@ export default class SfConnectionMocks {
    * @param activeOnly Only include active users
    */
   public mockUsers(resultFile: string, transformer?: (a: JsForceRecord) => JsForceRecord): void {
-    const users = this.setQueryMock(buildUsersQuery(true, true), resultFile, transformer);
-    this.setQueryMock(buildUsersQuery(true, false), resultFile, transformer);
-    this.setQueryMock(buildUsersQuery(false, false), resultFile, transformer);
-    this.setQueryMock(buildUsersQuery(false, true), resultFile, transformer);
+    const users = this.setQueryMock(USERS_QUERY, resultFile, transformer);
     for (const user of users) {
       if (user.Id) {
         this.mockedUsers[user.Id] = user as SfMinimalUser;

@@ -59,7 +59,7 @@ describe('salesforce APIs', () => {
     }
   });
 
-  it('fetches all users with permission set assignments from org', async () => {
+  it('fetches all users and initialises permission set assignments with flag', async () => {
     // Act
     const usersRepo = new Users(orgConnection);
     const allUsers = await usersRepo.resolve({ withPermissions: true });
@@ -67,7 +67,21 @@ describe('salesforce APIs', () => {
     // Assert
     expect(allUsers.size).to.not.equal(0);
     for (const user of allUsers.values()) {
+      expect(user.isActive).to.be.true;
       expect(user.assignments, `assignments for ${user.username}`).not.to.be.undefined;
+    }
+  });
+
+  it('fetches all users and skips permission set assignments without flag', async () => {
+    // Act
+    const usersRepo = new Users(orgConnection);
+    const allUsers = await usersRepo.resolve({ withPermissions: false });
+
+    // Assert
+    expect(allUsers.size).to.not.equal(0);
+    for (const user of allUsers.values()) {
+      expect(user.isActive).to.be.true;
+      expect(user.assignments, `assignments for ${user.username}`).to.be.undefined;
     }
   });
 });
