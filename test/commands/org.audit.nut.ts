@@ -5,7 +5,8 @@ import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { OrgAuditInitResult } from '../../src/commands/org/audit/init.js';
 import { OrgAuditRunResult } from '../../src/commands/org/audit/run.js';
 import { ConfigFileManager, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
-import { AcceptedRuleRisks } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { AcceptedRuleRisks, PermissionRiskLevel } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { setRoleInClassification } from '../mocks/testHelpers.js';
 
 const enterpriseOrgAlias = 'TestTargetOrg';
 const professionalOrgAlias = 'ProfTestTargetOrg';
@@ -27,21 +28,11 @@ describe('org audit NUTs', () => {
     return path.join(session.dir, 'test-sfdx-project', filePath);
   }
 
-  function activateClassifications(dirPath: string, role: UserPrivilegeLevel) {
+  function activateClassifications(dirPath: string, role: string) {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = ConfigFileManager.parse(configDirPath);
-    if (conf.classifications.profiles?.profiles) {
-      for (const profile of Object.values(conf.classifications.profiles.profiles)) {
-        // eslint-disable-next-line no-param-reassign
-        profile.role = role;
-      }
-    }
-    if (conf.classifications.permissionSets?.permissionSets) {
-      for (const profile of Object.values(conf.classifications.permissionSets.permissionSets)) {
-        // eslint-disable-next-line no-param-reassign
-        profile.role = role;
-      }
-    }
+    setRoleInClassification(role, conf.classifications.profiles?.profiles);
+    setRoleInClassification(role, conf.classifications.permissionSets?.permissionSets);
     ConfigFileManager.save(configDirPath, conf);
   }
 
@@ -74,6 +65,30 @@ describe('org audit NUTs', () => {
     ConfigFileManager.save(configDirPath, conf);
   }
 
+  function initCustomRoleDefinitions(auditConfigDirPath: string) {
+    const configDirPath = resolveTestDirFilePath(auditConfigDirPath);
+    const conf = ConfigFileManager.parse(configDirPath);
+    conf.definitions.roles = {
+      MyOpsRole: {
+        allowedPermissions: ['ApiEnabled', 'ViewSetup'],
+        allowedClassifications: [PermissionRiskLevel.CRITICAL],
+      },
+      MyStandardRole: {
+        allowedClassifications: [PermissionRiskLevel.LOW],
+      },
+    };
+    setRoleInClassification('MyStandardRole', conf.classifications.permissionSets?.permissionSets);
+    setRoleInClassification('MyStandardRole', conf.classifications.profiles?.profiles);
+    setRoleInClassification('MyStandardRole', conf.classifications.users?.users);
+    ConfigFileManager.save(configDirPath, conf);
+  }
+
+  function duplicateAuditConfig(sourcePath: string): string {
+    const newConfigPath = path.join('audits', 'ent-ed-2');
+    fs.cpSync(resolveTestDirFilePath(sourcePath), resolveTestDirFilePath(newConfigPath), { recursive: true });
+    return newConfigPath;
+  }
+
   before(async () => {
     session = await TestSession.create({
       project: {
@@ -99,10 +114,6 @@ describe('org audit NUTs', () => {
 
   after(async () => {
     await session?.clean();
-  });
-
-  afterEach(async () => {
-    // clean audit config files?
   });
 
   it('initialises a full audit config from enterprise org at target directory', () => {
@@ -211,6 +222,29 @@ describe('org audit NUTs', () => {
     const standardProfilesResult = result.policies.users?.executedRules.NoStandardProfilesOnActiveUsers;
     assert.isDefined(standardProfilesResult);
     expect(standardProfilesResult.violations).to.deep.equal([]);
+  });
+
+  it('completes full audit with custom role definitions', async () => {
+    // Arrange
+    const dirPath = duplicateAuditConfig(entEdAudit);
+    initCustomRoleDefinitions(dirPath);
+
+    // Act
+    const result = execCmd<OrgAuditRunResult>(
+      `org:audit:run --target-org ${enterpriseOrgAlias} --source-dir ${dirPath} --json`,
+      {
+        ensureExitCode: 0,
+      }
+    ).jsonOutput?.result;
+
+    // Assert
+    assert.isDefined(result);
+    const profilesPermsResult = result.policies.profiles?.executedRules.EnforcePermissionClassifications;
+    assert.isDefined(profilesPermsResult);
+    expect(profilesPermsResult.errors).to.deep.equal([]);
+    const userPermsResult = result.policies.users?.executedRules.EnforcePermissionClassifications;
+    assert.isDefined(userPermsResult);
+    expect(userPermsResult.errors).to.deep.equal([]);
   });
 
   it('successfully completes an audit of professional ed with all policies active', async () => {

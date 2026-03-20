@@ -14,6 +14,7 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
 import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
+import { RoledEntityMap } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import { loadPolicy, Policies } from '../../src/libs/audit-engine/index.js';
 import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
 import AuditTestContext from './auditTestContext.js';
@@ -39,6 +40,15 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
     warnings: new Array<RuleComponentMessage>(),
     errors: [],
   };
+}
+
+export function setRoleInClassification(role: string, maybeProfileLikes?: RoledEntityMap): void {
+  if (maybeProfileLikes) {
+    for (const profile of Object.values(maybeProfileLikes)) {
+      // eslint-disable-next-line no-param-reassign
+      profile.role = role;
+    }
+  }
 }
 
 export function parsePermSetFromFile(permSetName: string): PermissionSet {

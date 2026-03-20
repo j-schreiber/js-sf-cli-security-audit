@@ -142,11 +142,14 @@ function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
   const dirSaveResults: Record<string, FileResult<unknown>> = {};
   for (const [fileName, fileDefinition] of Object.entries(conf.dirDefinition.files)) {
     const maybeContent = conf.dirContent[fileName];
+    const filePath = path.join(conf.targetPath, `${fileName}.yml`);
     if (maybeContent) {
-      const filePath = path.join(conf.targetPath, `${fileName}.yml`);
       const entitiesCount = fileDefinition.entities ? countEntities(maybeContent[fileDefinition.entities]) : 0;
       dirSaveResults[fileName] = { filePath, content: maybeContent, totalEntities: entitiesCount };
       fs.writeFileSync(filePath, yaml.dump(maybeContent));
+    } else if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath);
+      dirSaveResults[fileName] = { filePath, content: undefined, totalEntities: 0 };
     }
   }
   return dirSaveResults;

@@ -85,6 +85,7 @@ const baseShape = {
 } as const satisfies AuditConfigShapeDefinition;
 
 const extendedShape = {
+  definitions: baseShape.definitions,
   classifications: baseShape.classifications,
   policies: baseShape.policies,
   acceptedRisks: {
@@ -375,14 +376,60 @@ describe('file manager', () => {
         path.join(DEFAULT_TEST_OUTPUT_DIR, 'acceptedRisks', 'users', 'NoOtherApexApiLogins.yml')
       );
       expect(saveResult.acceptedRisks.users.NoOtherApexApiLogins.content).to.deep.equal(noApexLoginsContent);
-      const noLoginsContent = fs.readFileSync(apexLoginsPath, 'utf-8');
-      expect(yaml.load(noLoginsContent)).to.deep.equal(noApexLoginsContent);
+      assertFileContentEquals(apexLoginsPath, noApexLoginsContent);
 
       const testRulePath = saveResult.acceptedRisks.profiles.TestRule.filePath;
       expect(testRulePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'acceptedRisks', 'profiles', 'TestRule.yml'));
       expect(saveResult.acceptedRisks.profiles.TestRule.content).to.deep.equal(testRuleContent);
-      const actualTestRuleContent = fs.readFileSync(testRulePath, 'utf-8');
-      expect(yaml.load(actualTestRuleContent)).to.deep.equal(testRuleContent);
+      assertFileContentEquals(testRulePath, testRuleContent);
+    });
+
+    it('saves existing role definitions to disk', () => {
+      // Arrange
+      const roleDefs = {
+        Ops: {
+          allowedPermissions: ['ApiEnabled', 'ViewSetup'],
+          allowedClassifications: ['Critical'],
+        },
+        Standard: {
+          allowedClassifications: ['Low'],
+        },
+      };
+
+      // Act
+      const fm = new FileManager(baseShape);
+      const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
+        definitions: {
+          roles: roleDefs,
+        },
+      });
+
+      // Assert
+      const defsSaveResult = saveResult.definitions.roles;
+      expect(defsSaveResult.filePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'definitions', 'roles.yml'));
+      assertFileContentEquals(defsSaveResult.filePath, roleDefs);
+    });
+
+    it('wipes existing role definitions on disk if none exist', () => {
+      // Arrange
+      const rolesPath = arrangeRoleDefinitions(
+        { MyRole: { allowedPermissions: ['TestPerm'] } },
+        DEFAULT_TEST_OUTPUT_DIR
+      );
+
+      // Act
+      const fm = new FileManager(baseShape);
+      const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
+        definitions: {
+          roles: undefined,
+        },
+      });
+
+      // Assert
+      const defsSaveResult = saveResult.definitions.roles;
+      assert.isDefined(defsSaveResult);
+      expect(defsSaveResult.content).to.be.undefined;
+      expect(fs.existsSync(rolesPath)).to.be.false;
     });
   });
 });
@@ -402,4 +449,18 @@ function wrapProfileDependencies(deps: ConfigFileDependency[]): AuditConfigShape
       },
     },
   };
+}
+
+function assertFileContentEquals(filePath: string, expectedContent: unknown) {
+  expect(fs.existsSync(filePath)).to.be.true;
+  const actualFileContent = fs.readFileSync(filePath, 'utf-8');
+  const parsedContent = yaml.load(actualFileContent);
+  expect(parsedContent).to.deep.equal(expectedContent);
+}
+
+function arrangeRoleDefinitions(roleContent: unknown, auditConfigDir: string): string {
+  const rolesPath = path.join(auditConfigDir, 'definitions', 'roles.yml');
+  fs.mkdirSync(path.join(auditConfigDir, 'definitions'), { recursive: true });
+  fs.writeFileSync(rolesPath, yaml.dump(roleContent));
+  return rolesPath;
 }
