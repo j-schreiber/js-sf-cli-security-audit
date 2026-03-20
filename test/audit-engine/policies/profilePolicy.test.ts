@@ -20,21 +20,17 @@ describe('policy - profiles', () => {
   let defaultConfig: PolicyConfig;
 
   beforeEach(async () => {
-    $$.mockAuditConfig.classifications = {
-      profiles: {
-        profiles: {
-          'System Administrator': {
-            role: UserPrivilegeLevel.ADMIN,
-          },
-          'Standard User': {
-            role: UserPrivilegeLevel.STANDARD_USER,
-          },
-          'Custom Profile': {
-            role: UserPrivilegeLevel.POWER_USER,
-          },
-        },
+    $$.mockProfileClassifications({
+      'System Administrator': {
+        role: UserPrivilegeLevel.ADMIN,
       },
-    };
+      'Standard User': {
+        role: UserPrivilegeLevel.STANDARD_USER,
+      },
+      'Custom Profile': {
+        role: UserPrivilegeLevel.POWER_USER,
+      },
+    });
     defaultConfig = {
       enabled: true,
       rules: {
@@ -126,7 +122,7 @@ describe('policy - profiles', () => {
   });
 
   describe('rule execution', () => {
-    describe('EnforcePermissionClassifications', () => {
+    describe('EnforcePermissionClassifications (Legacy Roles)', () => {
       it('reports error in custom perms if permission classification does not match preset', async () => {
         // Arrange
         defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
@@ -155,57 +151,65 @@ describe('policy - profiles', () => {
           },
         ]);
       });
+    });
 
-      it('audits permissions based on custom role definition', async () => {
-        // Arrange
-        defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ApiEnabled: { classification: PermissionRiskLevel.CRITICAL },
-          },
-        };
+    describe('EnforcePermissionClassifications (Modern Roles)', () => {
+      beforeEach(() => {
         $$.mockRoleDefinitions({
-          Dev: {
-            allowedClassifications: [PermissionRiskLevel.CRITICAL],
+          Operations: {
+            allowedClassifications: [PermissionRiskLevel.CRITICAL, PermissionRiskLevel.HIGH],
           },
-          Standard: {
-            allowedClassifications: [PermissionRiskLevel.LOW],
-          },
+          'Allows Nothing': {},
         });
         $$.mockProfileClassifications({
           'System Administrator': {
-            role: 'Dev',
+            role: 'Operations',
           },
           'Standard User': {
-            role: 'Standard',
+            role: 'Allows Nothing',
           },
         });
+        $$.mockAuditConfig.classifications.userPermissions = {
+          permissions: {
+            ViewSetup: { classification: PermissionRiskLevel.CRITICAL },
+            ApiEnabled: { classification: PermissionRiskLevel.UNKNOWN },
+          },
+        };
+        defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
+      });
 
+      it('reports violations for profiles that contain user permissions that are not allowed', async () => {
         // Act
         const policyResult = await resolveAndRun('profiles', $$);
 
         // Assert
+        expect(policyResult.auditedEntities).to.deep.equal(['System Administrator', 'Standard User']);
         const ruleResult = policyResult.executedRules.EnforcePermissionClassifications;
+        // aggregate from unclassified perms from all profiles
+        expect(ruleResult.warnings).to.have.lengthOf(261);
+        for (const warning of ruleResult.warnings) {
+          expect(warning.message).to.equal(ruleMessages.getMessage('warnings.permission-not-classified'));
+        }
         expect(ruleResult.violations).to.deep.equal([
           {
+            identifier: ['System Administrator', 'ApiEnabled'],
+            message: mismatchMessage('Unknown', 'Operations'),
+          },
+          {
             identifier: ['Standard User', 'ApiEnabled'],
-            message: ruleMessages.getMessage('violations.classification-preset-mismatch', ['Critical', 'Standard']),
+            message: mismatchMessage('Unknown', 'Allows Nothing'),
+          },
+          {
+            identifier: ['Standard User', 'ViewSetup'],
+            message: mismatchMessage('Critical', 'Allows Nothing'),
           },
         ]);
       });
 
       it('reports error if profile role is not an actual defined role in audit config', async () => {
         // Arrange
-        $$.mockRoleDefinitions({
-          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
-        });
-        $$.mockProfileClassifications({
-          'System Administrator': {
-            role: 'Dev',
-          },
-          'Standard User': {
-            role: 'Standard',
-          },
+        $$.mockProfileClassification('System Administrator', {
+          role: 'Dev',
         });
 
         // Act
@@ -367,3 +371,7 @@ describe('policy - profiles', () => {
     });
   });
 });
+
+function mismatchMessage(permClassification: string, roleName: string): string {
+  return ruleMessages.getMessage('violations.classification-preset-mismatch', [permClassification, roleName]);
+}

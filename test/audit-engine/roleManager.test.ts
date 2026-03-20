@@ -159,6 +159,16 @@ describe('role manager', () => {
       // Assert
       expect(rm.allowsPermission('My Custom Role', 'ViewPublicListViews')).to.be.false;
     });
+
+    it('denies all permissions for empty custom role (that allows nothing)', () => {
+      // Act
+      const rm = new RoleManager({ MyEmptyRole: {} }, { userPermissions });
+
+      // Assert
+      for (const permName of Object.keys(userPermissions)) {
+        expect(rm.allowsPermission('MyEmptyRole', permName)).to.be.false;
+      }
+    });
   });
 
   describe('compare', () => {
