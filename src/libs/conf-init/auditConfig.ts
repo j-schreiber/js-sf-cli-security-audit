@@ -35,7 +35,7 @@ export default class AuditConfig {
    * @param con
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
-    const conf: AuditRunConfig = { classifications: {}, policies: {}, acceptedRisks: {} };
+    const conf: AuditRunConfig = { classifications: {}, policies: {}, acceptedRisks: {}, definitions: {} };
     for (const [className, classInitDef] of Object.entries(ClassificationInitDefinitions)) {
       // eslint-disable-next-line no-await-in-loop
       const defaultClassification = await classInitDef.initialiser(targetCon, opts?.preset);

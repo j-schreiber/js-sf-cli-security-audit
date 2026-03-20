@@ -6,11 +6,13 @@ import { assert, expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import FileManager from '../../src/libs/audit-engine/file-manager/fileManager.js';
 import {
+  RefineError,
   AuditConfigShapeDefinition,
   ConfigFileDependency,
+  ExtractAuditConfigTypes,
 } from '../../src/libs/audit-engine/file-manager/fileManager.types.js';
 import { MOCK_DATA_BASE_PATH } from '../mocks/data/paths.js';
-import { AcceptedRisksSchema } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { AcceptedRisksSchema, RoleDefinitionsFileSchema } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -41,6 +43,11 @@ function buildPath(dirName: string) {
  * does not work.
  */
 const baseShape = {
+  definitions: {
+    files: {
+      roles: { schema: RoleDefinitionsFileSchema },
+    },
+  },
   classifications: {
     files: {
       userPermissions: {
@@ -78,6 +85,7 @@ const baseShape = {
 } as const satisfies AuditConfigShapeDefinition;
 
 const extendedShape = {
+  definitions: baseShape.definitions,
   classifications: baseShape.classifications,
   policies: baseShape.policies,
   acceptedRisks: {
@@ -111,6 +119,24 @@ const extendedShape = {
     },
   },
 } satisfies AuditConfigShapeDefinition;
+
+const validator = (parseResult: ExtractAuditConfigTypes<typeof baseShape>) => {
+  const errors: RefineError[] = [];
+  if (parseResult.definitions.roles && parseResult.classifications.profiles) {
+    for (const [profileName, profile] of Object.entries(parseResult.classifications.profiles.profiles)) {
+      if (!parseResult.definitions.roles[profile.role]) {
+        errors.push({ message: `Invalid role ${profile.role} for profile`, path: ['profiles', profileName] });
+      }
+    }
+  }
+  if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
+    errors.push({
+      message: 'Config invalid or empty. Needs one policy.',
+      path: ['policies'],
+    });
+  }
+  return errors;
+};
 
 describe('file manager', () => {
   describe('parsing', () => {
@@ -147,12 +173,16 @@ describe('file manager', () => {
     it('throws error if config does not satisfy minimum criteria', () => {
       // Act
       const dirPath = buildPath('empty');
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(baseShape, validator);
 
       // Assert
       // assert against the message, not the complete error. Otherwise, stack will
       // always be different and assert will fail
-      const expectedError = messages.getMessage('NoAuditConfigFound', [dirPath]);
+      const expectedError = messages.getMessage('error.FailedToValidateAuditConfig', [
+        dirPath,
+        'Config invalid or empty. Needs one policy.',
+        'policies',
+      ]);
       expect(() => fm.parse(dirPath)).to.throw(expectedError);
     });
 
@@ -228,6 +258,33 @@ describe('file manager', () => {
       assert.isDefined(conf.acceptedRisks.users);
       assert.isDefined(conf.acceptedRisks.users.EnforcePermissionClassifications);
       assert.isDefined(conf.acceptedRisks.users.NoInactiveUsers);
+    });
+
+    it('parses role definition from config file if it exists', () => {
+      // Act
+      const fm = new FileManager(baseShape, validator);
+      const conf = fm.parse(buildPath('custom-roles'));
+
+      // Assert
+      assert.isDefined(conf.definitions.roles);
+      expect(Object.keys(conf.definitions.roles)).to.deep.equal([
+        'DeployEntity',
+        'IntegrationUser',
+        'Developer',
+        'Ops',
+        'Standard',
+      ]);
+      expect(conf.definitions.roles.DeployEntity.deniedPermissions).to.deep.equal(['ViewAllData', 'ModifyAllData']);
+      assert.isDefined(conf.classifications.profiles);
+      expect(conf.classifications.profiles.profiles['API Only Deploy'].role).to.equal('DeployEntity');
+    });
+
+    it('runs custom validation logic on profiles classification', () => {
+      // Arrange
+      const fm = new FileManager(baseShape, validator);
+
+      // Assert
+      expect(() => fm.parse(buildPath('custom-roles-invalid'))).to.throw('Invalid role Admin for profile');
     });
   });
 
@@ -319,14 +376,60 @@ describe('file manager', () => {
         path.join(DEFAULT_TEST_OUTPUT_DIR, 'acceptedRisks', 'users', 'NoOtherApexApiLogins.yml')
       );
       expect(saveResult.acceptedRisks.users.NoOtherApexApiLogins.content).to.deep.equal(noApexLoginsContent);
-      const noLoginsContent = fs.readFileSync(apexLoginsPath, 'utf-8');
-      expect(yaml.load(noLoginsContent)).to.deep.equal(noApexLoginsContent);
+      assertFileContentEquals(apexLoginsPath, noApexLoginsContent);
 
       const testRulePath = saveResult.acceptedRisks.profiles.TestRule.filePath;
       expect(testRulePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'acceptedRisks', 'profiles', 'TestRule.yml'));
       expect(saveResult.acceptedRisks.profiles.TestRule.content).to.deep.equal(testRuleContent);
-      const actualTestRuleContent = fs.readFileSync(testRulePath, 'utf-8');
-      expect(yaml.load(actualTestRuleContent)).to.deep.equal(testRuleContent);
+      assertFileContentEquals(testRulePath, testRuleContent);
+    });
+
+    it('saves existing role definitions to disk', () => {
+      // Arrange
+      const roleDefs = {
+        Ops: {
+          allowedPermissions: ['ApiEnabled', 'ViewSetup'],
+          allowedClassifications: ['Critical'],
+        },
+        Standard: {
+          allowedClassifications: ['Low'],
+        },
+      };
+
+      // Act
+      const fm = new FileManager(baseShape);
+      const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
+        definitions: {
+          roles: roleDefs,
+        },
+      });
+
+      // Assert
+      const defsSaveResult = saveResult.definitions.roles;
+      expect(defsSaveResult.filePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'definitions', 'roles.yml'));
+      assertFileContentEquals(defsSaveResult.filePath, roleDefs);
+    });
+
+    it('wipes existing role definitions on disk if none exist', () => {
+      // Arrange
+      const rolesPath = arrangeRoleDefinitions(
+        { MyRole: { allowedPermissions: ['TestPerm'] } },
+        DEFAULT_TEST_OUTPUT_DIR
+      );
+
+      // Act
+      const fm = new FileManager(baseShape);
+      const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
+        definitions: {
+          roles: undefined,
+        },
+      });
+
+      // Assert
+      const defsSaveResult = saveResult.definitions.roles;
+      assert.isDefined(defsSaveResult);
+      expect(defsSaveResult.content).to.be.undefined;
+      expect(fs.existsSync(rolesPath)).to.be.false;
     });
   });
 });
@@ -346,4 +449,18 @@ function wrapProfileDependencies(deps: ConfigFileDependency[]): AuditConfigShape
       },
     },
   };
+}
+
+function assertFileContentEquals(filePath: string, expectedContent: unknown) {
+  expect(fs.existsSync(filePath)).to.be.true;
+  const actualFileContent = fs.readFileSync(filePath, 'utf-8');
+  const parsedContent = yaml.load(actualFileContent);
+  expect(parsedContent).to.deep.equal(expectedContent);
+}
+
+function arrangeRoleDefinitions(roleContent: unknown, auditConfigDir: string): string {
+  const rolesPath = path.join(auditConfigDir, 'definitions', 'roles.yml');
+  fs.mkdirSync(path.join(auditConfigDir, 'definitions'), { recursive: true });
+  fs.writeFileSync(rolesPath, yaml.dump(roleContent));
+  return rolesPath;
 }

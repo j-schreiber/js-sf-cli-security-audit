@@ -3,6 +3,7 @@ import {
   PermissionSetsClassificationFileSchema,
   PolicyFileSchema,
   ProfilesClassificationFileSchema,
+  RoleDefinitionsFileSchema,
   UserClassificationFileSchema,
   UserPolicyFileSchema,
 } from './schema.js';
@@ -13,6 +14,11 @@ import {
  * the audit config that is used by rules and policies.
  */
 export const BaseAuditConfigShape = {
+  definitions: {
+    files: {
+      roles: { schema: RoleDefinitionsFileSchema },
+    },
+  },
   classifications: {
     files: {
       userPermissions: {

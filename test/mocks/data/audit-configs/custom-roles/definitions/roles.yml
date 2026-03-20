@@ -1,0 +1,25 @@
+DeployEntity:
+  allowedClassifications:
+    - Critical
+  deniedPermissions:
+    - ViewAllData
+    - ModifyAllData
+IntegrationUser:
+  allowedClassifications:
+    - Medium
+  allowedPermissions:
+    - ViewAllData
+Developer:
+  allowedClassifications:
+    - Critical
+    - High
+    - Medium
+    - Low
+Ops:
+  allowedClassifications:
+    - High
+    - Medium
+    - Low
+Standard:
+  allowedClassifications:
+    - Low

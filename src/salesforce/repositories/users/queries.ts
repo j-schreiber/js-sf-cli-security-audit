@@ -2,10 +2,6 @@ import { joinToSoqlIN } from '../../utils.js';
 
 export const USERS_QUERY = buildUsersQuery();
 
-// DYNAMIC QUERIES
-export const buildPermsetAssignmentsQuery = (userIds: string[]): string =>
-  `${USERS_PERMSET_ASSIGNMENTS_QUERY} AND AssigneeId IN (${userIds.map((userId) => `'${userId}'`).join(',')})`;
-
 /**
  * Builds aggregate query for login history. Query is expected to
  * throw an exception, if too many rows are returned. The chunking
@@ -39,5 +35,3 @@ function buildUsersQuery(): string {
 // BASE QUERIES
 const USERS_LOGIN_HISTORY_QUERY =
   'SELECT LoginType,Application,UserId,COUNT(Id)LoginCount,MAX(LoginTime)LastLogin FROM LoginHistory';
-const USERS_PERMSET_ASSIGNMENTS_QUERY =
-  'SELECT AssigneeId,PermissionSet.Name FROM PermissionSetAssignment WHERE PermissionSet.IsOwnedByProfile = FALSE AND PermissionSet.NamespacePrefix = NULL';

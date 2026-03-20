@@ -5,11 +5,7 @@ import { AnyJson, isString } from '@salesforce/ts-types';
 import { TestContext } from '@salesforce/core/testSetup';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
 import { copyDir } from '@salesforce/packaging/lib/utils/packageUtils.js';
-import {
-  buildPermsetAssignmentsQuery,
-  buildScopedLoginHistoryQuery,
-  USERS_QUERY,
-} from '../../src/salesforce/repositories/users/queries.js';
+import { buildScopedLoginHistoryQuery, USERS_QUERY } from '../../src/salesforce/repositories/users/queries.js';
 import { CUSTOM_PERMS_QUERY } from '../../src/salesforce/describes/orgDescribe.types.js';
 import { buildProfilesQuery } from '../../src/salesforce/repositories/profiles/queries.js';
 import { PERMISSION_SETS_QUERY } from '../../src/salesforce/repositories/perm-sets/queries.js';
@@ -185,17 +181,6 @@ export default class SfConnectionMocks {
         this.mockedUsers[user.Id] = user as SfMinimalUser;
       }
     }
-  }
-
-  /**
-   * Results for permission set assignments. The actual assigneeIds are in the
-   * results file - the method param only sets the mock for query id.
-   *
-   * @param resultFile
-   * @param assigneeIds
-   */
-  public mockPermsetAssignments(resultFile: string, assigneeIds: string[]): void {
-    this.setQueryMock(buildPermsetAssignmentsQuery(assigneeIds), resultFile);
   }
 
   public mockPermissionSets(resultFile: string): void {

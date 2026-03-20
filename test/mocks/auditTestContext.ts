@@ -8,6 +8,7 @@ import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
   ProfileClassifications,
+  RoleDefinitions,
   UserClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
@@ -31,8 +32,8 @@ export default class AuditTestContext {
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
-  public mocks!: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+  public mocks: SfConnectionMocks;
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -65,10 +66,19 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {} };
+    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
     MDAPI.clearCache();
     resetAllEnvironmentVars();
     initDefaultMocks(this.mocks);
+  }
+
+  /**
+   * Replaces the entire role definitions
+   *
+   * @param roles
+   */
+  public mockRoleDefinitions(roles?: RoleDefinitions): void {
+    this.mockAuditConfig.definitions.roles = roles;
   }
 
   /**
@@ -139,6 +149,7 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   };
   mocks.prepareMocks(defaults);
   mocks.mockCustomPermissions('custom-permissions');
+  // active users, but wipe all permission set assignments
   mocks.mockUsers('active-user-details', (record) => ({ ...record, PermissionSetAssignments: null }));
   mocks.mockProfiles('profiles');
   mocks.mockProfiles('profiles', ['System Administrator', 'Standard User', 'Custom Profile']);
