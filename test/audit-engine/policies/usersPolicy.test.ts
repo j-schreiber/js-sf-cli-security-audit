@@ -45,7 +45,6 @@ describe('policy - users', () => {
       IsActive: isActive,
       Profile: { Name: profileName },
     }));
-    $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
   }
 
   beforeEach(async () => {
@@ -93,7 +92,6 @@ describe('policy - users', () => {
 
     it('ignores users with UNKNOWN role in resolve', async () => {
       // Arrange
-      $$.mocks.mockPermsetAssignments('test-user-assignments', ['005Pl000001p3HqIAI', '0054P00000AaGueQAF']);
       $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
@@ -339,7 +337,6 @@ describe('policy - users', () => {
     });
 
     describe('EnforcePermissionClassifications', () => {
-      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
       let localUsersPolicyConfig: UserPolicyConfig;
 
       beforeEach(() => {
@@ -353,8 +350,7 @@ describe('policy - users', () => {
           },
         };
         $$.mockAuditConfig.policies.users = localUsersPolicyConfig;
-        // no assignments for guest user and test-user-1, only for test-user-2 (admin)
-        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
+        $$.mocks.mockUsers('active-user-details');
       });
 
       it('reports compliance if user role allows all assigned permissions', async () => {
@@ -523,8 +519,6 @@ describe('policy - users', () => {
     });
 
     describe('EnforcePermissionPresets (Legacy Roles)', () => {
-      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
-
       beforeEach(() => {
         $$.mockAuditConfig.policies.users = {
           enabled: true,
@@ -535,8 +529,6 @@ describe('policy - users', () => {
             defaultRoleForMissingUsers: UserPrivilegeLevel.STANDARD_USER,
           },
         };
-        // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
         $$.mockPermSetClassifications({
@@ -558,6 +550,7 @@ describe('policy - users', () => {
             role: UserPrivilegeLevel.STANDARD_USER,
           },
         });
+        $$.mocks.mockUsers('active-user-details');
       });
 
       it('reports compliance if user has only permission sets assigned that match their role', async () => {
@@ -657,7 +650,6 @@ describe('policy - users', () => {
     });
 
     describe('EnforcePermissionPresets (Modern Roles)', () => {
-      const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
       let localPolicyConfig: UserPolicyConfig;
 
       beforeEach(() => {
@@ -687,9 +679,6 @@ describe('policy - users', () => {
         $$.mockAuditConfig.policies.users = localPolicyConfig;
         $$.mockAuditConfig.classifications.users = { users: {} };
 
-        // no assignments for guest user and user 1, only for test-user-2 (admin)
-        $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
-
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
         $$.mockPermSetClassifications({
@@ -711,13 +700,12 @@ describe('policy - users', () => {
             role: 'Standard',
           },
         });
+        $$.mocks.mockUsers('active-user-details');
       });
 
-      it('reports compliance if user has assignments that are included in custom role', async () => {
-        // Arrange
-        localPolicyConfig.options.defaultRoleForMissingUsers = 'Operations';
-
+      it('reports compliance if user has assignments that are allowed for their role', async () => {
         // Act
+        localPolicyConfig.options.defaultRoleForMissingUsers = 'Operations';
         const result = await resolveAndRun('users', $$);
 
         // Assert
@@ -726,11 +714,9 @@ describe('policy - users', () => {
         expect(ruleResult.violations).to.deep.equal([]);
       });
 
-      it('reports violation if user has assignments that are not included in custom role', async () => {
-        // Arrange
-        localPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
-
+      it('reports violation if user has assignments that are not allowed for their role', async () => {
         // Act
+        localPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
         const result = await resolveAndRun('users', $$);
 
         // Assert
@@ -869,7 +855,6 @@ describe('policy - users', () => {
           Username: username,
           Profile: { Name: profileName },
         }));
-        $$.mocks.mockPermsetAssignments('empty', ['005000000000000AAA']);
 
         // Act
         const result = await resolveAndRun('users', $$);

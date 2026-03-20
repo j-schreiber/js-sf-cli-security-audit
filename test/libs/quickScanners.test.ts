@@ -7,6 +7,7 @@ describe('quick scanners', () => {
 
   beforeEach(async () => {
     $$.mocks.mockPermissionSets('resolvable-permission-sets');
+    $$.mocks.mockUsers('active-user-details');
     await $$.init();
   });
 
@@ -34,13 +35,6 @@ describe('quick scanners', () => {
     });
 
     it('includes user permissions in scan result when deepScan is enabled', async () => {
-      // Arrange
-      $$.mocks.mockPermsetAssignments('test-user-assignments', [
-        '0054P00000AYPYXQA5',
-        '005Pl000001p3HqIAI',
-        '0054P00000AaGueQAF',
-      ]);
-
       // Act
       const scanner = new UserPermissionScanner();
       const result = await scanner.quickScan({

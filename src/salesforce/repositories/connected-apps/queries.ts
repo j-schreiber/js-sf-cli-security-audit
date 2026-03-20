@@ -1,3 +1,5 @@
+import { joinToSoqlIN } from '../../utils.js';
+
 export const CONNECTED_APPS_QUERY = 'SELECT Id,Name,OptionsAllowAdminApprovedUsersOnly FROM ConnectedApplication';
 export const ALL_EXISTING_USER_IDS = 'SELECT Id FROM User';
 export const EXTERNAL_CLIENT_APPS_QUERY =
@@ -13,8 +15,4 @@ export function formatCountSoql(userIds: string[]): string {
 
 export function formatTokenSoql(userIds: string[]): string {
   return `${OAUTH_TOKEN_QUERY} WHERE UserId IN (${joinToSoqlIN(userIds)})`;
-}
-
-function joinToSoqlIN(userIds: string[]): string {
-  return userIds.map((id) => `'${id}'`).join(',');
 }

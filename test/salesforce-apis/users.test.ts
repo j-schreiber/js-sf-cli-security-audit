@@ -5,8 +5,6 @@ import { parsePermSetFromFile, parseProfileFromFile } from '../mocks/testHelpers
 
 describe('users resolve', () => {
   const $$ = new AuditTestContext();
-  // directly copied from "query-result-records/active-users.json"
-  const testUserIds = ['0054P00000AYPYXQA5', '005Pl000001p3HqIAI', '0054P00000AaGueQAF'];
 
   beforeEach(async () => {
     await $$.init();
@@ -55,8 +53,7 @@ describe('users resolve', () => {
 
   it('resolves assigned permission sets to existing users from target org', async () => {
     // Arrange
-    // has assignments for test-user-2@example.de
-    $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
+    $$.mocks.mockUsers('active-user-details');
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -75,8 +72,7 @@ describe('users resolve', () => {
 
   it('resolves users with permission set assignments with metadata from target org', async () => {
     // Arrange
-    // has assignments for test-user-2@example.de
-    $$.mocks.mockPermsetAssignments('test-user-assignments', testUserIds);
+    $$.mocks.mockUsers('active-user-details');
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -101,7 +97,7 @@ describe('users resolve', () => {
 
   it('resolves empty list of assignments for all users if they have no assignments', async () => {
     // Arrange
-    $$.mocks.mockPermsetAssignments('empty', testUserIds);
+    $$.mocks.mockUsers('active-user-details', (record) => ({ ...record, PermissionSetAssignments: null }));
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -115,7 +111,7 @@ describe('users resolve', () => {
 
   it('resolves profile metadata for user if resolved with metadata', async () => {
     // Arrange
-    $$.mocks.mockPermsetAssignments('empty', testUserIds);
+    $$.mocks.mockUsers('active-user-details');
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -134,7 +130,7 @@ describe('users resolve', () => {
 
   it('includes inactive users when flag is set', async () => {
     // Arrange
-    $$.mocks.mockUsers('all-user-details', undefined, false);
+    $$.mocks.mockUsers('all-user-details', undefined);
 
     // Act
     const repo = new Users($$.targetOrgConnection);
@@ -145,5 +141,28 @@ describe('users resolve', () => {
     const inactiveUser = users.get('guest-user@example.de');
     assert.isDefined(inactiveUser);
     expect(inactiveUser.isActive).to.be.false;
+  });
+
+  it('reduces users batch size for logins when initial query throws EXCEEDED_ID_LIMIT', async () => {
+    // Arrange
+    // default query with all users in context
+    const { queryString } = $$.mocks.mockLoginHistory('logins-with-browser-only');
+    $$.mocks.queryErrors[queryString] = { errorCode: 'EXCEEDED_ID_LIMIT' };
+    // recursive batch-reduce uses Math.floor(), so 3 users create chunkSize = 1
+    for (const userId of Object.keys($$.mocks.mockedUsers)) {
+      $$.mocks.mockLoginHistory('empty', undefined, [userId]);
+    }
+
+    // Act
+    const repo = new Users($$.targetOrgConnection);
+    const users = await repo.resolve({ withLoginHistory: true });
+
+    // Assert
+    expect(users.size).to.equal(3);
+    for (const user of users.values()) {
+      // explicitly mocked results for each user id was "empty"
+      // the initial mock for all users is not used
+      expect(user.logins).to.deep.equal([]);
+    }
   });
 });

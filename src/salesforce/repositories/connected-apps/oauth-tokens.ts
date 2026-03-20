@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { Connection, Messages } from '@salesforce/core';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { envVars } from '../../../ux/environment.js';
+import { chunkArray } from '../../utils.js';
 import { SfMinimalUser, SfOauthToken } from './connected-app.types.js';
 import {
   ALL_EXISTING_USER_IDS,
@@ -60,7 +61,7 @@ export default class OAuthTokens extends EventEmitter {
   }
 
   private async batchQueryTokens(allUserIds: string[], options: QueryOptions): Promise<SfOauthToken[]> {
-    const userIdChunks = chunkUserIds(allUserIds, options.startingBatchSize);
+    const userIdChunks = chunkArray(allUserIds, options.startingBatchSize);
     const queryPromises = userIdChunks.map((idChunk) => this.fetchTokenChunk(idChunk, options));
     const results = await Promise.all(queryPromises);
     return results.flat();
@@ -70,7 +71,7 @@ export default class OAuthTokens extends EventEmitter {
     const countResult = await this.con.query(formatCountSoql(userIds));
     if (countResult.totalSize > options.totalSizeThreshold && options.startingBatchSize > 1) {
       const reducedChunkSize = Math.floor(options.startingBatchSize / 2);
-      const subChunks = chunkUserIds(userIds, reducedChunkSize);
+      const subChunks = chunkArray(userIds, reducedChunkSize);
       const subResultProms = subChunks.map((chunk) =>
         this.fetchTokenChunk(chunk, {
           totalSizeThreshold: options.totalSizeThreshold,
@@ -99,12 +100,4 @@ export default class OAuthTokens extends EventEmitter {
     }
     return userResult.records.map((userRecord) => userRecord.Id);
   }
-}
-
-function chunkUserIds(userIds: string[], chunkSize: number): string[][] {
-  const chunks = [];
-  for (let i = 0; i < userIds.length; i += chunkSize) {
-    chunks.push(userIds.slice(i, i + chunkSize));
-  }
-  return chunks;
 }
