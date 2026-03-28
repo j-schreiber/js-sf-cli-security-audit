@@ -10,7 +10,6 @@ import {
   UserPrivilegeLevel,
 } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import { resolve, resolveAndRun } from '../../mocks/testHelpers.js';
-import { OrgDescribe } from '../../../src/salesforce/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -109,12 +108,7 @@ describe('policy - users', () => {
     it('reports all users from org as total users', async () => {
       // Act
       const resolveListener = $$.context.SANDBOX.stub();
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      pol.addListener('entityresolve', resolveListener);
-      await pol.resolve({
-        targetOrgConnection: $$.targetOrgConnection,
-        orgDescribe: await OrgDescribe.create($$.targetOrgConnection),
-      });
+      await resolve('users', $$, resolveListener);
 
       // Assert
       expect(resolveListener.callCount).to.equal(3);

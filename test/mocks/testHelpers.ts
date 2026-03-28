@@ -45,9 +45,13 @@ export async function resolveAndRun(policy: Policies, context: AuditTestContext)
 
 export async function resolve<P extends Policies>(
   policy: P,
-  context: AuditTestContext
+  context: AuditTestContext,
+  resolveListener?: () => void
 ): Promise<ResolveEntityResult<PolicyEntity<P>>> {
   const pol = loadPolicy(policy, context.mockAuditConfig);
+  if (resolveListener) {
+    pol.addListener('entityresolve', resolveListener);
+  }
   const orgDescribe = await OrgDescribe.create(context.targetOrgConnection);
   const resolveResult = await pol.resolve({
     targetOrgConnection: context.targetOrgConnection,
