@@ -224,6 +224,31 @@ describe('policy - profiles', () => {
           },
         ]);
       });
+
+      it('reports warning if a used role defines an invalid permission', async () => {
+        // Arrange
+        $$.mockRoleDefinitions({
+          Operations: {
+            allowedPermissions: ['CustomizeApplication', 'UnknownPermName'],
+            deniedPermissions: ['ApiEnabled'],
+          },
+        });
+
+        // Act
+        const result = await resolveAndRun('profiles', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.warnings).to.contain.deep.members([
+          {
+            identifier: ['System Administrator', 'Operations'],
+            message: ruleMessages.getMessage('warnings.role-permission-invalid-for-org', [
+              'UnknownPermName',
+              'allowedPermissions',
+            ]),
+          },
+        ]);
+      });
     });
 
     describe('EnforceLoginIpRanges', () => {

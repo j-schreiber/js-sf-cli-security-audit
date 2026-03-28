@@ -22,13 +22,9 @@ Permission classified as UNKNOWN. Update classification to LOW or higher to reso
 
 Permission is assigned, but was not found in classification. Refresh or add manually.
 
-# warnings.permission-not-classified-in-profile
+# warnings.role-permission-invalid-for-org
 
-Profile assigns the permission, but it was not found in classification. Refresh or add manually.
-
-# warnings.permission-not-classified-in-permission-set
-
-PermissionSet assigns the permission, but it was not found in classification. Refresh or add manually.
+Permission %s in %s does not exist on Org.
 
 # error.failed-to-resolve-role
 

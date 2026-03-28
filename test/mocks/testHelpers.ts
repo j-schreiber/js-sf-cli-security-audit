@@ -15,9 +15,16 @@ import {
 } from '../../src/libs/audit-engine/registry/result.types.js';
 import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
 import { RoledEntityMap } from '../../src/libs/audit-engine/registry/shape/schema.js';
-import { loadPolicy, Policies } from '../../src/libs/audit-engine/index.js';
+import { loadPolicy, Policies, PolicyDefinitions } from '../../src/libs/audit-engine/index.js';
+import { OrgDescribe } from '../../src/salesforce/index.js';
+import Policy, { ResolveEntityResult } from '../../src/libs/audit-engine/registry/policy.js';
+
 import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
 import AuditTestContext from './auditTestContext.js';
+
+type PolicyEntity<P extends Policies> = InstanceType<(typeof PolicyDefinitions)[P]['handler']> extends Policy<infer T>
+  ? T
+  : never;
 
 /**
  * Runs policy with the mocked audit config. Add policy config
@@ -27,9 +34,26 @@ import AuditTestContext from './auditTestContext.js';
  */
 export async function resolveAndRun(policy: Policies, context: AuditTestContext): Promise<AuditPolicyResult> {
   const pol = loadPolicy(policy, context.mockAuditConfig);
-  await pol.resolve({ targetOrgConnection: context.targetOrgConnection });
-  const partials = await pol.executeRules({ targetOrgConnection: context.targetOrgConnection });
+  const orgDescribe = await OrgDescribe.create(context.targetOrgConnection);
+  await pol.resolve({
+    targetOrgConnection: context.targetOrgConnection,
+    orgDescribe,
+  });
+  const partials = await pol.executeRules({ targetOrgConnection: context.targetOrgConnection, orgDescribe });
   return pol.finalise(partials, new AcceptedRisks(context.mockAuditConfig.acceptedRisks));
+}
+
+export async function resolve<P extends Policies>(
+  policy: P,
+  context: AuditTestContext
+): Promise<ResolveEntityResult<PolicyEntity<P>>> {
+  const pol = loadPolicy(policy, context.mockAuditConfig);
+  const orgDescribe = await OrgDescribe.create(context.targetOrgConnection);
+  const resolveResult = await pol.resolve({
+    targetOrgConnection: context.targetOrgConnection,
+    orgDescribe,
+  });
+  return resolveResult as ResolveEntityResult<PolicyEntity<P>>;
 }
 
 export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {

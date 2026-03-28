@@ -9,7 +9,8 @@ import {
   UserPolicyConfig,
   UserPrivilegeLevel,
 } from '../../../src/libs/audit-engine/registry/shape/schema.js';
-import { resolveAndRun } from '../../mocks/testHelpers.js';
+import { resolve, resolveAndRun } from '../../mocks/testHelpers.js';
+import { OrgDescribe } from '../../../src/salesforce/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -72,8 +73,7 @@ describe('policy - users', () => {
   describe('entity resolve', () => {
     it('resolves all users from config with active users on org', async () => {
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       expect(resolveResult.ignoredEntities).to.deep.equal([]);
@@ -95,8 +95,7 @@ describe('policy - users', () => {
       $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       expect(resolveResult.ignoredEntities.length).to.equal(1);
@@ -112,7 +111,10 @@ describe('policy - users', () => {
       const resolveListener = $$.context.SANDBOX.stub();
       const pol = loadPolicy('users', $$.mockAuditConfig);
       pol.addListener('entityresolve', resolveListener);
-      await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      await pol.resolve({
+        targetOrgConnection: $$.targetOrgConnection,
+        orgDescribe: await OrgDescribe.create($$.targetOrgConnection),
+      });
 
       // Assert
       expect(resolveListener.callCount).to.equal(3);
@@ -127,8 +129,7 @@ describe('policy - users', () => {
       defaultConfig.rules = { NoInactiveUsers: { enabled: true } };
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
@@ -155,8 +156,7 @@ describe('policy - users', () => {
       };
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
@@ -471,7 +471,7 @@ describe('policy - users', () => {
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
         expect(ruleResult.errors).to.deep.equal([
           {
-            identifier: ['test-user-2@example.de'],
+            identifier: ['test-user-2@example.de', 'Admin'],
             message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
           },
         ]);
@@ -513,6 +513,32 @@ describe('policy - users', () => {
           {
             identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
             message: criticalMismatchMsg('Standard'),
+          },
+        ]);
+      });
+
+      it('reports warning if a used role defines an invalid permission', async () => {
+        // Arrange
+        $$.mockAuditConfig.definitions.roles = {
+          Operations: {
+            allowedPermissions: ['CustomizeApplication', 'UnknownPermName'],
+            deniedPermissions: ['ApiEnabled'],
+          },
+        };
+        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Operations';
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.warnings).to.contain.deep.members([
+          {
+            identifier: ['test-user-1@example.de', 'Operations'],
+            message: permScanningMessages.getMessage('warnings.role-permission-invalid-for-org', [
+              'UnknownPermName',
+              'allowedPermissions',
+            ]),
           },
         ]);
       });

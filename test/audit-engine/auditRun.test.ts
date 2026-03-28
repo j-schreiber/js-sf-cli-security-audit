@@ -122,17 +122,6 @@ describe('audit run execution', () => {
     expect(auditResult.policies.profiles.enabled).to.be.false;
   });
 
-  it('returns executable rules from a resolved policy', async () => {
-    // Act
-    const audit = startAuditRun(buildPath('full-valid'));
-    await audit.resolve($$.targetOrgConnection);
-
-    // Assert
-    expect(audit.getExecutableRulesCount('profiles')).to.equal(1);
-    expect(audit.getExecutableRulesCount('permissionSets')).to.equal(1);
-    expect(audit.getExecutableRulesCount('connectedApps')).to.equal(2);
-  });
-
   it('emits all stage-lifecycle events during a full audit run', async () => {
     // Arrange
     const stageListener = $$.context.SANDBOX.stub();

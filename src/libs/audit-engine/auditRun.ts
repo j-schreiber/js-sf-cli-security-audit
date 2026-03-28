@@ -1,7 +1,7 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.types.js';
-import { ResolveLifecycle } from '../../salesforce/index.js';
+import { OrgDescribe, ResolveLifecycle } from '../../salesforce/index.js';
 import { AuditRunConfig, Policies } from './registry/definitions.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
@@ -52,9 +52,10 @@ export default class AuditRun extends EventEmitter {
    */
   public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
     this.emitStageUpdate('resolving');
-    const executablePolicies = await this.resolve(targetOrgConnection);
+    const orgDescribe = await OrgDescribe.create(targetOrgConnection);
+    const executablePolicies = await this.resolve(targetOrgConnection, orgDescribe);
     this.emitStageUpdate('executing');
-    const pendingResults = await runPolicies(executablePolicies, targetOrgConnection);
+    const pendingResults = await runPolicies(executablePolicies, targetOrgConnection, orgDescribe);
     this.emitStageUpdate('finalising');
     const result = {
       orgId: targetOrgConnection.getAuthInfoFields().orgId,
@@ -71,14 +72,14 @@ export default class AuditRun extends EventEmitter {
    *
    * @param targetOrgConnection
    */
-  public async resolve(targetOrgConnection: Connection): Promise<PolicyMap> {
+  private async resolve(targetOrgConnection: Connection, orgDescribe: OrgDescribe): Promise<PolicyMap> {
     if (this.executablePolicies) {
       return this.executablePolicies;
     }
     this.executablePolicies = this.loadPolicies();
     const resolveResultPromises: Array<Promise<ResolveEntityResult<unknown>>> = [];
     Object.values(this.executablePolicies).forEach((executable) => {
-      resolveResultPromises.push(executable.resolve({ targetOrgConnection }));
+      resolveResultPromises.push(executable.resolve({ targetOrgConnection, orgDescribe }));
     });
     await Promise.all(resolveResultPromises);
     return this.executablePolicies;
@@ -137,12 +138,16 @@ function isCompliant(results: ResultsMap): boolean {
   return list.reduce((prevVal, currentVal) => prevVal && currentVal.isCompliant, list[0].isCompliant);
 }
 
-async function runPolicies(policies: PolicyMap, targetOrgConnection: Connection): Promise<PendingPolicyResults> {
+async function runPolicies(
+  policies: PolicyMap,
+  targetOrgConnection: Connection,
+  orgDescribe: OrgDescribe
+): Promise<PendingPolicyResults> {
   const resultsArray: Array<Promise<PartialRuleResults>> = [];
   const policiesList: string[] = [];
   Object.entries(policies).forEach(([policyKey, executable]) => {
     policiesList.push(policyKey);
-    resultsArray.push(executable.executeRules({ targetOrgConnection }));
+    resultsArray.push(executable.executeRules({ targetOrgConnection, orgDescribe }));
   });
   const arrayResult = await Promise.all(resultsArray);
   const results: PendingPolicyResults = {};

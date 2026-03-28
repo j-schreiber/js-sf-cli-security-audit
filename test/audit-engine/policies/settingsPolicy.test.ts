@@ -6,6 +6,7 @@ import SettingsPolicy, { SettingsRuleRegistry } from '../../../src/libs/audit-en
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import EnforceSettings from '../../../src/libs/audit-engine/registry/rules/enforceSettings.js';
 import { resolveAndRun } from '../../mocks/testHelpers.js';
+import { OrgDescribe } from '../../../src/salesforce/index.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -151,10 +152,13 @@ describe('policy - settings', () => {
       resolveListener = $$.context.SANDBOX.stub();
     });
 
-    function resolve(conf: PolicyConfig): ReturnType<SettingsPolicy['resolve']> {
+    async function resolve(conf: PolicyConfig): Promise<ReturnType<SettingsPolicy['resolve']>> {
       const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
       pol.addListener('entityresolve', resolveListener);
-      return pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      return pol.resolve({
+        targetOrgConnection: $$.targetOrgConnection,
+        orgDescribe: await OrgDescribe.create($$.targetOrgConnection),
+      });
     }
 
     it('interprets each valid rule as an entity and resolves them in bulk', async () => {
