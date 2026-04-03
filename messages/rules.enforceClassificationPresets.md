@@ -22,10 +22,6 @@ Permission classified as UNKNOWN. Update classification to LOW or higher to reso
 
 Permission is assigned, but was not found in classification. Refresh or add manually.
 
-# warnings.role-permission-invalid-for-org
-
-Permission %s in %s does not exist on Org.
-
 # error.failed-to-resolve-role
 
 The assigned role "%s" was not valid for this audit. Check your role definitions.

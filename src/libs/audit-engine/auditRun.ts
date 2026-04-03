@@ -7,12 +7,13 @@ import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
 import { PartialRuleResults } from './registry/context.types.js';
 import AcceptedRisks from './accepted-risks/acceptedRisks.js';
+import { verifyRoleDefinitions } from './registry/shape/shapeValidation.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PendingPolicyResults = Record<string, PartialRuleResults>;
 type PolicyMap = Record<string, Policy<unknown>>;
 
-type AuditRunStage = 'resolving' | 'executing' | 'finalising' | 'completed';
+type AuditRunStage = 'initialising' | 'resolving' | 'executing' | 'finalising' | 'completed';
 
 export type AuditRunStageUpdate = {
   newStage: AuditRunStage;
@@ -34,7 +35,7 @@ export default class AuditRun extends EventEmitter {
   public constructor(config: Partial<AuditRunConfig>) {
     super();
     this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {}, definitions: {} }, ...config };
-    ResolveLifecycle.on('resolvewarning', (warning) => this.emit('resolvewarning', warning));
+    ResolveLifecycle.on('warning', (warning) => this.emit('resolvewarning', warning));
   }
 
   public getExecutableRulesCount(policyName: Policies): number {
@@ -51,8 +52,10 @@ export default class AuditRun extends EventEmitter {
    * @returns
    */
   public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
-    this.emitStageUpdate('resolving');
+    this.emitStageUpdate('initialising');
     const orgDescribe = await OrgDescribe.create(targetOrgConnection);
+    this.verifyAuditConfig(orgDescribe);
+    this.emitStageUpdate('resolving');
     const executablePolicies = await this.resolve(targetOrgConnection, orgDescribe);
     this.emitStageUpdate('executing');
     const pendingResults = await runPolicies(executablePolicies, targetOrgConnection, orgDescribe);
@@ -66,6 +69,15 @@ export default class AuditRun extends EventEmitter {
   }
 
   // PRIVATE ZONE
+
+  private verifyAuditConfig(orgDescribe: OrgDescribe): void {
+    if (this.config.definitions.roles) {
+      const roleWarnings = verifyRoleDefinitions(this.config.definitions.roles, orgDescribe);
+      for (const warning of roleWarnings) {
+        this.emit('warning', { message: `${warning.path.join(' > ')}: ${warning.message}` });
+      }
+    }
+  }
 
   /**
    * Loads all policies, resolves entities and caches the results.

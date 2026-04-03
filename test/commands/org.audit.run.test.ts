@@ -401,6 +401,23 @@ describe('org audit run', () => {
         },
       ]);
     });
+
+    it('logs audit run warnings to console and JSON output', async () => {
+      // Act
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'with-warnings'),
+      ]);
+
+      // Assert
+      const expectedWarnings = [
+        'Controls > Roles > DeployEntity > deniedPermissions > AnInvalidPerm: Permission does not exist on Org.',
+        'Controls > Roles > StandardUser > allowedPermissions > AnotherInvalidPermName: Permission does not exist on Org.',
+      ];
+      expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal(expectedWarnings);
+    });
   });
 
   describe('report file creation', () => {

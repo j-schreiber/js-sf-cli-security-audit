@@ -64,6 +64,9 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 
     auditRun.on('stageupdate', (stageUpdate: AuditRunStageUpdate) => {
       switch (stageUpdate.newStage) {
+        case 'initialising':
+          // we are already in inititialising
+          break;
         case 'resolving':
           stageOutput.startPolicyResolve(auditRun);
           break;
@@ -79,7 +82,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       }
     });
 
-    auditRun.on('resolvewarning', (warning: MessageEvent) => {
+    auditRun.on('warning', (warning: MessageEvent) => {
       this.warn(warning.message);
     });
 

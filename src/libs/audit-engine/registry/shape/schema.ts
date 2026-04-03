@@ -80,6 +80,7 @@ const RoleDefinition = z.object({
   allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
   allowedPermissions: z.array(z.string()).optional(),
   deniedPermissions: z.array(z.string()).optional(),
+  requiredPermissions: z.array(z.string()).optional(),
 });
 
 // Definition File Schemata

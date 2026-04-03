@@ -133,8 +133,11 @@ describe('audit run execution', () => {
     await audit.execute($$.targetOrgConnection);
 
     // Assert
-    expect(stageListener.callCount).to.equal(4);
+    expect(stageListener.callCount).to.equal(5);
     expect(stageListener.args.flat()).to.deep.equal([
+      {
+        newStage: 'initialising',
+      },
       {
         newStage: 'resolving',
       },

@@ -225,29 +225,25 @@ describe('policy - profiles', () => {
         ]);
       });
 
-      it('reports warning if a used role defines an invalid permission', async () => {
+      it('ignores invalid permission for a role in rule audit result', async () => {
         // Arrange
         $$.mockRoleDefinitions({
           Operations: {
-            allowedPermissions: ['CustomizeApplication', 'UnknownPermName'],
+            allowedPermissions: ['ViewSetup', 'UnknownPermName'],
             deniedPermissions: ['ApiEnabled'],
           },
+          'Allows Nothing': {},
         });
+        $$.mocks.mockProfileResolve('Standard User', 'profile-with-null-metadata');
+        $$.mocks.mockProfileResolve('System Administrator', 'slim-admin-profile');
 
         // Act
         const result = await resolveAndRun('profiles', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
-        expect(ruleResult.warnings).to.contain.deep.members([
-          {
-            identifier: ['System Administrator', 'Operations'],
-            message: ruleMessages.getMessage('warnings.role-permission-invalid-for-org', [
-              'UnknownPermName',
-              'allowedPermissions',
-            ]),
-          },
-        ]);
+        expect(ruleResult.warnings).to.deep.equal([]);
+        expect(ruleResult.errors).to.deep.equal([]);
       });
     });
 

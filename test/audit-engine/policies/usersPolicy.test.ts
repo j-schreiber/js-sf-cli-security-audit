@@ -48,11 +48,13 @@ describe('policy - users', () => {
   }
 
   beforeEach(async () => {
-    $$.mockUserClassification('guest-user@example.de', {
-      role: UserPrivilegeLevel.STANDARD_USER,
-    });
-    $$.mockUserClassification('test-user-2@example.de', {
-      role: UserPrivilegeLevel.ADMIN,
+    $$.mockUserClassifications({
+      'guest-user@example.de': {
+        role: UserPrivilegeLevel.STANDARD_USER,
+      },
+      'test-user-2@example.de': {
+        role: UserPrivilegeLevel.ADMIN,
+      },
     });
     defaultConfig = {
       enabled: true,
@@ -507,32 +509,6 @@ describe('policy - users', () => {
           {
             identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
             message: criticalMismatchMsg('Standard'),
-          },
-        ]);
-      });
-
-      it('reports warning if a used role defines an invalid permission', async () => {
-        // Arrange
-        $$.mockAuditConfig.definitions.roles = {
-          Operations: {
-            allowedPermissions: ['CustomizeApplication', 'UnknownPermName'],
-            deniedPermissions: ['ApiEnabled'],
-          },
-        };
-        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Operations';
-
-        // Act
-        const result = await resolveAndRun('users', $$);
-
-        // Assert
-        const ruleResult = result.executedRules.EnforcePermissionClassifications;
-        expect(ruleResult.warnings).to.contain.deep.members([
-          {
-            identifier: ['test-user-1@example.de', 'Operations'],
-            message: permScanningMessages.getMessage('warnings.role-permission-invalid-for-org', [
-              'UnknownPermName',
-              'allowedPermissions',
-            ]),
           },
         ]);
       });

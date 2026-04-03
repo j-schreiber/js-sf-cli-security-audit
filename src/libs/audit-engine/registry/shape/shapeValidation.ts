@@ -1,5 +1,6 @@
 import { Messages } from '@salesforce/core';
 import { ExtractAuditConfigTypes, RefineError } from '../../file-manager/fileManager.types.js';
+import { OrgDescribe } from '../../../../salesforce/index.js';
 import { BaseAuditConfigShape } from './auditConfigShape.js';
 import { RoleDefinitions, RoledEntityMap } from './schema.js';
 
@@ -37,6 +38,27 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
   }
   return errors;
 };
+
+export function verifyRoleDefinitions(roles: RoleDefinitions, orgDescribe: OrgDescribe): RefineError[] {
+  const PermissionKeys = ['allowedPermissions', 'deniedPermissions'] as const;
+  const warnings = new Array<RefineError>();
+  for (const [roleName, roleDef] of Object.entries(roles)) {
+    for (const permProp of PermissionKeys) {
+      const namedPerms = roleDef[permProp];
+      if (namedPerms) {
+        for (const permName of namedPerms) {
+          if (!orgDescribe.isValid(permName)) {
+            warnings.push({
+              path: ['Controls', 'Roles', roleName, permProp, permName],
+              message: messages.getMessage('PermissionDoesNotExistOnOrg'),
+            });
+          }
+        }
+      }
+    }
+  }
+  return warnings;
+}
 
 function validateRoledEntity(roles: RoleDefinitions, entries: RoledEntityMap, entityName: string): RefineError[] {
   const errors: RefineError[] = [];

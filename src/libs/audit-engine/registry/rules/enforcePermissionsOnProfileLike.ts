@@ -2,8 +2,7 @@ import { Messages } from '@salesforce/core';
 import { isNullish } from '../../../../utils.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../context.types.js';
 import RoleManager from '../roles/roleManager.js';
-import { ResolvedProfileLike, ScanResult } from '../roles/roleManager.types.js';
-import RoleChecker from '../roles/roleChecker.js';
+import { ResolvedProfileLike } from '../roles/roleManager.types.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -23,7 +22,6 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
   public run(context: RuleAuditContext<ResolvedProfileLike>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
     const resolvedProfiles = context.resolvedEntities;
-    const validator = new RoleChecker(context.orgDescribe, this.auditConfig.definitions.roles);
     for (const profile of Object.values(resolvedProfiles)) {
       if (!this.roleManager.isValidRole(profile.role)) {
         result.errors.push({
@@ -32,7 +30,6 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
         });
         continue;
       }
-      result.warnings.push(...formatWarnings(validator, profile));
       if (!isNullish(profile.metadata)) {
         const profileScanResult = this.roleManager.scanProfileLike(profile);
         result.violations.push(...profileScanResult.violations);
@@ -41,9 +38,4 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
     }
     return Promise.resolve(result);
   }
-}
-
-function formatWarnings(validator: RoleChecker, profileOrPermset: ResolvedProfileLike): ScanResult['warnings'] {
-  const warnMessages = validator.checkRoleDefinitionAgainstOrg(profileOrPermset.role);
-  return warnMessages.map((message) => ({ identifier: [profileOrPermset.name, profileOrPermset.role], message }));
 }

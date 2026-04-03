@@ -2,6 +2,10 @@
 
 %s is not a valid role for audit config.
 
+# PermissionDoesNotExistOnOrg
+
+Permission does not exist on Org.
+
 # FailedToParseAuditConfig
 
 Failed to parse audit config at location %s: %s (%s).

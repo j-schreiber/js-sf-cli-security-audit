@@ -1,7 +1,6 @@
 import { Messages } from '@salesforce/core';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../context.types.js';
 import RoleManager from '../roles/roleManager.js';
-import RoleChecker from '../roles/roleChecker.js';
 import { ScanResult } from '../roles/roleManager.types.js';
 import { ResolvedUser } from '../policies/users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
@@ -22,7 +21,6 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
     const result = this.initResult();
-    const validator = new RoleChecker(context.orgDescribe, this.auditConfig.definitions.roles);
     const users = context.resolvedEntities;
     for (const user of Object.values(users)) {
       if (!this.roleManager.isValidRole(user.role)) {
@@ -32,7 +30,6 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
         });
         continue;
       }
-      result.warnings.push(...formatPermissionWarnings(validator, user));
       const { violations, warnings } = this.scanAssignedPermissionSets(user, user.assignments);
       result.violations.push(...violations);
       result.warnings.push(...warnings);
@@ -66,9 +63,4 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     }
     return result;
   }
-}
-
-function formatPermissionWarnings(validator: RoleChecker, user: ResolvedUser): ScanResult['warnings'] {
-  const warnMessages = validator.checkRoleDefinitionAgainstOrg(user.role);
-  return warnMessages.map((message) => ({ identifier: [user.username, user.role], message }));
 }

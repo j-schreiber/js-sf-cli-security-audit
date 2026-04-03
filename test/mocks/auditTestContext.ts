@@ -127,6 +127,18 @@ export default class AuditTestContext {
     this.mockAuditConfig.classifications.permissionSets.permissionSets[permSetName] = classification;
   }
 
+  /**
+   * Replaces the complete user classifications in the mock audit config
+   *
+   * @param classifications
+   */
+  public mockUserClassifications(classifications: UserClassifications): void {
+    this.mockAuditConfig.classifications.users = undefined;
+    Object.entries(classifications).forEach(([permSetName, classification]) => {
+      this.mockUserClassification(permSetName, classification);
+    });
+  }
+
   public mockUserClassification(username: string, classification: UserClassifications['string']): void {
     this.mockAuditConfig.classifications.users ??= { users: {} };
     this.mockAuditConfig.classifications.users.users[username] = classification;

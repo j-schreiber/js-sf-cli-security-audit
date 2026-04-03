@@ -1,0 +1,9 @@
+DeployEntity:
+  allowedClassifications:
+    - Critical
+  deniedPermissions:
+    - ModifyAllData
+    - AnInvalidPerm
+StandardUser:
+  allowedPermissions:
+    - AnotherInvalidPermName
