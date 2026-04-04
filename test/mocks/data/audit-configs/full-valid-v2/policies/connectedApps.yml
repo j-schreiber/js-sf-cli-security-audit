@@ -1,0 +1,6 @@
+enabled: true
+rules:
+  AllUsedAppsUnderManagement:
+    enabled: true
+  NoUserCanSelfAuthorize:
+    enabled: true

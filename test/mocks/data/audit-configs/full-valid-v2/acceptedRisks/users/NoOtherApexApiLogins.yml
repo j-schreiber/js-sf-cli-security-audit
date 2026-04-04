@@ -1,0 +1,3 @@
+test-user-1@example.com:
+  '*':
+    reason: Allows all logins for this user.

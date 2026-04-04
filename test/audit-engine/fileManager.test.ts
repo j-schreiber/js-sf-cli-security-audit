@@ -1,148 +1,28 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import z from 'zod';
 import yaml from 'js-yaml';
 import { assert, expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import FileManager from '../../src/libs/audit-engine/file-manager/fileManager.js';
 import {
-  RefineError,
   AuditConfigShapeDefinition,
   ConfigFileDependency,
-  ExtractAuditConfigTypes,
 } from '../../src/libs/audit-engine/file-manager/fileManager.types.js';
 import { MOCK_DATA_BASE_PATH } from '../mocks/data/paths.js';
-import { AcceptedRisksSchema, RoleDefinitionsFileSchema } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { BaseShapeV1, BaseShapeV2, ExtendedShapeV1, v1validator } from '../mocks/fileManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
-
-const PolicyRuleConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  options: z.unknown().optional(),
-});
-
-const RuleMapSchema = z.record(z.string(), PolicyRuleConfigSchema);
-
-const PolicyBaseFile = z.object({
-  enabled: z.boolean().default(false),
-  rules: RuleMapSchema.default({}),
-});
-
-const PermissionsClassificationSchema = z.object({
-  classification: z.string(),
-});
 
 function buildPath(dirName: string) {
   return path.join(MOCK_DATA_BASE_PATH, 'audit-configs', dirName);
 }
 
-/**
- * Shape must be defined "as const Shape", otherwise typescript
- * loosens the type too much and dynamic inference of schema types
- * does not work.
- */
-const baseShape = {
-  definitions: {
-    files: {
-      roles: { schema: RoleDefinitionsFileSchema },
-    },
-  },
-  classifications: {
-    files: {
-      userPermissions: {
-        schema: z.object({ permissions: z.record(z.string(), PermissionsClassificationSchema) }),
-        entities: 'permissions',
-      },
-      profiles: {
-        schema: z.object({
-          profiles: z.record(
-            z.string(),
-            z.object({
-              role: z.string(),
-            })
-          ),
-        }),
-      },
-    },
-  },
-  policies: {
-    files: {
-      profiles: {
-        schema: PolicyBaseFile,
-      },
-      permissionSets: {
-        schema: PolicyBaseFile,
-      },
-      connectedApps: {
-        schema: PolicyBaseFile,
-      },
-      users: {
-        schema: PolicyBaseFile,
-      },
-    },
-  },
-} as const satisfies AuditConfigShapeDefinition;
-
-const extendedShape = {
-  definitions: baseShape.definitions,
-  classifications: baseShape.classifications,
-  policies: baseShape.policies,
-  acceptedRisks: {
-    dirs: {
-      profiles: {
-        files: {
-          EnforcePermissionClassifications: {
-            schema: AcceptedRisksSchema,
-          },
-          TestRule: {
-            schema: AcceptedRisksSchema,
-          },
-        },
-      },
-      users: {
-        files: {
-          NoStandardProfilesOnActiveUsers: {
-            schema: AcceptedRisksSchema,
-          },
-          NoOtherApexApiLogins: {
-            schema: AcceptedRisksSchema,
-          },
-          EnforcePermissionClassifications: {
-            schema: AcceptedRisksSchema,
-          },
-          NoInactiveUsers: {
-            schema: AcceptedRisksSchema,
-          },
-        },
-      },
-    },
-  },
-} satisfies AuditConfigShapeDefinition;
-
-const validator = (parseResult: ExtractAuditConfigTypes<typeof baseShape>) => {
-  const errors: RefineError[] = [];
-  if (parseResult.definitions.roles && parseResult.classifications.profiles) {
-    for (const [profileName, profile] of Object.entries(parseResult.classifications.profiles.profiles)) {
-      if (!parseResult.definitions.roles[profile.role]) {
-        errors.push({ message: `Invalid role ${profile.role} for profile`, path: ['profiles', profileName] });
-      }
-    }
-  }
-  if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
-    errors.push({
-      message: 'Config invalid or empty. Needs one policy.',
-      path: ['policies'],
-    });
-  }
-  return errors;
-};
-
 describe('file manager', () => {
   describe('parsing', () => {
     it('parses audit config from directory that matches shape', () => {
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const conf = fm.parse(buildPath('full-valid'));
 
       // Assert
@@ -157,7 +37,7 @@ describe('file manager', () => {
 
     it('parses partial audit config from directory that matches shape', () => {
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const conf = fm.parse(buildPath('minimal'));
 
       // Assert
@@ -170,10 +50,22 @@ describe('file manager', () => {
       expect(conf.policies.permissionSets).to.be.undefined;
     });
 
+    it('throws error if directory does not exist', () => {
+      // Act
+      const dirPath = buildPath('does-not-exist');
+      const fm = new FileManager(BaseShapeV1);
+
+      // Assert
+      // assert against the message, not the complete error. Otherwise, stack will
+      // always be different and assert will fail
+      const expectedError = messages.getMessage('error.DirectoryDoesNotExistOrIsEmpty', [dirPath]);
+      expect(() => fm.parse(dirPath)).to.throw(expectedError);
+    });
+
     it('throws error if config does not satisfy minimum criteria', () => {
       // Act
       const dirPath = buildPath('empty');
-      const fm = new FileManager(baseShape, validator);
+      const fm = new FileManager(BaseShapeV1, v1validator);
 
       // Assert
       // assert against the message, not the complete error. Otherwise, stack will
@@ -188,13 +80,13 @@ describe('file manager', () => {
 
     it('throws error is config does not satisfy configured dependencies', () => {
       // Arrange
-      const wrappedBaseShape = wrapProfileDependencies([
+      const wrappedBaseShapeV1 = wrapProfileDependencies([
         {
           path: ['classifications', 'userPermissions'],
           errorName: 'UserPermClassificationRequiredForProfiles',
         },
       ]);
-      const fm = new FileManager(wrappedBaseShape);
+      const fm = new FileManager(wrappedBaseShapeV1);
 
       // Assert
       const expectedError = messages.getMessage('UserPermClassificationRequiredForProfiles');
@@ -203,10 +95,10 @@ describe('file manager', () => {
 
     it('parses config that satisfies all configured dependencies', () => {
       // Arrange
-      const wrappedBaseShape = wrapProfileDependencies([
+      const wrappedBaseShapeV1 = wrapProfileDependencies([
         { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
       ]);
-      const fm = new FileManager(wrappedBaseShape);
+      const fm = new FileManager(wrappedBaseShapeV1);
 
       // Act
       const conf = fm.parse(buildPath('full-valid'));
@@ -218,10 +110,10 @@ describe('file manager', () => {
 
     it('ignores policy-dependencies if policy is not present', () => {
       // Arrange
-      const wrappedBaseShape = wrapProfileDependencies([
+      const wrappedBaseShapeV1 = wrapProfileDependencies([
         { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
       ]);
-      const fm = new FileManager(wrappedBaseShape);
+      const fm = new FileManager(wrappedBaseShapeV1);
 
       // Act
       const conf = fm.parse(buildPath('no-classifications-2'));
@@ -234,7 +126,7 @@ describe('file manager', () => {
 
     it('reads accepted risks for mapped policies', () => {
       // Act
-      const fm = new FileManager(extendedShape);
+      const fm = new FileManager(ExtendedShapeV1);
       const conf = fm.parse(buildPath('full-valid'));
 
       // Assert
@@ -250,7 +142,7 @@ describe('file manager', () => {
 
     it('parses accepted risks with deep and flat matchers', () => {
       // Act
-      const fm = new FileManager(extendedShape);
+      const fm = new FileManager(ExtendedShapeV1);
       const conf = fm.parse(buildPath('edge-case-risks'));
 
       // Assert
@@ -262,7 +154,7 @@ describe('file manager', () => {
 
     it('parses role definition from config file if it exists', () => {
       // Act
-      const fm = new FileManager(baseShape, validator);
+      const fm = new FileManager(BaseShapeV1, v1validator);
       const conf = fm.parse(buildPath('custom-roles'));
 
       // Assert
@@ -281,10 +173,22 @@ describe('file manager', () => {
 
     it('runs custom validation logic on profiles classification', () => {
       // Arrange
-      const fm = new FileManager(baseShape, validator);
+      const fm = new FileManager(BaseShapeV1, v1validator);
 
       // Assert
       expect(() => fm.parse(buildPath('custom-roles-invalid'))).to.throw('Invalid role Admin for profile');
+    });
+
+    it('reads new audit config shape from files', () => {
+      // Arrange
+      const fm = new FileManager(BaseShapeV2);
+      const conf = fm.parse(buildPath('full-valid-v2'));
+
+      // Assert
+      assert.isDefined(conf.controls.roles);
+      assert.isDefined(conf.controls.permissions);
+      assert.isDefined(conf.inventory.profiles);
+      assert.isDefined(conf.shape.userPermissions);
     });
   });
 
@@ -297,7 +201,7 @@ describe('file manager', () => {
 
     it('saves audit config that is compatible with shape', () => {
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
         classifications: {
           userPermissions: { permissions: { TestPermission: { classification: 'Unknown' } } },
@@ -323,7 +227,7 @@ describe('file manager', () => {
 
     it('ignores elements in audit config that are not present in shape', () => {
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
         policies: {
           someUnknownPolicy: { enabled: true, rules: { TestRule: { enabled: true } } },
@@ -358,7 +262,7 @@ describe('file manager', () => {
       };
 
       // Act
-      const fm = new FileManager(extendedShape);
+      const fm = new FileManager(ExtendedShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
         acceptedRisks: {
           profiles: {
@@ -397,7 +301,7 @@ describe('file manager', () => {
       };
 
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
         definitions: {
           roles: roleDefs,
@@ -418,7 +322,7 @@ describe('file manager', () => {
       );
 
       // Act
-      const fm = new FileManager(baseShape);
+      const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
         definitions: {
           roles: undefined,
@@ -436,15 +340,15 @@ describe('file manager', () => {
 
 function wrapProfileDependencies(deps: ConfigFileDependency[]): AuditConfigShapeDefinition {
   return {
-    classifications: baseShape.classifications,
+    classifications: BaseShapeV1.classifications,
     policies: {
       files: {
         profiles: {
-          ...baseShape.policies.files.profiles,
+          ...BaseShapeV1.policies.files.profiles,
           dependencies: deps,
         },
         permissionSets: {
-          ...baseShape.policies.files.permissionSets,
+          ...BaseShapeV1.policies.files.permissionSets,
         },
       },
     },

@@ -1,0 +1,4 @@
+test-user-1@example.com:
+  role: Standard
+guest-user@example.com:
+  role: Standard

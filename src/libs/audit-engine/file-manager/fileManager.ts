@@ -22,10 +22,9 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 /**
- * The file manager streamlines initialisation of an audit config from
- * a source directory and writing updated content back to disk. The directory
- * structure is configurable, but most of the time using the default file manager
- * will be enough.
+ * Streamlines read and write operations of an audit config from a source directory.
+ * The file manager is initialised with the audit config shape and handles all disk
+ * operations.
  */
 export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
   public constructor(
@@ -44,6 +43,7 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
     // no idea if there is not a better solution than casting to "any"
     // but it works, and tests prove that its somewhat save :).
     const parseResult: any = {};
+    assertPath(dirPath);
     for (const dirName of typedKeys(this.schema)) {
       parseResult[dirName] = this.parseSubdir(dirName, dirPath);
     }
@@ -63,8 +63,8 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
   }
 
   /**
-   * Writes a full audit config to disk. The file manager attempts
-   * to save the config based on the injected schema.
+   * Writes a full audit config to disk. The file manager creates
+   * directory and files based on its configuration.
    *
    * @param targetDirPath
    * @param conf AuditConfig to save
@@ -160,6 +160,12 @@ type DirSaveConfig = {
   targetPath: string;
   dirContent: any;
 };
+
+function assertPath(dirPath: PathLike): void {
+  if (!fs.existsSync(dirPath)) {
+    throw messages.createError('error.DirectoryDoesNotExistOrIsEmpty', [dirPath.toString()]);
+  }
+}
 
 function parseFilesDirectory(def: ConfigsFileDir, dirPath: PathLike): Record<string, unknown> {
   const parseResults: Record<string, unknown> = {};

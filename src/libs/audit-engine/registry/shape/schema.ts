@@ -76,14 +76,14 @@ const UsersPolicyOptions = z.strictObject({
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
-const RoleDefinition = z.object({
+// Definition File Schemata
+
+export const RoleDefinition = z.object({
   allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
   allowedPermissions: z.array(z.string()).optional(),
   deniedPermissions: z.array(z.string()).optional(),
   requiredPermissions: z.array(z.string()).optional(),
 });
-
-// Definition File Schemata
 
 export const RoleDefinitionsFileSchema = z.record(z.string(), RoleDefinition);
 

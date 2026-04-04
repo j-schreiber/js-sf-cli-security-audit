@@ -1,0 +1,14 @@
+Test_Developer_Permission_Set_1:
+  role: Developer
+Test_Admin_Permission_Set_1:
+  role: Admin
+Test_Admin_Permission_Set_2:
+  role: Admin
+Test_Power_User_Permission_Set_1:
+  role: Power User
+Test_Power_User_Permission_Set_2:
+  role: Power User
+Test_Standard_User_Permission_Set_1:
+  role: Standard
+Test_Standard_User_Permission_Set_2:
+  role: Standard

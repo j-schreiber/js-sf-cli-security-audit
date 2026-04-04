@@ -1,0 +1,11 @@
+CriticalAndModifyAll:
+  allowedClassifications:
+    - Critical
+  deniedPermissions:
+    - ViewAllData
+    - ModifyAllData
+HighAndLower:
+  allowedClassifications:
+    - High
+    - Medium
+    - Low
