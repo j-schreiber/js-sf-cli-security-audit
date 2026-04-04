@@ -51,9 +51,8 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
     if (this.refine) {
       const errs = this.refine(parseResult);
       if (errs.length > 0) {
-        const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
         throw messages.createError('error.FailedToValidateAuditConfig', [
-          formattedDirPath,
+          formatDirPath(dirPath),
           errs[0].message,
           errs[0].path.join('.'),
         ]);
@@ -163,26 +162,39 @@ type DirSaveConfig = {
 
 function assertPath(dirPath: PathLike): void {
   if (!fs.existsSync(dirPath)) {
-    throw messages.createError('error.DirectoryDoesNotExistOrIsEmpty', [dirPath.toString()]);
+    throw messages.createError('error.DirectoryDoesNotExistOrIsEmpty', [formatDirPath(dirPath)]);
   }
+}
+
+function formatDirPath(dirPath: PathLike): string {
+  return !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
 }
 
 function parseFilesDirectory(def: ConfigsFileDir, dirPath: PathLike): Record<string, unknown> {
   const parseResults: Record<string, unknown> = {};
   for (const [fileName, fileConfig] of Object.entries(def.files)) {
-    const filePath = path.join(dirPath.toString(), `${fileName}.yml`);
-    if (!fs.existsSync(filePath)) {
+    const maybeFileContent = readFile(dirPath, fileName);
+    if (!maybeFileContent.content || !maybeFileContent.path) {
       continue;
     }
-    const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
-    const parseResult = fileConfig.schema.safeParse(fileContent);
+    const parseResult = fileConfig.schema.safeParse(maybeFileContent.content);
     if (parseResult.success) {
       parseResults[fileName] = parseResult.data;
     } else {
-      throwAsSfError(filePath, parseResult.error);
+      throwAsSfError(maybeFileContent.path, parseResult.error);
     }
   }
   return parseResults;
+}
+
+function readFile(basePath: PathLike, fileName: string): { content: unknown; path: string | undefined } {
+  for (const suffix of ['yml', 'yaml']) {
+    const filePath = path.join(basePath.toString(), `${fileName}.${suffix}`);
+    if (fs.existsSync(filePath)) {
+      return { content: yaml.load(fs.readFileSync(filePath, 'utf-8')), path: filePath };
+    }
+  }
+  return { content: undefined, path: undefined };
 }
 
 function isFilesDir(dir: ConfigsFileDir | NestedConfigDir): dir is ConfigsFileDir {

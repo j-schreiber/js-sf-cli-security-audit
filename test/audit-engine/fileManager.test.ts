@@ -50,6 +50,20 @@ describe('file manager', () => {
       expect(conf.policies.permissionSets).to.be.undefined;
     });
 
+    it('parses audit config with .yaml files', () => {
+      // Act
+      // previous behavior only parsed .yml file suffix, now we accept .yml and .yaml
+      const fm = new FileManager(BaseShapeV1);
+      const conf = fm.parse(buildPath('minimal-yaml'));
+
+      // Assert
+      assert.isDefined(conf.classifications);
+      assert.isDefined(conf.classifications.userPermissions);
+      assert.isDefined(conf.classifications.profiles);
+      assert.isDefined(conf.policies);
+      assert.isDefined(conf.policies.profiles);
+    });
+
     it('throws error if directory does not exist', () => {
       // Act
       const dirPath = buildPath('does-not-exist');

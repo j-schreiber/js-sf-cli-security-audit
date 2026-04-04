@@ -49,9 +49,9 @@ describe('org audit run', () => {
       // Act
       try {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
-        expect.fail('Expected exception,but succeeded');
+        expect.fail('Expected exception, but succeeded');
       } catch (error) {
-        assertSfError(error, 'FailedToValidateAuditConfig', '<root-dir>');
+        assertSfError(error, 'DirectoryDoesNotExistOrIsEmpty', '<root-dir>');
       }
     });
 
