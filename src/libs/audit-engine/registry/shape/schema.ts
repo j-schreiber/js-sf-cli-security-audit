@@ -76,16 +76,27 @@ const UsersPolicyOptions = z.strictObject({
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
-// Definition File Schemata
+// Controls File Schema
 
-export const RoleDefinition = z.object({
+export const PermissionControlSchema = z.object({
   allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
-  allowedPermissions: z.array(z.string()).optional(),
-  deniedPermissions: z.array(z.string()).optional(),
-  requiredPermissions: z.array(z.string()).optional(),
+  allowedUserPermissions: z.array(z.string()).optional(),
+  deniedUserPermissions: z.array(z.string()).optional(),
+  requiredUserPermissions: z.array(z.string()).optional(),
+  allowedCustomPermissions: z.array(z.string()).optional(),
+  deniedCustomPermissions: z.array(z.string()).optional(),
+  requiredCustomPermissions: z.array(z.string()).optional(),
 });
 
-export const RoleDefinitionsFileSchema = z.record(z.string(), RoleDefinition);
+export const PermissionControlsFileSchema = z.record(z.string(), PermissionControlSchema);
+
+// new, V2
+export const ResolvedRoleDefinitionSchema = z.object({ permissions: PermissionControlSchema.optional() });
+
+export const ComposableRolesFileSchema = z.record(
+  z.string(),
+  z.object({ permissions: z.xor([z.array(z.string()), PermissionControlSchema]).optional() }).strict()
+);
 
 // Classification File Schemata
 
@@ -149,5 +160,15 @@ export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
 export type AcceptedRuleRisks = z.infer<typeof AcceptedRisksSchema>;
 
 // Definitions
-export type RoleDefinitions = z.infer<typeof RoleDefinitionsFileSchema>;
+export type ResolvedRoleDefinition = z.infer<typeof ResolvedRoleDefinitionSchema>;
+export type ComposableRolesControl = z.infer<typeof ComposableRolesFileSchema>;
+export type PermissionControl = z.infer<typeof PermissionControlSchema>;
+export type PermissionControls = z.infer<typeof PermissionControlsFileSchema>;
 export type RoledEntityMap = z.infer<typeof PermSetMap>;
+
+// Guard Functions
+
+export function isPermissionControl(maybeRoleDef: unknown): maybeRoleDef is PermissionControl {
+  const parseResult = PermissionControlSchema.safeParse(maybeRoleDef);
+  return maybeRoleDef !== undefined && parseResult.success;
+}

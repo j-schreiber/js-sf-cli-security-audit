@@ -1,8 +1,8 @@
 import z from 'zod';
 import {
   AcceptedRisksSchema,
-  RoleDefinition,
-  RoleDefinitionsFileSchema,
+  ComposableRolesFileSchema,
+  PermissionControlsFileSchema,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import {
   AuditConfigShapeDefinition,
@@ -34,9 +34,9 @@ const PermissionsClassificationSchema = z.object({
  * does not work.
  */
 export const BaseShapeV1 = {
-  definitions: {
+  controls: {
     files: {
-      roles: { schema: RoleDefinitionsFileSchema },
+      roles: { schema: ComposableRolesFileSchema },
     },
   },
   classifications: {
@@ -76,7 +76,7 @@ export const BaseShapeV1 = {
 } as const satisfies AuditConfigShapeDefinition;
 
 export const ExtendedShapeV1 = {
-  definitions: BaseShapeV1.definitions,
+  controls: BaseShapeV1.controls,
   classifications: BaseShapeV1.classifications,
   policies: BaseShapeV1.policies,
   acceptedRisks: {
@@ -113,9 +113,9 @@ export const ExtendedShapeV1 = {
 
 export const v1validator = (parseResult: ExtractAuditConfigTypes<typeof BaseShapeV1>) => {
   const errors: RefineError[] = [];
-  if (parseResult.definitions.roles && parseResult.classifications.profiles) {
+  if (parseResult.controls.roles && parseResult.classifications.profiles) {
     for (const [profileName, profile] of Object.entries(parseResult.classifications.profiles.profiles)) {
-      if (!parseResult.definitions.roles[profile.role]) {
+      if (!parseResult.controls.roles[profile.role]) {
         errors.push({ message: `Invalid role ${profile.role} for profile`, path: ['profiles', profileName] });
       }
     }
@@ -129,18 +129,11 @@ export const v1validator = (parseResult: ExtractAuditConfigTypes<typeof BaseShap
   return errors;
 };
 
-// V2 Types
-
-const ComposableRolesFileSchema = z.record(
-  z.string(),
-  z.object({ permissions: z.xor([z.array(z.string()), RoleDefinition]) })
-);
-
 export const BaseShapeV2 = {
   controls: {
     files: {
       roles: { schema: ComposableRolesFileSchema },
-      permissions: { schema: RoleDefinitionsFileSchema },
+      permissions: { schema: PermissionControlsFileSchema },
     },
   },
   inventory: {

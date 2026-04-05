@@ -452,8 +452,8 @@ describe('policy - users', () => {
 
       it('reports error if default role is not compatible with actual roles', async () => {
         // Arrange
-        $$.mockRoleDefinitions({
-          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        $$.mockRoles({
+          Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
         $$.mockUserClassification('guest-user@example.de', {
           role: 'Standard',
@@ -478,8 +478,8 @@ describe('policy - users', () => {
         // all users will be assigned the default role
         $$.mockAuditConfig.classifications.users = { users: {} };
         localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
-        $$.mockRoleDefinitions({
-          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        $$.mockRoles({
+          Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
         $$.mockAuditConfig.classifications.userPermissions = {
           permissions: {
@@ -652,17 +652,21 @@ describe('policy - users', () => {
         // First role is assigned to user and is more permissive than
         // second role (which is assigned to permission set)
         // permissiveness is calculated by merging all "allows" and substracting all "denies"
-        $$.mockAuditConfig.definitions.roles = {
+        $$.mockRoles({
           Operations: {
-            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-            allowedPermissions: ['CustomizeApplication', 'ViewAllData'],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+              allowedUserPermissions: ['CustomizeApplication', 'ViewAllData'],
+              deniedUserPermissions: ['ApiEnabled'],
+            },
           },
           Standard: {
-            allowedClassifications: [PermissionRiskLevel.LOW],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW],
+              deniedUserPermissions: ['ApiEnabled'],
+            },
           },
-        };
+        });
         localPolicyConfig = {
           enabled: true,
           rules: {
@@ -742,15 +746,19 @@ describe('policy - users', () => {
         // Arrange
         // The denied permission by Operations (ApiEnabled) is already covered by the lower classification
         // in standard. So we expect that Operations is a true superset of Standard
-        $$.mockAuditConfig.definitions.roles = {
+        $$.mockRoles({
           Operations: {
-            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+              deniedUserPermissions: ['ApiEnabled'],
+            },
           },
           Standard: {
-            allowedClassifications: [PermissionRiskLevel.LOW],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW],
+            },
           },
-        };
+        });
         $$.mockAuditConfig.classifications.userPermissions = {
           permissions: {
             ApiEnabled: {

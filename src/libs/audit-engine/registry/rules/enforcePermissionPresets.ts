@@ -14,8 +14,12 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
 
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
-      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+    this.roleManager = new RoleManager({
+      controls: opts.auditConfig.controls,
+      shape: {
+        userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+        customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
+      },
     });
   }
 

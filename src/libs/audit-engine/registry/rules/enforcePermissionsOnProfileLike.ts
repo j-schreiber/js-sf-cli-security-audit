@@ -13,9 +13,12 @@ export default class EnforcePermissionsOnProfileLike extends PolicyRule<Resolved
 
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
-      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
-      customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
+    this.roleManager = new RoleManager({
+      controls: opts.auditConfig.controls,
+      shape: {
+        userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+        customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
+      },
     });
   }
 

@@ -34,7 +34,7 @@ export default class AuditRun extends EventEmitter {
 
   public constructor(config: Partial<AuditRunConfig>) {
     super();
-    this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {}, definitions: {} }, ...config };
+    this.config = { ...{ classifications: {}, policies: {}, acceptedRisks: {}, controls: {} }, ...config };
     ResolveLifecycle.on('warning', (warning) => this.emit('resolvewarning', warning));
   }
 
@@ -71,8 +71,8 @@ export default class AuditRun extends EventEmitter {
   // PRIVATE ZONE
 
   private verifyAuditConfig(orgDescribe: OrgDescribe): void {
-    if (this.config.definitions.roles) {
-      const roleWarnings = verifyRoleDefinitions(this.config.definitions.roles, orgDescribe);
+    if (this.config.controls.roles) {
+      const roleWarnings = verifyRoleDefinitions(this.config.controls.roles, orgDescribe);
       for (const warning of roleWarnings) {
         this.emit('warning', { message: `${warning.path.join(' > ')}: ${warning.message}` });
       }

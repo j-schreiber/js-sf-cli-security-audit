@@ -155,9 +155,11 @@ describe('policy - profiles', () => {
 
     describe('EnforcePermissionClassifications (Modern Roles)', () => {
       beforeEach(() => {
-        $$.mockRoleDefinitions({
+        $$.mockRoles({
           Operations: {
-            allowedClassifications: [PermissionRiskLevel.CRITICAL, PermissionRiskLevel.HIGH],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.CRITICAL, PermissionRiskLevel.HIGH],
+            },
           },
           'Allows Nothing': {},
         });
@@ -227,10 +229,12 @@ describe('policy - profiles', () => {
 
       it('ignores invalid permission for a role in rule audit result', async () => {
         // Arrange
-        $$.mockRoleDefinitions({
+        $$.mockRoles({
           Operations: {
-            allowedPermissions: ['ViewSetup', 'UnknownPermName'],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedUserPermissions: ['ViewSetup', 'UnknownPermName'],
+              deniedUserPermissions: ['ApiEnabled'],
+            },
           },
           'Allows Nothing': {},
         });

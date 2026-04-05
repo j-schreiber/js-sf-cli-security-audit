@@ -8,8 +8,9 @@ import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
   ProfileClassifications,
-  RoleDefinitions,
+  PermissionControls,
   UserClassifications,
+  ComposableRolesControl,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
@@ -33,7 +34,7 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, controls: {} };
 
   public constructor(dirPath?: string) {
     this.context = new TestContext();
@@ -66,19 +67,42 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
+    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, controls: {} };
     MDAPI.clearCache();
     resetAllEnvironmentVars();
     initDefaultMocks(this.mocks);
   }
 
   /**
-   * Replaces the entire role definitions
+   * Replaces all role controls in the mock audit config.
    *
    * @param roles
    */
-  public mockRoleDefinitions(roles?: RoleDefinitions): void {
-    this.mockAuditConfig.definitions.roles = roles;
+  public mockRoles(roles: ComposableRolesControl): void {
+    this.mockAuditConfig.controls.roles = roles;
+  }
+
+  /**
+   * Replaces the definition of one role control in the mock audit config
+   * without affecting the other roles.
+   *
+   * @param roleName
+   * @param role
+   */
+  public mockRole(roleName: string, role: ComposableRolesControl['string']): void {
+    if (!this.mockAuditConfig.controls.roles) {
+      this.mockAuditConfig.controls.roles = {};
+    }
+    this.mockAuditConfig.controls.roles[roleName] = role;
+  }
+
+  /**
+   * Replaces the permission controls (formerly role definitions)
+   *
+   * @param roles
+   */
+  public mockPermissionControls(perms?: PermissionControls): void {
+    this.mockAuditConfig.controls.permissions = perms;
   }
 
   /**

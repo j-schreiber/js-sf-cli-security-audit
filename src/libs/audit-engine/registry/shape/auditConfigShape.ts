@@ -1,9 +1,10 @@
 import {
+  ComposableRolesFileSchema,
+  PermissionControlsFileSchema,
   PermissionsClassificationFileSchema,
   PermissionSetsClassificationFileSchema,
   PolicyFileSchema,
   ProfilesClassificationFileSchema,
-  RoleDefinitionsFileSchema,
   UserClassificationFileSchema,
   UserPolicyFileSchema,
 } from './schema.js';
@@ -14,9 +15,10 @@ import {
  * the audit config that is used by rules and policies.
  */
 export const BaseAuditConfigShape = {
-  definitions: {
+  controls: {
     files: {
-      roles: { schema: RoleDefinitionsFileSchema },
+      roles: { schema: ComposableRolesFileSchema },
+      permissions: { schema: PermissionControlsFileSchema },
     },
   },
   classifications: {

@@ -248,36 +248,21 @@ describe('audit config', () => {
     it('rejects to load audit config if assigned roles do not match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
+      auditConf.controls.roles = {
         MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          },
         },
         MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
         },
       };
       saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
 
       // Assert
-      const expectedMsg = validationMessages.getMessage('RoleNotInDefinition', ['Unknown']);
-      expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
-    });
-
-    it('rejects to load audit config if assigned roles do not match custom roles', async () => {
-      // Arrange
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
-        MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
-        },
-        MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
-        },
-      };
-      saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
-
-      // Assert
-      // default config initialises all entities with "Unknown"
       const expectedMsg = validationMessages.getMessage('RoleNotInDefinition', ['Unknown']);
       expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
     });
@@ -285,12 +270,16 @@ describe('audit config', () => {
     it('accepts to load audit config if assigned roles match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
+      auditConf.controls.roles = {
         MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          },
         },
         MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
         },
       };
       setRoleInClassification('MyOpsRole', auditConf.classifications.permissionSets?.permissionSets);
@@ -302,8 +291,8 @@ describe('audit config', () => {
       const loadedConf = loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR);
 
       // Assert
-      assert.isDefined(loadedConf.definitions.roles);
-      expect(Object.keys(loadedConf.definitions.roles)).to.deep.equal(['MyOpsRole', 'MyUserRole']);
+      assert.isDefined(loadedConf.controls.roles);
+      expect(Object.keys(loadedConf.controls.roles)).to.deep.equal(['MyOpsRole', 'MyUserRole']);
     });
   });
 });

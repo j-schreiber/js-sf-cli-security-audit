@@ -6,6 +6,10 @@ Duplicate role identifier after normalization found: %s was already defined, %s 
 
 Tried to access a role that does not exist: %s.
 
+# RoleReferencesPermissionThatDoesNotExist
+
+Role %s references permission control %s that does not exist.
+
 # violations.classification-preset-mismatch
 
 Permission is classified as "%s" and not allowed in role "%s".

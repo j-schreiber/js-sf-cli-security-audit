@@ -41,7 +41,9 @@ describe('org audit run', () => {
 
   afterEach(async () => {
     $$.reset();
-    clearAuditReports(DEFAULT_WORKING_DIR);
+    ['full-valid', 'with-warnings'].forEach((workingDir) =>
+      clearAuditReports(path.join(AUDIT_CONFIGS_DIR, workingDir))
+    );
   });
 
   describe('exception handling', () => {
@@ -413,8 +415,8 @@ describe('org audit run', () => {
 
       // Assert
       const expectedWarnings = [
-        'Controls > Roles > DeployEntity > deniedPermissions > AnInvalidPerm: Permission does not exist on Org.',
-        'Controls > Roles > StandardUser > allowedPermissions > AnotherInvalidPermName: Permission does not exist on Org.',
+        'Controls > Roles > DeployEntity > deniedUserPermissions > AnInvalidPerm: Permission does not exist on Org.',
+        'Controls > Roles > StandardUser > allowedUserPermissions > AnotherInvalidPermName: Permission does not exist on Org.',
       ];
       expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal(expectedWarnings);
     });

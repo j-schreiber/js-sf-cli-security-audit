@@ -10,6 +10,7 @@ import {
 } from '../../src/libs/audit-engine/file-manager/fileManager.types.js';
 import { MOCK_DATA_BASE_PATH } from '../mocks/data/paths.js';
 import { BaseShapeV1, BaseShapeV2, ExtendedShapeV1, v1validator } from '../mocks/fileManager.types.js';
+import { PermissionControl } from '../../src/libs/audit-engine/registry/shape/schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -172,15 +173,18 @@ describe('file manager', () => {
       const conf = fm.parse(buildPath('custom-roles'));
 
       // Assert
-      assert.isDefined(conf.definitions.roles);
-      expect(Object.keys(conf.definitions.roles)).to.deep.equal([
+      assert.isDefined(conf.controls.roles);
+      expect(Object.keys(conf.controls.roles)).to.deep.equal([
         'DeployEntity',
         'IntegrationUser',
         'Developer',
         'Ops',
         'Standard',
       ]);
-      expect(conf.definitions.roles.DeployEntity.deniedPermissions).to.deep.equal(['ViewAllData', 'ModifyAllData']);
+      const deployEntity = conf.controls.roles.DeployEntity;
+      assert.isDefined(deployEntity.permissions);
+      const perms = deployEntity.permissions as PermissionControl;
+      expect(perms.deniedUserPermissions).to.deep.equal(['ViewAllData', 'ModifyAllData']);
       assert.isDefined(conf.classifications.profiles);
       expect(conf.classifications.profiles.profiles['API Only Deploy'].role).to.equal('DeployEntity');
     });
@@ -317,14 +321,14 @@ describe('file manager', () => {
       // Act
       const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
-        definitions: {
+        controls: {
           roles: roleDefs,
         },
       });
 
       // Assert
-      const defsSaveResult = saveResult.definitions.roles;
-      expect(defsSaveResult.filePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'definitions', 'roles.yml'));
+      const defsSaveResult = saveResult.controls.roles;
+      expect(defsSaveResult.filePath).to.equal(path.join(DEFAULT_TEST_OUTPUT_DIR, 'controls', 'roles.yml'));
       assertFileContentEquals(defsSaveResult.filePath, roleDefs);
     });
 
@@ -338,13 +342,13 @@ describe('file manager', () => {
       // Act
       const fm = new FileManager(BaseShapeV1);
       const saveResult = fm.save(DEFAULT_TEST_OUTPUT_DIR, {
-        definitions: {
+        controls: {
           roles: undefined,
         },
       });
 
       // Assert
-      const defsSaveResult = saveResult.definitions.roles;
+      const defsSaveResult = saveResult.controls.roles;
       assert.isDefined(defsSaveResult);
       expect(defsSaveResult.content).to.be.undefined;
       expect(fs.existsSync(rolesPath)).to.be.false;
@@ -377,8 +381,8 @@ function assertFileContentEquals(filePath: string, expectedContent: unknown) {
 }
 
 function arrangeRoleDefinitions(roleContent: unknown, auditConfigDir: string): string {
-  const rolesPath = path.join(auditConfigDir, 'definitions', 'roles.yml');
-  fs.mkdirSync(path.join(auditConfigDir, 'definitions'), { recursive: true });
+  const rolesPath = path.join(auditConfigDir, 'controls', 'roles.yml');
+  fs.mkdirSync(path.join(auditConfigDir, 'controls'), { recursive: true });
   fs.writeFileSync(rolesPath, yaml.dump(roleContent));
   return rolesPath;
 }
