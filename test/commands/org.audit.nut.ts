@@ -65,16 +65,23 @@ describe('org audit NUTs', () => {
     ConfigFileManager.save(configDirPath, conf);
   }
 
-  function initCustomRoleDefinitions(auditConfigDirPath: string) {
+  function initAuditControls(auditConfigDirPath: string) {
     const configDirPath = resolveTestDirFilePath(auditConfigDirPath);
     const conf = ConfigFileManager.parse(configDirPath);
-    conf.definitions.roles = {
+    conf.controls.roles = {
       MyOpsRole: {
-        allowedPermissions: ['ApiEnabled', 'ViewSetup'],
-        allowedClassifications: [PermissionRiskLevel.CRITICAL],
+        permissions: ['OpsPermissions'],
       },
       MyStandardRole: {
-        allowedClassifications: [PermissionRiskLevel.LOW],
+        permissions: {
+          allowedClassifications: [PermissionRiskLevel.LOW],
+        },
+      },
+    };
+    conf.controls.permissions = {
+      OpsPermissions: {
+        allowedClassifications: [PermissionRiskLevel.CRITICAL],
+        allowedUserPermissions: ['ApiEnabled', 'ViewSetup'],
       },
     };
     setRoleInClassification('MyStandardRole', conf.classifications.permissionSets?.permissionSets);
@@ -227,7 +234,7 @@ describe('org audit NUTs', () => {
   it('completes full audit with custom role definitions', async () => {
     // Arrange
     const dirPath = duplicateAuditConfig(entEdAudit);
-    initCustomRoleDefinitions(dirPath);
+    initAuditControls(dirPath);
 
     // Act
     const result = execCmd<OrgAuditRunResult>(
