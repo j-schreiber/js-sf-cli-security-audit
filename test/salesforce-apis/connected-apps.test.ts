@@ -66,14 +66,14 @@ describe('connected apps resolve', () => {
     const app1 = apps.get('Test App 1');
     assert.isDefined(app1);
     expect(app1.users).to.deep.equal([
-      'test1@example.com',
-      'test2@example.com',
-      'test3@example.com',
-      'test4@example.com',
+      { username: 'test1@example.com', tokenCount: 1, useCount: 1 },
+      { username: 'test2@example.com', tokenCount: 1, useCount: 1 },
+      { username: 'test3@example.com', tokenCount: 1, useCount: 1 },
+      { username: 'test4@example.com', tokenCount: 1, useCount: 1 },
     ]);
     const app2 = apps.get('Test App 2');
     assert.isDefined(app2);
-    expect(app2.users).to.deep.equal(['test1@example.com']);
+    expect(app2.users).to.deep.equal([{ username: 'test1@example.com', tokenCount: 1, useCount: 1 }]);
   });
 
   it('batches token retrieve by user id when initial count exceeds threshold', async () => {
@@ -164,6 +164,24 @@ describe('connected apps resolve', () => {
     expect(app1.useCount).to.equal(1);
     expect(app1.origin).to.equal('Installed');
   });
+
+  it('aggregates highest last used date if user has multiple tokens', async () => {
+    // Arrange
+    $$.mocks.mockOAuthTokens('oauth-usage-multiple-tokens');
+    $$.mocks.mockConnectedApps('connected-apps');
+
+    // Act
+    const appsRepo = new ConnectedApps($$.targetOrgConnection);
+    const apps = await appsRepo.resolve({ withTokenUsage: true });
+
+    // Assert
+    const appFromTokens = apps.get('Test App 2');
+    assert.isDefined(appFromTokens);
+    expect(appFromTokens.useCount).to.equal(1);
+    expect(appFromTokens.users).to.deep.equal([
+      { username: 'test-user-1@example.com', lastUsed: '2026-04-07T16:00:10.000Z', useCount: 1, tokenCount: 5 },
+    ]);
+  });
 });
 
 /**
@@ -183,6 +201,7 @@ function generateMockTokens(userCount: number, appCount: number): SfOauthToken[]
         User: { Username: `test-user-${userIncrementer}@example.com` },
         AppName: `Test App ${appIncrementer}`,
         UseCount: 1,
+        LastUsedDate: new Date().toISOString(),
       });
     }
   }

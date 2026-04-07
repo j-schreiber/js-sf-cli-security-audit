@@ -30,6 +30,7 @@ export type SfOauthToken = Record & {
     ApplicationId: string;
   };
   UseCount: number;
+  LastUsedDate?: string;
 };
 
 export type SfMinimalUser = Record & {
@@ -44,7 +45,7 @@ export type ConnectedApp = {
   onlyAdminApprovedUsersAllowed: boolean;
   overrideByApiSecurityAccess: boolean;
   useCount: number;
-  users: string[];
+  users: ConnectedAppUser[];
 };
 
 export const ResolveAppsOptionsSchema = z.object({
@@ -53,3 +54,27 @@ export const ResolveAppsOptionsSchema = z.object({
 });
 
 export type ResolveAppsOptions = z.infer<typeof ResolveAppsOptionsSchema>;
+
+export type ConnectedAppUser = {
+  username: string;
+
+  /** Aggregated usage of all tokens from this user */
+  useCount: number;
+
+  tokenCount: number;
+
+  /** ISO Code timestamp of last use date from tokens of this user */
+  lastUsed?: string;
+};
+
+export type OAuthUsageStats = {
+  /** ISO Code timestamp of last use date from all tokens for this app */
+  lastUsed?: string;
+
+  appId?: string;
+
+  /** Aggregated usage of all tokens from this app */
+  useCount: number;
+
+  users: Map<string, ConnectedAppUser>;
+};

@@ -1,8 +1,10 @@
 import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
+import { maxDate } from '../../utils.js';
 import {
   ConnectedApp,
+  OAuthUsageStats,
   ResolveAppsOptions,
   ResolveAppsOptionsSchema,
   SfConnectedApp,
@@ -49,26 +51,21 @@ export default class ConnectedApps extends EventEmitter {
       resolved: 0,
     });
     if (definitiveOpts.withTokenUsage) {
-      const usersOAuthToken = await this.oauthTokenRepo.queryAll();
-      for (const sfToken of usersOAuthToken) {
-        const appRef =
-          sfToken.AppMenuItem?.ApplicationId && appIndex.get(sfToken.AppMenuItem.ApplicationId)
-            ? appIndex.get(sfToken.AppMenuItem.ApplicationId)
-            : apps.get(sfToken.AppName);
+      const oauthUsage = await this.fetchOauthUsage();
+      for (const [appName, appDef] of oauthUsage.entries()) {
+        const appRef = appDef.appId && appIndex.get(appDef.appId) ? appIndex.get(appDef.appId) : apps.get(appName);
         if (appRef) {
-          appRef.useCount += sfToken.UseCount;
-          if (!appRef.users.includes(sfToken.User.Username)) {
-            appRef.users.push(sfToken.User.Username);
-          }
+          appRef.useCount += appDef.useCount;
+          appRef.users = [...appDef.users.values()];
         } else {
-          apps.set(sfToken.AppName, {
-            name: sfToken.AppName,
+          apps.set(appName, {
+            name: appName,
             origin: 'OauthToken',
             type: 'Unknown',
             onlyAdminApprovedUsersAllowed: false,
             overrideByApiSecurityAccess: false,
-            useCount: sfToken.UseCount,
-            users: [sfToken.User.Username],
+            useCount: appDef.useCount,
+            users: [...appDef.users.values()],
           });
         }
       }
@@ -99,6 +96,50 @@ export default class ConnectedApps extends EventEmitter {
     for (const app of nonExternalClientApps) {
       app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
     }
+  }
+
+  private async fetchOauthUsage(): Promise<Map<string, OAuthUsageStats>> {
+    const usersOAuthToken = await this.oauthTokenRepo.queryAll();
+    const stats = new Map<string, OAuthUsageStats>();
+    for (const sfToken of usersOAuthToken) {
+      let appStats = stats.get(sfToken.AppName);
+      if (!appStats) {
+        appStats = {
+          appId: sfToken.AppMenuItem?.ApplicationId,
+          useCount: sfToken.UseCount,
+          users: new Map(),
+        };
+        stats.set(sfToken.AppName, appStats);
+      } else {
+        appStats.useCount += sfToken.UseCount;
+        // appStats.lastUsed += ...
+      }
+      const userStats = appStats.users.get(sfToken.User.Username);
+      if (userStats) {
+        userStats.tokenCount++;
+        userStats.useCount += sfToken.UseCount;
+        userStats.lastUsed = maxDate(userStats.lastUsed, sfToken.LastUsedDate);
+      } else {
+        appStats.users.set(sfToken.User.Username, {
+          username: sfToken.User.Username,
+          useCount: sfToken.UseCount,
+          lastUsed: sfToken.LastUsedDate,
+          tokenCount: 1,
+        });
+      }
+    }
+    // clean optional properties that were initialised with nullish
+    for (const app of stats.values()) {
+      if (!app.lastUsed) {
+        delete app.lastUsed;
+      }
+      for (const user of app.users.values()) {
+        if (!user.lastUsed) {
+          delete user.lastUsed;
+        }
+      }
+    }
+    return stats;
   }
 }
 

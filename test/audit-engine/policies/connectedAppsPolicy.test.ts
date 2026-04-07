@@ -177,14 +177,19 @@ describe('policy - connected apps', () => {
   });
 
   describe('rule execution', () => {
+    const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.connectedApps');
+
     describe('AllUsedAppsUnderManagement', () => {
+      beforeEach(() => {
+        defaultConfig.rules.AllUsedAppsUnderManagement.enabled = true;
+      });
+
       it('adds each user of an app to details of violation', async () => {
         // Arrange
         $$.mocks.mockOAuthTokens('oauth-usage');
         $$.mocks.mockExternalClientApps('external-client-apps');
 
         // Act
-        defaultConfig.rules.AllUsedAppsUnderManagement.enabled = true;
         const policyResult = await resolveAndRun('connectedApps', $$);
 
         // Assert
@@ -193,18 +198,49 @@ describe('policy - connected apps', () => {
         expect(ruleResult.violations).to.have.lengthOf(2);
         expect(ruleResult.violations.at(0)).to.deep.contain({
           identifier: ['Test App 2'],
-          details: ['test3@example.com'],
+          details: [
+            messages.getMessage('violations.app-used-details-without-last-access', ['test3@example.com', 1, 3]),
+          ],
         });
         expect(ruleResult.violations.at(1)).to.deep.contain({
           identifier: ['AI Platform Auth'],
-          details: ['cloud@00d3x000001tal2uaa'],
+          details: [
+            messages.getMessage('violations.app-used-details-without-last-access', [
+              'cloud@00d3x000001tal2uaa',
+              1,
+              13_745,
+            ]),
+          ],
         });
+      });
+
+      it('reports comprehensive usage-details for violations', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage-multiple-tokens');
+
+        // Act
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.AllUsedAppsUnderManagement;
+        const expectedMessage = messages.getMessage('violations.app-used-but-not-registered', [1, 1]);
+        const expectedDetail = messages.getMessage('violations.app-used-details-with-last-access', [
+          'test-user-1@example.com',
+          5,
+          1,
+          '2026-04-07T16:00:10.000Z',
+        ]);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['Test App 2'],
+            message: expectedMessage,
+            details: [expectedDetail],
+          },
+        ]);
       });
     });
 
     describe('NoUserCanSelfAuthorize', () => {
-      const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.connectedApps');
-
       beforeEach(() => {
         defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
       });
