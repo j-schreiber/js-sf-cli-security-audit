@@ -19,10 +19,29 @@ export default class AllUsedAppsUnderManagement extends PolicyRule<ConnectedApp>
         result.violations.push({
           identifier: [app.name],
           message: messages.getMessage('violations.app-used-but-not-registered', [app.users.length, app.useCount]),
-          details: app.users,
+          details: formatUserDetails(app.users),
         });
       }
     });
     return Promise.resolve(result);
   }
+}
+
+function formatUserDetails(users: ConnectedApp['users']): string[] {
+  return users.map((user) => {
+    if (user.lastUsed) {
+      return messages.getMessage('violations.app-used-details-with-last-access', [
+        user.username,
+        user.tokenCount,
+        user.useCount,
+        user.lastUsed,
+      ]);
+    } else {
+      return messages.getMessage('violations.app-used-details-without-last-access', [
+        user.username,
+        user.tokenCount,
+        user.useCount,
+      ]);
+    }
+  });
 }
