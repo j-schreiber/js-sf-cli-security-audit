@@ -86,16 +86,17 @@ export default class ConnectedApps extends EventEmitter {
   }
 
   private async setOverrideByApiAccess(apps: ConnectedApp[]): Promise<void> {
+    const nonExternalClientApps = apps.filter((app) => app.type !== 'ExternalClientApp');
     this.emit('entityresolve', {
       total: apps.length,
-      resolved: apps.filter((app) => app.type !== 'ConnectedApp').length,
+      resolved: apps.length - nonExternalClientApps.length,
     });
     let overrideByApiSecurityAccess = false;
     const apiSecurityAccessSetting = await this.mdapi.resolveSingleton('ConnectedAppSettings');
     if (apiSecurityAccessSetting?.enableAdminApprovedAppsOnly) {
       overrideByApiSecurityAccess = true;
     }
-    for (const app of apps.filter((a) => a.type === 'ConnectedApp')) {
+    for (const app of nonExternalClientApps) {
       app.overrideByApiSecurityAccess = overrideByApiSecurityAccess;
     }
   }

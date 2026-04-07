@@ -166,7 +166,7 @@ describe('policy - connected apps', () => {
         },
         {
           total: 9,
-          resolved: 4,
+          resolved: 2,
         },
         {
           total: 9,
@@ -203,10 +203,15 @@ describe('policy - connected apps', () => {
     });
 
     describe('NoUserCanSelfAuthorize', () => {
+      const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.connectedApps');
+
+      beforeEach(() => {
+        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
+      });
+
       it('uses result form ApiAccess setting to override self-authorize flag', async () => {
         // Arrange
         await $$.mocks.stubMetadataRetrieve('security-settings');
-        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
         // Act
         const policyResult = await resolveAndRun('connectedApps', $$);
@@ -225,6 +230,44 @@ describe('policy - connected apps', () => {
         expect(executedRuleNames).to.deep.equal(['NoUserCanSelfAuthorize']);
       });
 
+      it('reports no violation for unknown app by oauth token if override is active', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage');
+        await $$.mocks.stubMetadataRetrieve('security-settings');
+
+        // Act
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.NoUserCanSelfAuthorize;
+        expect(ruleResult.warnings).to.have.lengthOf(8);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('reports violation for unknown app by oauth token if override is disabled', async () => {
+        // Arrange
+        $$.mocks.mockOAuthTokens('oauth-usage');
+        await $$.mocks.stubMetadataRetrieve('api-access-not-available');
+
+        // Act
+        const policyResult = await resolveAndRun('connectedApps', $$);
+
+        // Assert
+        const ruleResult = policyResult.executedRules.NoUserCanSelfAuthorize;
+        const unknownAppMsg = messages.getMessage('violations.users-can-self-authorize-unknown-app');
+        const connectedAppMsg = messages.getMessage('violations.users-can-self-authorize-known-app', ['ConnectedApp']);
+        expect(ruleResult.violations).to.deep.equal([
+          { identifier: ['Chatter Desktop'], message: connectedAppMsg },
+          { identifier: ['Salesforce for Android'], message: connectedAppMsg },
+          { identifier: ['Chatter Mobile for BlackBerry'], message: connectedAppMsg },
+          { identifier: ['Salesforce for iOS'], message: connectedAppMsg },
+          { identifier: ['Test App 1'], message: connectedAppMsg },
+          { identifier: ['Test App 2'], message: unknownAppMsg },
+          { identifier: ['AI Platform Auth'], message: unknownAppMsg },
+          { identifier: ['Test External Client App'], message: unknownAppMsg },
+        ]);
+      });
+
       it('shows app type and details in violation message', async () => {
         // Arrange
         $$.mocks.mockOAuthTokens('oauth-usage');
@@ -232,28 +275,15 @@ describe('policy - connected apps', () => {
         $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
 
         // Act
-        defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
         const policyResult = await resolveAndRun('connectedApps', $$);
 
         // Assert
         const ruleResult = policyResult.executedRules.NoUserCanSelfAuthorize;
-        expect(ruleResult.violatedEntities).to.deep.equal([
-          'Test External Client App',
-          'Test App 2',
-          'AI Platform Auth',
-        ]);
+        expect(ruleResult.violatedEntities).to.deep.equal(['Test External Client App']);
         expect(ruleResult.violations).to.deep.equal([
           {
             identifier: ['Test External Client App'],
             message: 'ExternalClientApp allows users to self-authorize.',
-          },
-          {
-            identifier: ['Test App 2'],
-            message: 'Unknown app allows users to self-authorize.',
-          },
-          {
-            identifier: ['AI Platform Auth'],
-            message: 'Unknown app allows users to self-authorize.',
           },
         ]);
       });
