@@ -4,9 +4,8 @@ import { Optional } from '@jsforce/jsforce-node';
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { createDigest } from '../../../../utils.js';
 import { PartialPolicyRuleResult, RuleAuditContext } from '../context.types.js';
-import { throwAsSfError } from '../schema.js';
 import { ResolvedProfile } from '../policies/profiles.js';
-import PolicyRule, { ConfigurableRuleOptions } from './policyRule.js';
+import PolicyRule, { RuleOptions } from './policyRule.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const msgs = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceLoginIpRanges');
@@ -33,14 +32,12 @@ const EnforceLoginOptionsSchema = z.strictObject({
   noExcessiveRanges: z.boolean().default(false),
 });
 
-type EnforceLoginOptions = z.infer<typeof EnforceLoginOptionsSchema>;
-
 export default class EnforceLoginIpRanges extends PolicyRule<ResolvedProfile> {
-  private readonly ruleOpts: EnforceLoginOptions;
+  private readonly options;
 
-  public constructor(opts: ConfigurableRuleOptions<EnforceLoginOptions>) {
+  public constructor(opts: RuleOptions) {
     super(opts);
-    this.ruleOpts = parseRuleOptions(opts.ruleConfig);
+    this.options = this.parseOptions(EnforceLoginOptionsSchema, opts.ruleConfig, 'profiles.yml');
   }
 
   public run(context: RuleAuditContext<ResolvedProfile>): Promise<PartialPolicyRuleResult> {
@@ -71,7 +68,7 @@ export default class EnforceLoginIpRanges extends PolicyRule<ResolvedProfile> {
           });
         }
       }
-      if (this.ruleOpts.noExcessiveRanges) {
+      if (this.options.noExcessiveRanges) {
         for (const excessive of evalResult.excessiveRanges) {
           result.violations.push({
             identifier: [profile.name, excessive.digest],
@@ -118,13 +115,4 @@ function formatIpRange(range: Omit<NormalizedIpRange, 'digest'>): string {
   return range.description
     ? `${range.startAddress} - ${range.endAddress} (${range.description})`
     : `${range.startAddress} - ${range.endAddress}`;
-}
-
-function parseRuleOptions(anyObject?: unknown): EnforceLoginOptions {
-  const parseResult = EnforceLoginOptionsSchema.safeParse(anyObject ?? {});
-  if (parseResult.success) {
-    return parseResult.data;
-  } else {
-    throwAsSfError('profiles.yml', parseResult.error, ['rules', 'EnforceLoginIpRanges', 'options']);
-  }
 }

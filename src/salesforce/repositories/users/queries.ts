@@ -12,11 +12,10 @@ export const USERS_QUERY = buildUsersQuery();
  * @returns
  */
 export const buildScopedLoginHistoryQuery = (userIds: string[], daysToAnalayse?: number): string => {
-  const groupBy = 'LoginType,Application,UserId';
   const where = daysToAnalayse
     ? `UserId IN (${joinToSoqlIN(userIds)}) AND LoginTime >= LAST_N_DAYS:${daysToAnalayse}`
     : `UserId IN (${joinToSoqlIN(userIds)})`;
-  return `${USERS_LOGIN_HISTORY_QUERY} WHERE ${where} GROUP BY ${groupBy}`;
+  return `${USERS_LOGIN_HISTORY_QUERY} WHERE ${where} GROUP BY ${USERS_LOGIN_GROUPING}`;
 };
 
 function buildUsersQuery(): string {
@@ -33,5 +32,5 @@ function buildUsersQuery(): string {
 }
 
 // BASE QUERIES
-const USERS_LOGIN_HISTORY_QUERY =
-  'SELECT LoginType,Application,UserId,COUNT(Id)LoginCount,MAX(LoginTime)LastLogin FROM LoginHistory';
+const USERS_LOGIN_GROUPING = 'LoginType,Application,Status,UserId';
+const USERS_LOGIN_HISTORY_QUERY = `SELECT ${USERS_LOGIN_GROUPING},COUNT(Id)LoginCount,MAX(LoginTime)LastLogin FROM LoginHistory`;
