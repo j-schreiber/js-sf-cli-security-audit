@@ -1,6 +1,10 @@
-# violations.no-other-apex-api-logins
+# violations.no-successful-other-apex-api-logins
 
-%s logins with "Other Apex API" in the last %s days, which is a deprecated and unsecure login type.
+%s successful logins with "Other Apex API" in the last %s days.
+
+# violations.no-attempted-other-apex-api-logins
+
+%s successful or attempted logins with "Other Apex API" in the last %s days.
 
 # violations.inactive-since-n-days
 

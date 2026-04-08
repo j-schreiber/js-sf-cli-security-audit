@@ -153,6 +153,7 @@ function indexLoginData(rawLogins: SfUserLoginsAggregate[]): Map<string, UserLog
       loginCount: loginHistoryRow.LoginCount,
       application: loginHistoryRow.Application,
       lastLogin: Date.parse(loginHistoryRow.LastLogin),
+      status: loginHistoryRow.Status,
     });
   }
   return loginData;
@@ -201,6 +202,7 @@ type SfUserLoginsAggregate = Record & {
   LoginType: string;
   Application: string;
   UserId: string;
+  Status: string;
   LoginCount: number;
   LastLogin: string;
 };

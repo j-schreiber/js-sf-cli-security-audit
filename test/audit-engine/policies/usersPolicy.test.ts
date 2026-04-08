@@ -138,6 +138,7 @@ describe('policy - users', () => {
           loginCount: 123,
           loginType: 'Application',
           lastLogin: Date.parse('2025-11-11T12:00:00.000+0000'),
+          status: 'Success',
         },
       ]);
     });
@@ -165,6 +166,7 @@ describe('policy - users', () => {
           application: 'Browser',
           loginCount: 123,
           loginType: 'Application',
+          status: 'Success',
           lastLogin: Date.parse('2025-11-11T12:00:00.000+0000'),
         },
       ]);
@@ -206,7 +208,7 @@ describe('policy - users', () => {
         expect(result.executedRules.NoOtherApexApiLogins.violations).to.deep.equal([
           {
             identifier: ['test-user-1@example.de', '2025-08-07T10:01:17.000Z'],
-            message: messages.getMessage('violations.no-other-apex-api-logins', [
+            message: messages.getMessage('violations.no-successful-other-apex-api-logins', [
               10,
               ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory,
             ]),
@@ -214,7 +216,7 @@ describe('policy - users', () => {
         ]);
       });
 
-      it('reports no violation if user has no logins with "Other Apex API', async () => {
+      it('reports no violation if user has no logins with "Other Apex API"', async () => {
         // Arrange
         $$.mocks.mockLoginHistory('logins-with-browser-only', ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory);
 
@@ -225,6 +227,45 @@ describe('policy - users', () => {
         expect(Object.keys(result.executedRules)).deep.equals(['NoOtherApexApiLogins']);
         assert.isDefined(result.executedRules.NoOtherApexApiLogins);
         expect(result.executedRules.NoOtherApexApiLogins.isCompliant).to.be.true;
+      });
+
+      it('no violation if user has no successful logins with "Other Apex API" and only success are included', async () => {
+        // Arrange
+        ruleEnabledConfig.rules.NoOtherApexApiLogins.options = { includeAllLoginAttempts: false };
+        $$.mocks.mockLoginHistory(
+          'logins-with-failed-other-apex-api',
+          ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory
+        );
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.NoOtherApexApiLogins;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([]);
+      });
+
+      it('violation if user has no successful logins with "Other Apex API" and all attempts are included', async () => {
+        // Arrange
+        ruleEnabledConfig.rules.NoOtherApexApiLogins.options = { includeAllLoginAttempts: true };
+        $$.mocks.mockLoginHistory(
+          'logins-with-failed-other-apex-api',
+          ruleEnabledConfig.options.analyseLastNDaysOfLoginHistory
+        );
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.NoOtherApexApiLogins;
+        assert.isDefined(ruleResult);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-1@example.de', '2025-08-06T10:00:00.000Z'],
+            message: messages.getMessage('violations.no-attempted-other-apex-api-logins', [10, 30]),
+          },
+        ]);
       });
     });
 

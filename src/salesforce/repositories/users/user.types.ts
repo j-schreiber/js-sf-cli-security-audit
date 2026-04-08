@@ -23,6 +23,7 @@ export type UserLogins = {
   application: string;
   loginCount: number;
   lastLogin: number;
+  status: string;
 };
 
 export type PermissionSetAssignment = {
