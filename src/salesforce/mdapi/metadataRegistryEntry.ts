@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { XMLParser } from 'fast-xml-parser';
 import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
-import { Connection } from '@salesforce/core';
 import { isNullish } from '../../utils.js';
+import SfConnection from '../connection.js';
 import { RETRIEVE_CACHE } from './constants.js';
 
 export type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
@@ -31,7 +31,7 @@ export type MetadataRegistryEntryOpts<Type, Key extends keyof Type> = {
 };
 
 export type NamedMetadataResolver<Type> = {
-  resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type>>;
+  resolve(con: SfConnection, componentNames: string[]): Promise<Record<string, Type>>;
 };
 
 export type ComponentRetrieveResult = {
@@ -91,19 +91,11 @@ export default abstract class MetadataRegistryEntry<Type, Key extends keyof Type
   }
 }
 
-export async function retrieve(compSet: ComponentSet, con: Connection): Promise<ComponentRetrieveResult> {
+export async function retrieve(compSet: ComponentSet, con: SfConnection): Promise<ComponentRetrieveResult> {
   const packageName = `metadataPackage_${Date.now()}`;
   fs.mkdirSync(RETRIEVE_CACHE, { recursive: true });
   const retrievePath = path.join(RETRIEVE_CACHE, packageName);
-  const retrieveRequest = await compSet.retrieve({
-    usernameOrConnection: con,
-    format: 'metadata',
-    unzip: true,
-    singlePackage: true,
-    zipFileName: `${packageName}.zip`,
-    output: RETRIEVE_CACHE,
-  });
-  const mdapiRetrieveResult = await retrieveRequest.pollStatus();
+  const mdapiRetrieveResult = await con.retrieve(compSet, packageName);
   const retrievedComponents = await parseRetrievedComponents(retrievePath);
   cleanRetrieveCache(packageName);
   return {

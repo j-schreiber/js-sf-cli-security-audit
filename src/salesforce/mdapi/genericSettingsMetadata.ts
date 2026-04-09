@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
-import { Connection } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
+import SfConnection from '../connection.js';
 import { ComponentRetrieveResult, retrieve } from './metadataRegistryEntry.js';
 
 export type SalesforceSetting = {
@@ -29,7 +29,7 @@ export default class GenericSettingsMetadata {
    * @param settingNames
    * @returns
    */
-  public async resolve(con: Connection, settingNames: string[]): Promise<Record<string, SalesforceSetting>> {
+  public async resolve(con: SfConnection, settingNames: string[]): Promise<Record<string, SalesforceSetting>> {
     const cmpSet = new ComponentSet();
     if (settingNames.length === 0) {
       return {};

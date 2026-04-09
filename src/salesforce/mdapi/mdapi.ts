@@ -1,13 +1,16 @@
 import { Connection } from '@salesforce/core';
 import { Metadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import SfConnection from '../connection.js';
 import { MdapiRegistry, Registry } from './metadataRegistry.js';
 
 export default class MDAPI {
   private static readonly retrievers = new Map<string, MDAPI>();
   private readonly cache: MetadataCache;
+  private readonly con: SfConnection;
 
-  public constructor(private readonly connection: Connection, private readonly registry: MdapiRegistry = Registry) {
+  public constructor(connection: Connection, private readonly registry: MdapiRegistry = Registry) {
     this.cache = new MetadataCache();
+    this.con = new SfConnection(connection);
   }
 
   /**
@@ -45,7 +48,7 @@ export default class MDAPI {
     const retriever = this.registry.namedTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached(componentNames);
     if (toRetrieve.length > 0) {
-      const retrieveResults = await retriever.resolve(this.connection, toRetrieve);
+      const retrieveResults = await retriever.resolve(this.con, toRetrieve);
       this.cacheResults(retrieveResults);
       return {
         ...cached,
@@ -68,7 +71,7 @@ export default class MDAPI {
     const retriever = this.registry.singletonTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached([typeName]);
     if (toRetrieve.length > 0) {
-      const retrieveResults = await retriever.resolve(this.connection);
+      const retrieveResults = await retriever.resolve(this.con);
       this.cache.set(typeName, retrieveResults);
       return retrieveResults as SingletonReturnTypes[K];
     }

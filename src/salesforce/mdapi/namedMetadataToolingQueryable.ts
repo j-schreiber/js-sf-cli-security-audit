@@ -1,6 +1,6 @@
 import { QueryResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
-import { Connection } from '@salesforce/core';
 import { isNullish } from '../../utils.js';
+import SfConnection from '../connection.js';
 import { NamedMetadataResolver } from './metadataRegistryEntry.js';
 
 export type NamedMetadataQueryableOpts<Type> = {
@@ -34,12 +34,13 @@ export default class NamedMetadataQueryable<Type, Key extends keyof Type> implem
    * @param componentNames
    * @returns
    */
-  public async resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
+  public async resolve(con: SfConnection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
     const pendingQueries = new Array<Promise<QueryResult<MetadataRecord<Type[Key]>>>>();
     componentNames.forEach((cname) => {
       const qr = Promise.resolve(
-        con.tooling.query<MetadataRecord<Type[Key]>>(
-          `SELECT ${this.opts.nameField},Metadata FROM ${this.opts.objectName} WHERE ${this.opts.nameField} = '${cname}'`
+        con.query<MetadataRecord<Type[Key]>>(
+          `SELECT ${this.opts.nameField},Metadata FROM ${this.opts.objectName} WHERE ${this.opts.nameField} = '${cname}'`,
+          true
         )
       );
       pendingQueries.push(qr);
