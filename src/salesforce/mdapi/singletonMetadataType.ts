@@ -1,5 +1,6 @@
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
+import SfConnection from '../connection.js';
 import MetadataRegistryEntry, {
   ComponentRetrieveResult,
   MetadataRegistryEntryOpts,
@@ -29,7 +30,7 @@ export default class SingletonMetadata<Type, Key extends keyof Type> extends Met
    * @param componentNames
    * @returns
    */
-  public async resolve(con: Connection): Promise<Type[Key]> {
+  public async resolve(con: SfConnection): Promise<Type[Key]> {
     const cmpSet = new ComponentSet([{ type: this.retrieveType, fullName: this.retrieveName }]);
     const result = await retrieve(cmpSet, con);
     return this.returnRetrieveType(result.retrievedComponents);

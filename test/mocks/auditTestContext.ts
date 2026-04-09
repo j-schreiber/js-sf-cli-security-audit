@@ -14,7 +14,7 @@ import {
   PermissionClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
-import { MDAPI } from '../../src/salesforce/index.js';
+import { MDAPI, OrgDescribe } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
@@ -67,6 +67,7 @@ export default class AuditTestContext {
   public reset() {
     this.context.restore();
     process.chdir(this.originalCwd);
+    OrgDescribe.orgCache.clear();
     process.removeAllListeners();
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });

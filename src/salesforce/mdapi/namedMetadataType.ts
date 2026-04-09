@@ -1,5 +1,5 @@
-import { Connection } from '@salesforce/core';
 import { ComponentSet } from '@salesforce/source-deploy-retrieve';
+import SfConnection from '../connection.js';
 import MetadataRegistryEntry, {
   ComponentRetrieveResult,
   MetadataRegistryEntryOpts,
@@ -23,7 +23,7 @@ export default class NamedMetadata<Type, Key extends keyof Type> extends Metadat
    * @param componentNames
    * @returns
    */
-  public async resolve(con: Connection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
+  public async resolve(con: SfConnection, componentNames: string[]): Promise<Record<string, Type[Key]>> {
     const cmpSet = new ComponentSet(componentNames.map((cname) => ({ type: this.retrieveType, fullName: cname })));
     const retrieveResult = await retrieve(cmpSet, con);
     const resolvedFiles = this.parseSourceFiles(retrieveResult.retrievedComponents, componentNames);
