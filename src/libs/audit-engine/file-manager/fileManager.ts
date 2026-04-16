@@ -161,7 +161,7 @@ type DirSaveConfig = {
 };
 
 function assertPath(dirPath: PathLike): void {
-  if (!fs.existsSync(dirPath)) {
+  if (dirPath.toString().length > 0 && !fs.existsSync(dirPath)) {
     throw messages.createError('error.DirectoryDoesNotExistOrIsEmpty', [formatDirPath(dirPath)]);
   }
 }

@@ -35,8 +35,10 @@ export default class AuditTestContext {
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
   public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, controls: {} };
+  private originalCwd;
 
   public constructor(dirPath?: string) {
+    this.originalCwd = process.cwd();
     this.context = new TestContext();
     this.targetOrg = new MockTestOrgData();
     this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
@@ -63,6 +65,7 @@ export default class AuditTestContext {
 
   public reset() {
     this.context.restore();
+    process.chdir(this.originalCwd);
     process.removeAllListeners();
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
