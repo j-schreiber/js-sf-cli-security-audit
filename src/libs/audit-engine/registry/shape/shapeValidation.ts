@@ -38,21 +38,26 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
 };
 
 export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe: OrgDescribe): RefineError[] {
-  const PermissionKeys = ['allowedUserPermissions', 'deniedUserPermissions'] as const;
   const warnings = new Array<RefineError>();
   for (const [roleName, roleDef] of Object.entries(roles)) {
     if (!isPermissionControl(roleDef.permissions) || !roleDef.permissions) {
       continue;
     }
-    for (const permProp of PermissionKeys) {
-      const namedPerms = roleDef.permissions[permProp];
-      if (namedPerms) {
-        for (const permName of namedPerms) {
-          if (!orgDescribe.isValid(permName)) {
-            warnings.push({
-              path: ['Controls', 'Roles', roleName, permProp, permName],
-              message: messages.getMessage('PermissionDoesNotExistOnOrg'),
-            });
+    for (const permissionBlockName of ['userPermissions', 'customPermissions'] as const) {
+      const permBlock = roleDef.permissions[permissionBlockName];
+      if (!permBlock) {
+        continue;
+      }
+      for (const permProp of ['allowed', 'denied', 'required'] as const) {
+        const namedPerms = permBlock[permProp];
+        if (namedPerms) {
+          for (const permName of namedPerms) {
+            if (!orgDescribe.isValid(permName)) {
+              warnings.push({
+                path: ['Controls', 'Roles', roleName, permissionBlockName, permProp, permName],
+                message: messages.getMessage('PermissionDoesNotExistOnOrg'),
+              });
+            }
           }
         }
       }

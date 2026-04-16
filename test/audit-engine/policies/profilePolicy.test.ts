@@ -232,8 +232,10 @@ describe('policy - profiles', () => {
         $$.mockRoles({
           Operations: {
             permissions: {
-              allowedUserPermissions: ['ViewSetup', 'UnknownPermName'],
-              deniedUserPermissions: ['ApiEnabled'],
+              userPermissions: {
+                allowed: ['ViewSetup', 'UnknownPermName'],
+                denied: ['ApiEnabled'],
+              },
             },
           },
           'Allows Nothing': {},

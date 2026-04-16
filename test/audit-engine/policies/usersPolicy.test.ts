@@ -656,14 +656,18 @@ describe('policy - users', () => {
           Operations: {
             permissions: {
               allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-              allowedUserPermissions: ['CustomizeApplication', 'ViewAllData'],
-              deniedUserPermissions: ['ApiEnabled'],
+              userPermissions: {
+                allowed: ['CustomizeApplication', 'ViewAllData'],
+                denied: ['ApiEnabled'],
+              },
             },
           },
           Standard: {
             permissions: {
               allowedClassifications: [PermissionRiskLevel.LOW],
-              deniedUserPermissions: ['ApiEnabled'],
+              userPermissions: {
+                denied: ['ApiEnabled'],
+              },
             },
           },
         });
@@ -750,7 +754,9 @@ describe('policy - users', () => {
           Operations: {
             permissions: {
               allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-              deniedUserPermissions: ['ApiEnabled'],
+              userPermissions: {
+                denied: ['ApiEnabled'],
+              },
             },
           },
           Standard: {

@@ -76,16 +76,18 @@ const UsersPolicyOptions = z.strictObject({
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
+const IndividualPermissionControlSchema = z.object({
+  allowed: z.array(z.string()).optional(),
+  denied: z.array(z.string()).optional(),
+  required: z.array(z.string()).optional(),
+});
+
 // Controls File Schema
 
 export const PermissionControlSchema = z.object({
   allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
-  allowedUserPermissions: z.array(z.string()).optional(),
-  deniedUserPermissions: z.array(z.string()).optional(),
-  requiredUserPermissions: z.array(z.string()).optional(),
-  allowedCustomPermissions: z.array(z.string()).optional(),
-  deniedCustomPermissions: z.array(z.string()).optional(),
-  requiredCustomPermissions: z.array(z.string()).optional(),
+  userPermissions: IndividualPermissionControlSchema.optional(),
+  customPermissions: IndividualPermissionControlSchema.optional(),
 });
 
 export const PermissionControlsFileSchema = z.record(z.string(), PermissionControlSchema);
@@ -160,6 +162,7 @@ export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
 export type AcceptedRuleRisks = z.infer<typeof AcceptedRisksSchema>;
 
 // Definitions
+export type PermissionControlSection = z.infer<typeof IndividualPermissionControlSchema>;
 export type ResolvedRoleDefinition = z.infer<typeof ResolvedRoleDefinitionSchema>;
 export type ComposableRolesControl = z.infer<typeof ComposableRolesFileSchema>;
 export type PermissionControl = z.infer<typeof PermissionControlSchema>;
@@ -170,5 +173,5 @@ export type RoledEntityMap = z.infer<typeof PermSetMap>;
 
 export function isPermissionControl(maybeRoleDef: unknown): maybeRoleDef is PermissionControl {
   const parseResult = PermissionControlSchema.safeParse(maybeRoleDef);
-  return maybeRoleDef !== undefined && parseResult.success;
+  return maybeRoleDef !== undefined && parseResult.success === true;
 }

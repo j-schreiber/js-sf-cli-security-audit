@@ -4,8 +4,8 @@ import {
   PermissionClassifications,
   PermissionRiskLevel,
   UserPrivilegeLevel,
-  PermissionControlSchema,
-  PermissionControl,
+  isPermissionControl,
+  PermissionControlSection,
 } from '../shape/schema.js';
 import {
   DefinitiveRoleDefinition,
@@ -57,26 +57,19 @@ export default class UserRole {
 }
 
 export function newRoleFromDefinition(roleName: string, config: RoleManagerConfig): UserRole {
-  const allowedUserPerms = new Set<string>();
   const { permissions } = resolveRole(roleName, config.controls);
-  if (permissions?.allowedUserPermissions) {
-    for (const permName of permissions.allowedUserPermissions) {
-      allowedUserPerms.add(permName);
-    }
-  }
-  if (permissions && config.shape.userPermissions) {
-    for (const [permName, permDef] of Object.entries(config.shape.userPermissions)) {
-      if (permissions.allowedClassifications && permissions.allowedClassifications.includes(permDef.classification)) {
-        allowedUserPerms.add(permName);
-      }
-    }
-  }
-  if (permissions?.deniedUserPermissions) {
-    for (const permName of permissions.deniedUserPermissions) {
-      allowedUserPerms.delete(permName);
-    }
-  }
-  return new UserRole(roleName, allowedUserPerms, new Set<string>());
+  const userPerms = buildAllowedPerms(
+    permissions?.userPermissions,
+    config.shape.userPermissions,
+    permissions?.allowedClassifications
+  );
+  const customPerms = buildAllowedPerms(
+    permissions?.customPermissions,
+    config.shape.customPermissions,
+    permissions?.allowedClassifications
+  );
+
+  return new UserRole(roleName, userPerms, customPerms);
 }
 
 export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: PermissionClassifications): UserRole {
@@ -123,7 +116,36 @@ function resolveRole(roleName: string, controls: OrgAuditControls): DefinitiveRo
   return { permissions };
 }
 
-function isPermissionControl(maybeRoleDef: unknown): maybeRoleDef is PermissionControl {
-  const parseResult = PermissionControlSchema.safeParse(maybeRoleDef);
-  return maybeRoleDef !== undefined && parseResult.success;
+function buildAllowedPerms(
+  rolePermDef?: PermissionControlSection,
+  permClassifications?: PermissionClassifications,
+  allowedClassifications?: string[]
+): Set<string> {
+  const allowedPerms = new Set<string>();
+  if (allowedClassifications && permClassifications) {
+    for (const [permName, permDef] of Object.entries(permClassifications)) {
+      if (allowedClassifications.includes(permDef.classification)) {
+        allowedPerms.add(permName);
+      }
+    }
+  }
+  if (!rolePermDef) {
+    return allowedPerms;
+  }
+  if (rolePermDef.allowed) {
+    for (const permName of rolePermDef.allowed) {
+      allowedPerms.add(permName);
+    }
+  }
+  if (rolePermDef.required) {
+    for (const permName of rolePermDef.required) {
+      allowedPerms.add(permName);
+    }
+  }
+  if (rolePermDef.denied) {
+    for (const permName of rolePermDef.denied) {
+      allowedPerms.delete(permName);
+    }
+  }
+  return allowedPerms;
 }

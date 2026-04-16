@@ -1,9 +1,10 @@
 CriticalAndModifyAll:
   allowedClassifications:
     - Critical
-  deniedPermissions:
-    - ViewAllData
-    - ModifyAllData
+  userPermissions:
+    denied:
+      - ViewAllData
+      - ModifyAllData
 HighAndLower:
   allowedClassifications:
     - High

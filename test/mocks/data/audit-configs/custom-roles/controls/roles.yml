@@ -2,15 +2,17 @@ DeployEntity:
   permissions:
     allowedClassifications:
       - Critical
-    deniedUserPermissions:
-      - ViewAllData
-      - ModifyAllData
+    userPermissions:
+      denied:
+        - ViewAllData
+        - ModifyAllData
 IntegrationUser:
   permissions:
     allowedClassifications:
       - Medium
-    allowedUserPermissions:
-      - ViewAllData
+    userPermissions:
+      allowed:
+        - ViewAllData
 Developer:
   permissions:
     allowedClassifications:

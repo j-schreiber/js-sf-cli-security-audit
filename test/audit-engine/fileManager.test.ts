@@ -184,7 +184,7 @@ describe('file manager', () => {
       const deployEntity = conf.controls.roles.DeployEntity;
       assert.isDefined(deployEntity.permissions);
       const perms = deployEntity.permissions as PermissionControl;
-      expect(perms.deniedUserPermissions).to.deep.equal(['ViewAllData', 'ModifyAllData']);
+      expect(perms.userPermissions?.denied).to.deep.equal(['ViewAllData', 'ModifyAllData']);
       assert.isDefined(conf.classifications.profiles);
       expect(conf.classifications.profiles.profiles['API Only Deploy'].role).to.equal('DeployEntity');
     });

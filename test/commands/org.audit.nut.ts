@@ -81,7 +81,9 @@ describe('org audit NUTs', () => {
     conf.controls.permissions = {
       OpsPermissions: {
         allowedClassifications: [PermissionRiskLevel.CRITICAL],
-        allowedUserPermissions: ['ApiEnabled', 'ViewSetup'],
+        userPermissions: {
+          allowed: ['ApiEnabled', 'ViewSetup'],
+        },
       },
     };
     setRoleInClassification('MyStandardRole', conf.classifications.permissionSets?.permissionSets);

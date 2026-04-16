@@ -138,14 +138,21 @@ describe('role manager', () => {
           },
           permissions: {
             AdminPerms: {
-              allowedUserPermissions: ['ApiEnabled', 'ViewSetup'],
+              userPermissions: {
+                allowed: ['ApiEnabled', 'ViewSetup'],
+              },
+              customPermissions: {
+                allowed: ['My_Custom_Perm'],
+              },
             },
             HighAndLower: {
               allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
             },
             StandardUserOnly: {
               allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-              deniedUserPermissions: ['ApiEnabled'],
+              userPermissions: {
+                denied: ['ApiEnabled'],
+              },
             },
           },
         },
@@ -176,7 +183,7 @@ describe('role manager', () => {
       // Arrange
       testAuditConfig.controls.roles!['My Ops Role'] = {
         permissions: {
-          deniedUserPermissions: ['CriticalPermName'],
+          userPermissions: { denied: ['CriticalPermName'] },
           allowedClassifications: [PermissionRiskLevel.CRITICAL],
         },
       };
@@ -220,6 +227,7 @@ describe('role manager', () => {
       expect(roleDef.isAllowed({ name: 'ViewSetup', type: 'userPermissions' })).to.be.true;
       expect(roleDef.isAllowed({ name: 'ApiEnabled', type: 'userPermissions' })).to.be.false;
       expect(roleDef.isAllowed({ name: 'CriticalPermName', type: 'userPermissions' })).to.be.false;
+      expect(roleDef.isAllowed({ name: 'My_Custom_Perm', type: 'customPermissions' })).to.be.true;
     });
 
     // it('ignores duplicate role definitions after normalisation', () => {

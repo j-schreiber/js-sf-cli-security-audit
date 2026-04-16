@@ -415,8 +415,8 @@ describe('org audit run', () => {
 
       // Assert
       const expectedWarnings = [
-        'Controls > Roles > DeployEntity > deniedUserPermissions > AnInvalidPerm: Permission does not exist on Org.',
-        'Controls > Roles > StandardUser > allowedUserPermissions > AnotherInvalidPermName: Permission does not exist on Org.',
+        'Controls > Roles > DeployEntity > userPermissions > denied > AnInvalidPerm: Permission does not exist on Org.',
+        'Controls > Roles > StandardUser > userPermissions > allowed > AnotherInvalidPermName: Permission does not exist on Org.',
       ];
       expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal(expectedWarnings);
     });
