@@ -34,8 +34,8 @@ type PolicyDefinitions = {
 export type AuditRunConfig = ExtractAuditConfigTypes<typeof AuditConfigShape>;
 export type Policies = keyof AuditRunConfig['policies'];
 export type PolicyShapes = AuditRunConfig['policies'];
-export type Classifications = keyof AuditRunConfig['classifications'];
-export type ClassificationShapes = AuditRunConfig['classifications'];
+export type Shapes = keyof AuditRunConfig['shape'];
+export type Inventories = keyof AuditRunConfig['inventory'];
 
 /**
  * Central definition of policies (handlers + registered rules).

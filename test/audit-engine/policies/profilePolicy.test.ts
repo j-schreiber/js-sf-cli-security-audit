@@ -126,10 +126,8 @@ describe('policy - profiles', () => {
       it('reports error in custom perms if permission classification does not match preset', async () => {
         // Arrange
         defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
-        $$.mockAuditConfig.classifications.customPermissions = {
-          permissions: {
-            CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
-          },
+        $$.mockAuditConfig.shape.customPermissions = {
+          CriticalCustomPermission: { classification: PermissionRiskLevel.CRITICAL },
         };
 
         // Act
@@ -171,13 +169,11 @@ describe('policy - profiles', () => {
             role: 'Allows Nothing',
           },
         });
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: { classification: PermissionRiskLevel.CRITICAL },
-            ApiEnabled: { classification: PermissionRiskLevel.UNKNOWN },
-          },
-        };
-        defaultConfig.rules.EnforcePermissionClassifications.enabled = true;
+        ($$.mockAuditConfig.shape.userPermissions = {
+          ViewSetup: { classification: PermissionRiskLevel.CRITICAL },
+          ApiEnabled: { classification: PermissionRiskLevel.UNKNOWN },
+        }),
+          (defaultConfig.rules.EnforcePermissionClassifications.enabled = true);
       });
 
       it('reports violations for profiles that contain user permissions that are not allowed', async () => {
@@ -282,7 +278,7 @@ describe('policy - profiles', () => {
           },
         };
         $$.mockAuditConfig.policies.profiles = ruleConfig;
-        $$.mockAuditConfig.classifications.profiles = { profiles: classifications };
+        $$.mockAuditConfig.inventory.profiles = classifications;
       });
 
       it('reports violation if profile does not have required login IP ranges', async () => {

@@ -1,5 +1,0 @@
-profiles:
-  System Administrator:
-    role: DeployEntity
-  Standard User:
-    role: StandardUser

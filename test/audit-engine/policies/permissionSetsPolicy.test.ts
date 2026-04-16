@@ -20,15 +20,13 @@ describe('policy - permission sets', () => {
   }
 
   beforeEach(async () => {
-    $$.mockAuditConfig.classifications = {
+    $$.mockAuditConfig.inventory = {
       permissionSets: {
-        permissionSets: {
-          Test_Admin_Permission_Set_1: {
-            role: UserPrivilegeLevel.ADMIN,
-          },
-          Test_Power_User_Permission_Set_1: {
-            role: UserPrivilegeLevel.POWER_USER,
-          },
+        Test_Admin_Permission_Set_1: {
+          role: UserPrivilegeLevel.ADMIN,
+        },
+        Test_Power_User_Permission_Set_1: {
+          role: UserPrivilegeLevel.POWER_USER,
         },
       },
     };

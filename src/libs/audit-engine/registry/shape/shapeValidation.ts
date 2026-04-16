@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { ExtractAuditConfigTypes, RefineError } from '../../file-manager/fileManager.types.js';
 import { OrgDescribe } from '../../../../salesforce/index.js';
 import { BaseAuditConfigShape } from './auditConfigShape.js';
-import { ComposableRolesControl, isPermissionControl, RoledEntityMap } from './schema.js';
+import { ComposableRolesControl, isPermissionControl, PermissionSetClassifications } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'auditShapeValidation');
@@ -10,22 +10,16 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'au
 export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditConfigShape>): RefineError[] => {
   const errors: RefineError[] = [];
   if (parseResult.controls.roles) {
-    if (parseResult.classifications.profiles) {
+    if (parseResult.inventory.profiles) {
+      errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.profiles, 'profiles'));
+    }
+    if (parseResult.inventory.permissionSets) {
       errors.push(
-        ...validateRoledEntity(parseResult.controls.roles, parseResult.classifications.profiles.profiles, 'profiles')
+        ...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.permissionSets, 'permissionSets')
       );
     }
-    if (parseResult.classifications.permissionSets) {
-      errors.push(
-        ...validateRoledEntity(
-          parseResult.controls.roles,
-          parseResult.classifications.permissionSets.permissionSets,
-          'permissionSets'
-        )
-      );
-    }
-    if (parseResult.classifications.users) {
-      errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.classifications.users.users, 'users'));
+    if (parseResult.inventory.users) {
+      errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.users, 'users'));
     }
   }
   if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
@@ -68,7 +62,7 @@ export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe
 
 function validateRoledEntity(
   roles: ComposableRolesControl,
-  entries: RoledEntityMap,
+  entries: PermissionSetClassifications,
   entityName: string
 ): RefineError[] {
   const errors: RefineError[] = [];

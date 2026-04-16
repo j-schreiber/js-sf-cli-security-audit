@@ -63,13 +63,7 @@ const ProfileConfig = PermSetConfig.extend({
   allowedLoginIps: z.array(z.object({ from: z.string().regex(IP4RegExp), to: z.string().regex(IP4RegExp) })).optional(),
 });
 
-const PermSetMap = z.record(z.string(), PermSetConfig);
-
-const ProfilesMap = z.record(z.string(), ProfileConfig);
-
 const UserConfig = z.object({ role: z.string() });
-
-const UsersMap = z.record(z.string(), UserConfig);
 
 const UsersPolicyOptions = z.strictObject({
   defaultRoleForMissingUsers: z.string().default(UserPrivilegeLevel.STANDARD_USER),
@@ -102,21 +96,13 @@ export const ComposableRolesFileSchema = z.record(
 
 // Classification File Schemata
 
-export const PermissionsClassificationFileSchema = z.object({
-  permissions: PermissionClassifications,
-});
+export const PermissionsClassificationFileSchema = z.record(z.string(), PermClassification);
 
-export const ProfilesClassificationFileSchema = z.object({
-  profiles: ProfilesMap,
-});
+export const ProfilesClassificationFileSchema = z.record(z.string(), ProfileConfig);
 
-export const PermissionSetsClassificationFileSchema = z.object({
-  permissionSets: PermSetMap,
-});
+export const PermissionSetsClassificationFileSchema = z.record(z.string(), PermSetConfig);
 
-export const UserClassificationFileSchema = z.object({
-  users: UsersMap,
-});
+export const UserClassificationFileSchema = z.record(z.string(), UserConfig);
 
 // Policy File Schemata
 
@@ -149,10 +135,10 @@ export const AcceptedRisksSchema: z.ZodType<NestedStructure> = z.lazy(() =>
 );
 
 // Classification Types
-export type PermissionClassifications = z.infer<typeof PermissionClassifications>;
-export type PermissionSetClassifications = z.infer<typeof PermSetMap>;
-export type ProfileClassifications = z.infer<typeof ProfilesMap>;
-export type UserClassifications = z.infer<typeof UsersMap>;
+export type PermissionClassifications = z.infer<typeof PermissionsClassificationFileSchema>;
+export type PermissionSetClassifications = z.infer<typeof PermissionSetsClassificationFileSchema>;
+export type ProfileClassifications = z.infer<typeof ProfilesClassificationFileSchema>;
+export type UserClassifications = z.infer<typeof UserClassificationFileSchema>;
 
 // Policy Types
 export type PolicyConfig = z.infer<typeof PolicyFileSchema>;
@@ -167,7 +153,6 @@ export type ResolvedRoleDefinition = z.infer<typeof ResolvedRoleDefinitionSchema
 export type ComposableRolesControl = z.infer<typeof ComposableRolesFileSchema>;
 export type PermissionControl = z.infer<typeof PermissionControlSchema>;
 export type PermissionControls = z.infer<typeof PermissionControlsFileSchema>;
-export type RoledEntityMap = z.infer<typeof PermSetMap>;
 
 // Guard Functions
 

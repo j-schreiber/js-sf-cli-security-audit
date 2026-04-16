@@ -1,9 +1,0 @@
-profiles:
-  Guest License User:
-    role: Unknown
-  Minimum Access - Salesforce:
-    role: Unknown
-  System Administrator:
-    role: Admin
-  Standard User:
-    role: Standard User

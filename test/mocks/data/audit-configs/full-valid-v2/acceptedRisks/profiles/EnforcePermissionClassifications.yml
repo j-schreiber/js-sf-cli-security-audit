@@ -1,6 +1,0 @@
-System Administrator:
-  '*':
-    reason: 'No violations for admin user.'
-Standard User:
-  ViewSetup:
-    reason: 'Standard users are allowed to view setup.'

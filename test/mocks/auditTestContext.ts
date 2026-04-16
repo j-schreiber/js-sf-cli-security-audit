@@ -11,6 +11,7 @@ import {
   PermissionControls,
   UserClassifications,
   ComposableRolesControl,
+  PermissionClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
@@ -34,7 +35,7 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, controls: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, shape: {}, inventory: {}, acceptedRisks: {}, controls: {} };
   private originalCwd;
 
   public constructor(dirPath?: string) {
@@ -70,7 +71,7 @@ export default class AuditTestContext {
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, controls: {} };
+    this.mockAuditConfig = { policies: {}, shape: {}, inventory: {}, acceptedRisks: {}, controls: {} };
     MDAPI.clearCache();
     resetAllEnvironmentVars();
     initDefaultMocks(this.mocks);
@@ -114,7 +115,7 @@ export default class AuditTestContext {
    * @param classifications
    */
   public mockProfileClassifications(classifications: ProfileClassifications): void {
-    this.mockAuditConfig.classifications.profiles = undefined;
+    this.mockAuditConfig.inventory.profiles = undefined;
     Object.entries(classifications).forEach(([profileName, classification]) => {
       this.mockProfileClassification(profileName, classification);
     });
@@ -126,7 +127,7 @@ export default class AuditTestContext {
    * @param classifications
    */
   public mockPermSetClassifications(classifications: PermissionSetClassifications): void {
-    this.mockAuditConfig.classifications.permissionSets = undefined;
+    this.mockAuditConfig.inventory.permissionSets = undefined;
     Object.entries(classifications).forEach(([permSetName, classification]) => {
       this.mockPermSetClassification(permSetName, classification);
     });
@@ -139,8 +140,8 @@ export default class AuditTestContext {
    * @param classification
    */
   public mockProfileClassification(profileName: string, classification: ProfileClassifications['string']): void {
-    this.mockAuditConfig.classifications.profiles ??= { profiles: {} };
-    this.mockAuditConfig.classifications.profiles.profiles[profileName] = classification;
+    this.mockAuditConfig.inventory.profiles ??= {};
+    this.mockAuditConfig.inventory.profiles[profileName] = classification;
   }
 
   /**
@@ -150,8 +151,8 @@ export default class AuditTestContext {
    * @param classification
    */
   public mockPermSetClassification(permSetName: string, classification: PermissionSetClassifications['string']): void {
-    this.mockAuditConfig.classifications.permissionSets ??= { permissionSets: {} };
-    this.mockAuditConfig.classifications.permissionSets.permissionSets[permSetName] = classification;
+    this.mockAuditConfig.inventory.permissionSets ??= {};
+    this.mockAuditConfig.inventory.permissionSets[permSetName] = classification;
   }
 
   /**
@@ -160,15 +161,23 @@ export default class AuditTestContext {
    * @param classifications
    */
   public mockUserClassifications(classifications: UserClassifications): void {
-    this.mockAuditConfig.classifications.users = undefined;
+    this.mockAuditConfig.inventory.users = undefined;
     Object.entries(classifications).forEach(([permSetName, classification]) => {
       this.mockUserClassification(permSetName, classification);
     });
   }
 
   public mockUserClassification(username: string, classification: UserClassifications['string']): void {
-    this.mockAuditConfig.classifications.users ??= { users: {} };
-    this.mockAuditConfig.classifications.users.users[username] = classification;
+    this.mockAuditConfig.inventory.users ??= {};
+    this.mockAuditConfig.inventory.users[username] = classification;
+  }
+
+  public mockUserPermissions(classifications: PermissionClassifications): void {
+    this.mockAuditConfig.shape.userPermissions = classifications;
+  }
+
+  public mockCustomPermissions(classifications: PermissionClassifications): void {
+    this.mockAuditConfig.shape.customPermissions = classifications;
   }
 }
 

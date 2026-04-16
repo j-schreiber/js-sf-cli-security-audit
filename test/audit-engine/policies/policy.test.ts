@@ -17,18 +17,16 @@ describe('policy - base implementation', () => {
   }
 
   beforeEach(async () => {
-    $$.mockAuditConfig.classifications = {
+    $$.mockAuditConfig.inventory = {
       profiles: {
-        profiles: {
-          'System Administrator': {
-            role: UserPrivilegeLevel.ADMIN,
-          },
-          'Standard User': {
-            role: UserPrivilegeLevel.STANDARD_USER,
-          },
-          'Custom Profile': {
-            role: UserPrivilegeLevel.POWER_USER,
-          },
+        'System Administrator': {
+          role: UserPrivilegeLevel.ADMIN,
+        },
+        'Standard User': {
+          role: UserPrivilegeLevel.STANDARD_USER,
+        },
+        'Custom Profile': {
+          role: UserPrivilegeLevel.POWER_USER,
         },
       },
     };

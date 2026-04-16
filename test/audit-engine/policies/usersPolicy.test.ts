@@ -354,13 +354,11 @@ describe('policy - users', () => {
         // mock classification for some of the profile & perm sets that are okay for user
         // profiles and permsets grant >200 perms, but all of them will be ignored because
         // they are not classified. LOW is okay for standard users
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.LOW,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.LOW,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -379,13 +377,11 @@ describe('policy - users', () => {
 
       it('reports violation if user has an permission that is not allowed', async () => {
         // Arrange
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -414,13 +410,11 @@ describe('policy - users', () => {
 
       it('reports violation if user has a custom permission that is not allowed', async () => {
         // Arrange
-        $$.mockAuditConfig.classifications.customPermissions = {
-          permissions: {
-            My_Critical_Custom_Perm: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
+        $$.mockCustomPermissions({
+          My_Critical_Custom_Perm: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -476,21 +470,19 @@ describe('policy - users', () => {
       it('audits users based role definitions if they exist', async () => {
         // Arrange
         // all users will be assigned the default role
-        $$.mockAuditConfig.classifications.users = { users: {} };
+        $$.mockUserClassifications({});
         localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
         $$.mockRoles({
           Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
-            ApiEnabled: {
-              classification: PermissionRiskLevel.LOW,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+          ApiEnabled: {
+            classification: PermissionRiskLevel.LOW,
+          },
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -681,7 +673,7 @@ describe('policy - users', () => {
           },
         };
         $$.mockAuditConfig.policies.users = localPolicyConfig;
-        $$.mockAuditConfig.classifications.users = { users: {} };
+        $$.mockUserClassifications({});
 
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
@@ -765,16 +757,14 @@ describe('policy - users', () => {
             },
           },
         });
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ApiEnabled: {
-              classification: PermissionRiskLevel.HIGH,
-            },
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
+        $$.mockUserPermissions({
+          ApiEnabled: {
+            classification: PermissionRiskLevel.HIGH,
           },
-        };
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
+          },
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);

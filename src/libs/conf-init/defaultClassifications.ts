@@ -1,6 +1,7 @@
 import { Connection } from '@salesforce/core';
-import { Classifications, PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
+import { PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
 import { OrgDescribe, PermissionSets, Profiles, Users } from '../../salesforce/index.js';
+import { Inventories, Shapes } from '../audit-engine/registry/definitions.js';
 import { loadPreset } from './presets.js';
 import {
   AuditInitPresets,
@@ -11,26 +12,17 @@ import {
   UserClassifications,
 } from './init.types.js';
 
-type ClassificationDefinition = {
-  initialiser: (con: Connection, preset?: AuditInitPresets) => unknown;
+export type Initialiser = (con: Connection, preset?: AuditInitPresets) => Promise<unknown>;
+
+export const ShapeInitialisers: Record<Shapes, Initialiser> = {
+  userPermissions: initUserPermissions,
+  customPermissions: initCustomPermissions,
 };
 
-export const ClassificationInitDefinitions: Record<Classifications, ClassificationDefinition> = {
-  userPermissions: {
-    initialiser: initUserPermissions,
-  },
-  customPermissions: {
-    initialiser: initCustomPermissions,
-  },
-  profiles: {
-    initialiser: initProfiles,
-  },
-  permissionSets: {
-    initialiser: initPermissionSets,
-  },
-  users: {
-    initialiser: initUsers,
-  },
+export const InventoryInitialisers: Record<Inventories, Initialiser> = {
+  profiles: initProfiles,
+  permissionSets: initPermissionSets,
+  users: initUsers,
 };
 
 async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
@@ -39,10 +31,10 @@ async function initUserPermissions(con: Connection, preset?: AuditInitPresets): 
   const presConfig = loadPreset(preset);
   const perms = presConfig.classifyUserPermissions(userPerms);
   perms.sort(classificationSorter);
-  const result: PermissionClassifications = { permissions: {} };
+  const result: PermissionClassifications = {};
   perms.forEach(
     (perm) =>
-      (result.permissions[perm.name] = {
+      (result[perm.name] = {
         label: perm.label,
         classification: perm.classification,
         reason: perm.reason,
@@ -52,7 +44,7 @@ async function initUserPermissions(con: Connection, preset?: AuditInitPresets): 
 }
 
 async function initCustomPermissions(con: Connection): Promise<PermissionClassifications | undefined> {
-  const result: PermissionClassifications = { permissions: {} };
+  const result: PermissionClassifications = {};
   const orgManager = await OrgDescribe.create(con);
   const customPerms = orgManager.getCustomPermissions();
   if (customPerms.length === 0) {
@@ -64,7 +56,7 @@ async function initCustomPermissions(con: Connection): Promise<PermissionClassif
   }));
   perms.forEach(
     (perm) =>
-      (result.permissions[perm.name] = {
+      (result[perm.name] = {
         label: perm.label,
         classification: perm.classification,
       })
@@ -75,9 +67,9 @@ async function initCustomPermissions(con: Connection): Promise<PermissionClassif
 async function initProfiles(targetOrgCon: Connection): Promise<ProfileClassifications> {
   const profilesRepo = new Profiles(targetOrgCon);
   const profiles = await profilesRepo.resolve();
-  const content: ProfileClassifications = { profiles: {} };
+  const content: ProfileClassifications = {};
   for (const profileName of profiles.keys()) {
-    content.profiles[profileName] = { role: UserPrivilegeLevel.UNKNOWN };
+    content[profileName] = { role: UserPrivilegeLevel.UNKNOWN };
   }
   return content;
 }
@@ -85,9 +77,9 @@ async function initProfiles(targetOrgCon: Connection): Promise<ProfileClassifica
 async function initPermissionSets(targetOrgCon: Connection): Promise<PermsetClassifications> {
   const permsetsRepo = new PermissionSets(targetOrgCon);
   const permsets = await permsetsRepo.resolve({ isCustomOnly: true });
-  const content: PermsetClassifications = { permissionSets: {} };
+  const content: PermsetClassifications = {};
   for (const permsetName of permsets.keys()) {
-    content.permissionSets[permsetName] = { role: UserPrivilegeLevel.UNKNOWN };
+    content[permsetName] = { role: UserPrivilegeLevel.UNKNOWN };
   }
   return content;
 }
@@ -95,10 +87,8 @@ async function initPermissionSets(targetOrgCon: Connection): Promise<PermsetClas
 async function initUsers(targetOrgCon: Connection): Promise<UserClassifications> {
   const usersRepo = new Users(targetOrgCon);
   const users = await usersRepo.resolve();
-  const content: UserClassifications = {
-    users: {},
-  };
-  for (const username of users.keys()) content.users[username] = { role: UserPrivilegeLevel.STANDARD_USER };
+  const content: UserClassifications = {};
+  for (const username of users.keys()) content[username] = { role: UserPrivilegeLevel.STANDARD_USER };
   return content;
 }
 

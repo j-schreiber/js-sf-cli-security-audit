@@ -1,0 +1,18 @@
+Developer:
+  permissions:
+    - CriticalAndModifyAll
+    - HighAndLower
+Admin:
+  permissions:
+    - HighAndLower
+Power User:
+  permissions:
+    allowedClassifications:
+      - Medium
+      - Low
+Standard:
+  permissions:
+    allowedClassifications:
+      - Low
+      - Unknown
+Unknown: {}

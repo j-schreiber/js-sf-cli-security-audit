@@ -21,7 +21,7 @@ export default class UsersPolicy extends Policy<ResolvedUser> {
 
   public constructor(public config: UserPolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
     super('users', config, auditConfig, registry);
-    this.classifications = this.auditConfig.classifications.users?.users ?? {};
+    this.classifications = this.auditConfig.inventory.users ?? {};
     this.totalEntities = Object.keys(this.classifications).length;
     this.resolveOptions = buildResolveOptions(this.config);
   }

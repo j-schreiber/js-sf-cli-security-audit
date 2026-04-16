@@ -14,7 +14,7 @@ import {
   RuleComponentMessage,
 } from '../../src/libs/audit-engine/registry/result.types.js';
 import AcceptedRisks from '../../src/libs/audit-engine/accepted-risks/acceptedRisks.js';
-import { RoledEntityMap } from '../../src/libs/audit-engine/registry/shape/schema.js';
+import { PermissionSetClassifications } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import { loadPolicy, Policies, PolicyDefinitions } from '../../src/libs/audit-engine/index.js';
 import { OrgDescribe } from '../../src/salesforce/index.js';
 import Policy, { ResolveEntityResult } from '../../src/libs/audit-engine/registry/policy.js';
@@ -70,7 +70,7 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
   };
 }
 
-export function setRoleInClassification(role: string, maybeProfileLikes?: RoledEntityMap): void {
+export function setRoleInClassification(role: string, maybeProfileLikes?: PermissionSetClassifications): void {
   if (maybeProfileLikes) {
     for (const profile of Object.values(maybeProfileLikes)) {
       // eslint-disable-next-line no-param-reassign

@@ -1,4 +1,0 @@
-enabled: true
-rules:
-  EnforcePermissionClassifications:
-    enabled: true

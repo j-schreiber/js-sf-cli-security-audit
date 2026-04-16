@@ -24,6 +24,7 @@ export type ConfigSchema = {
   schema: z.ZodType;
   dependencies?: ConfigFileDependency[];
   entities?: string;
+  isCountable?: boolean;
 };
 
 /**

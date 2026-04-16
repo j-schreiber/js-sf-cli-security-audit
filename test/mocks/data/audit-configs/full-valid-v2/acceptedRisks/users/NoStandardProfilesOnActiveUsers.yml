@@ -1,6 +1,0 @@
-test-user-1@example.de:
-  Standard User:
-    reason: This profile is allowed today.
-test-user-2@example.de:
-  System Administrator:
-    reason: This profile is allowed today.

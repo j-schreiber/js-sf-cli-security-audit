@@ -1,5 +1,0 @@
-profiles:
-  System Administrator:
-    role: Admin
-  Standard User:
-    role: Standard User

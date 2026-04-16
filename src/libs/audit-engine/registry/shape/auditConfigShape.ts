@@ -21,52 +21,47 @@ export const BaseAuditConfigShape = {
       permissions: { schema: PermissionControlsFileSchema },
     },
   },
-  classifications: {
+  shape: {
     files: {
-      userPermissions: {
-        schema: PermissionsClassificationFileSchema,
-        entities: 'permissions',
-      },
-      customPermissions: {
-        schema: PermissionsClassificationFileSchema,
-        entities: 'permissions',
-      },
-      profiles: {
-        schema: ProfilesClassificationFileSchema,
-        entities: 'profiles',
-      },
-      permissionSets: {
-        schema: PermissionSetsClassificationFileSchema,
-        entities: 'permissionSets',
-      },
-      users: {
-        schema: UserClassificationFileSchema,
-        entities: 'users',
-      },
+      userPermissions: { schema: PermissionsClassificationFileSchema, isCountable: true },
+      customPermissions: { schema: PermissionsClassificationFileSchema, isCountable: true },
+    },
+  },
+  inventory: {
+    files: {
+      profiles: { schema: ProfilesClassificationFileSchema, isCountable: true },
+      permissionSets: { schema: PermissionSetsClassificationFileSchema, isCountable: true },
+      users: { schema: UserClassificationFileSchema, isCountable: true },
     },
   },
   policies: {
     files: {
       profiles: {
         schema: PolicyFileSchema,
-        dependencies: [
-          { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' },
-        ],
+        dependencies: [{ path: ['shape', 'userPermissions'], errorName: 'UserPermClassificationRequiredForProfiles' }],
+        isCountable: true,
+        entities: 'rules',
       },
       permissionSets: {
         schema: PolicyFileSchema,
-        dependencies: [
-          { path: ['classifications', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' },
-        ],
+        dependencies: [{ path: ['shape', 'userPermissions'], errorName: 'UserPermClassificationRequiredForPermSets' }],
+        isCountable: true,
+        entities: 'rules',
       },
       connectedApps: {
         schema: PolicyFileSchema,
+        isCountable: true,
+        entities: 'rules',
       },
       users: {
         schema: UserPolicyFileSchema,
+        isCountable: true,
+        entities: 'rules',
       },
       settings: {
         schema: PolicyFileSchema,
+        isCountable: true,
+        entities: 'rules',
       },
     },
   },

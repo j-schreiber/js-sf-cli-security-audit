@@ -1,16 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Connection } from '@salesforce/core';
-import {
-  AuditRunConfig,
-  Classifications,
-  RuleRegistry,
-  Policies,
-  PolicyConfig,
-  PolicyDefinitions,
-} from '../audit-engine/index.js';
+import { AuditRunConfig, RuleRegistry, Policies, PolicyConfig, PolicyDefinitions } from '../audit-engine/index.js';
 import { AuditInitPresets } from './init.types.js';
-import { ClassificationInitDefinitions } from './defaultClassifications.js';
+import { Initialiser, InventoryInitialisers, ShapeInitialisers } from './defaultClassifications.js';
 import { DefaultPolicyDefinitions } from './defaultPolicies.js';
 
 /**
@@ -35,19 +28,29 @@ export default class AuditConfig {
    * @param con
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
-    const conf: AuditRunConfig = { classifications: {}, policies: {}, acceptedRisks: {}, controls: {} };
-    for (const [className, classInitDef] of Object.entries(ClassificationInitDefinitions)) {
-      // eslint-disable-next-line no-await-in-loop
-      const defaultClassification = await classInitDef.initialiser(targetCon, opts?.preset);
-      if (defaultClassification) {
-        conf.classifications[className as Classifications] = defaultClassification as any;
-      }
-    }
+    const conf: AuditRunConfig = { shape: {}, inventory: {}, policies: {}, acceptedRisks: {}, controls: {} };
+    conf.shape = await this.initSubtype(ShapeInitialisers, targetCon, opts);
+    conf.inventory = await this.initSubtype(InventoryInitialisers, targetCon, opts);
     for (const policyName of Object.keys(PolicyDefinitions)) {
       const policy = initPolicyConfig(policyName as Policies);
       conf.policies[policyName as Policies] = policy as any;
     }
     return conf;
+  }
+
+  private static async initSubtype(
+    initialisable: Record<string, Initialiser>,
+    targetCon: Connection,
+    opts?: AuditInitOptions
+  ): Promise<Record<string, unknown>> {
+    const initPromises = Object.entries(initialisable).map(([, init]) => init(targetCon, opts?.preset));
+    const inits = await Promise.all(initPromises);
+    const result: Record<string, unknown> = {};
+    const keys = Object.keys(initialisable);
+    for (const initEntry of keys) {
+      result[initEntry] = inits.at(keys.indexOf(initEntry));
+    }
+    return result;
   }
 }
 

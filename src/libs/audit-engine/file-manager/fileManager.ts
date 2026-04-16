@@ -143,7 +143,11 @@ function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
     const maybeContent = conf.dirContent[fileName];
     const filePath = path.join(conf.targetPath, `${fileName}.yml`);
     if (maybeContent) {
-      const entitiesCount = fileDefinition.entities ? countEntities(maybeContent[fileDefinition.entities]) : 0;
+      const entitiesCount = fileDefinition.isCountable
+        ? fileDefinition.entities
+          ? countEntities(maybeContent[fileDefinition.entities])
+          : countEntities(maybeContent)
+        : 0;
       dirSaveResults[fileName] = { filePath, content: maybeContent, totalEntities: entitiesCount };
       fs.writeFileSync(filePath, yaml.dump(maybeContent));
     } else if (fs.existsSync(filePath)) {
@@ -206,7 +210,7 @@ function isNestedDir(dir: ConfigsFileDir | NestedConfigDir): dir is NestedConfig
 }
 
 function countEntities(content: unknown): number {
-  if (content) {
+  if (content && content != null && typeof content === 'object') {
     return Object.entries(content).length;
   } else {
     return 0;
