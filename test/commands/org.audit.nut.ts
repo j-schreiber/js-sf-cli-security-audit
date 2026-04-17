@@ -42,26 +42,24 @@ describe('org audit NUTs', () => {
     const enforceClassificationsRisks: AcceptedRuleRisks = {};
     const enforcePresetsRisks: AcceptedRuleRisks = {};
     const standardProfilesRisks: AcceptedRuleRisks = {};
-    if (conf.inventory.users?.users) {
-      for (const user of Object.keys(conf.inventory.users.users)) {
-        enforceClassificationsRisks[user] = {
-          '*': {
-            '*': { reason: 'Matches all permissions from all profiles or permsets' },
-          },
-        };
-        enforcePresetsRisks[user] = {
-          '*': { reason: 'Matches all profiles or permsets' },
-        };
-        standardProfilesRisks[user] = {
-          '*': { reason: 'Matches all profiles' },
-        };
-      }
-      conf.acceptedRisks.users = {
-        EnforcePermissionClassifications: enforceClassificationsRisks,
-        EnforcePermissionPresets: enforcePresetsRisks,
-        NoStandardProfilesOnActiveUsers: standardProfilesRisks,
+    for (const user of Object.keys(conf.inventory.users!)) {
+      enforceClassificationsRisks[user] = {
+        '*': {
+          '*': { reason: 'Matches all permissions from all profiles or permsets' },
+        },
+      };
+      enforcePresetsRisks[user] = {
+        '*': { reason: 'Matches all profiles or permsets' },
+      };
+      standardProfilesRisks[user] = {
+        '*': { reason: 'Matches all profiles' },
       };
     }
+    conf.acceptedRisks.users = {
+      EnforcePermissionClassifications: enforceClassificationsRisks,
+      EnforcePermissionPresets: enforcePresetsRisks,
+      NoStandardProfilesOnActiveUsers: standardProfilesRisks,
+    };
     ConfigFileManager.save(configDirPath, conf);
   }
 
