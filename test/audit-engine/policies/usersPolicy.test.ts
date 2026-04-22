@@ -9,7 +9,7 @@ import {
   UserPolicyConfig,
   UserPrivilegeLevel,
 } from '../../../src/libs/audit-engine/registry/shape/schema.js';
-import { resolveAndRun } from '../../mocks/testHelpers.js';
+import { resolve, resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.users');
@@ -48,11 +48,13 @@ describe('policy - users', () => {
   }
 
   beforeEach(async () => {
-    $$.mockUserClassification('guest-user@example.de', {
-      role: UserPrivilegeLevel.STANDARD_USER,
-    });
-    $$.mockUserClassification('test-user-2@example.de', {
-      role: UserPrivilegeLevel.ADMIN,
+    $$.mockUserClassifications({
+      'guest-user@example.de': {
+        role: UserPrivilegeLevel.STANDARD_USER,
+      },
+      'test-user-2@example.de': {
+        role: UserPrivilegeLevel.ADMIN,
+      },
     });
     defaultConfig = {
       enabled: true,
@@ -72,8 +74,7 @@ describe('policy - users', () => {
   describe('entity resolve', () => {
     it('resolves all users from config with active users on org', async () => {
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       expect(resolveResult.ignoredEntities).to.deep.equal([]);
@@ -95,8 +96,7 @@ describe('policy - users', () => {
       $$.mockUserClassification('guest-user@example.de', { role: UserPrivilegeLevel.UNKNOWN });
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       expect(resolveResult.ignoredEntities.length).to.equal(1);
@@ -110,9 +110,7 @@ describe('policy - users', () => {
     it('reports all users from org as total users', async () => {
       // Act
       const resolveListener = $$.context.SANDBOX.stub();
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      pol.addListener('entityresolve', resolveListener);
-      await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      await resolve('users', $$, resolveListener);
 
       // Assert
       expect(resolveListener.callCount).to.equal(3);
@@ -127,8 +125,7 @@ describe('policy - users', () => {
       defaultConfig.rules = { NoInactiveUsers: { enabled: true } };
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
@@ -156,8 +153,7 @@ describe('policy - users', () => {
       };
 
       // Act
-      const pol = loadPolicy('users', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('users', $$);
 
       // Assert
       const testUser = resolveResult.resolvedEntities['test-user-2@example.de'];
@@ -399,13 +395,11 @@ describe('policy - users', () => {
         // mock classification for some of the profile & perm sets that are okay for user
         // profiles and permsets grant >200 perms, but all of them will be ignored because
         // they are not classified. LOW is okay for standard users
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.LOW,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.LOW,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -424,13 +418,11 @@ describe('policy - users', () => {
 
       it('reports violation if user has an permission that is not allowed', async () => {
         // Arrange
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -459,13 +451,11 @@ describe('policy - users', () => {
 
       it('reports violation if user has a custom permission that is not allowed', async () => {
         // Arrange
-        $$.mockAuditConfig.classifications.customPermissions = {
-          permissions: {
-            My_Critical_Custom_Perm: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
+        $$.mockCustomPermissions({
+          My_Critical_Custom_Perm: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -497,8 +487,8 @@ describe('policy - users', () => {
 
       it('reports error if default role is not compatible with actual roles', async () => {
         // Arrange
-        $$.mockRoleDefinitions({
-          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        $$.mockRoles({
+          Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
         $$.mockUserClassification('guest-user@example.de', {
           role: 'Standard',
@@ -512,7 +502,7 @@ describe('policy - users', () => {
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
         expect(ruleResult.errors).to.deep.equal([
           {
-            identifier: ['test-user-2@example.de'],
+            identifier: ['test-user-2@example.de', 'Admin'],
             message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
           },
         ]);
@@ -521,21 +511,19 @@ describe('policy - users', () => {
       it('audits users based role definitions if they exist', async () => {
         // Arrange
         // all users will be assigned the default role
-        $$.mockAuditConfig.classifications.users = { users: {} };
+        $$.mockUserClassifications({});
         localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
-        $$.mockRoleDefinitions({
-          Standard: { allowedClassifications: [PermissionRiskLevel.LOW] },
+        $$.mockRoles({
+          Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
-            },
-            ApiEnabled: {
-              classification: PermissionRiskLevel.LOW,
-            },
+        $$.mockUserPermissions({
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
           },
-        };
+          ApiEnabled: {
+            classification: PermissionRiskLevel.LOW,
+          },
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);
@@ -697,17 +685,25 @@ describe('policy - users', () => {
         // First role is assigned to user and is more permissive than
         // second role (which is assigned to permission set)
         // permissiveness is calculated by merging all "allows" and substracting all "denies"
-        $$.mockAuditConfig.definitions.roles = {
+        $$.mockRoles({
           Operations: {
-            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-            allowedPermissions: ['CustomizeApplication', 'ViewAllData'],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+              userPermissions: {
+                allowed: ['CustomizeApplication', 'ViewAllData'],
+                denied: ['ApiEnabled'],
+              },
+            },
           },
           Standard: {
-            allowedClassifications: [PermissionRiskLevel.LOW],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW],
+              userPermissions: {
+                denied: ['ApiEnabled'],
+              },
+            },
           },
-        };
+        });
         localPolicyConfig = {
           enabled: true,
           rules: {
@@ -718,7 +714,7 @@ describe('policy - users', () => {
           },
         };
         $$.mockAuditConfig.policies.users = localPolicyConfig;
-        $$.mockAuditConfig.classifications.users = { users: {} };
+        $$.mockUserClassifications({});
 
         // default classifications for the permission sets and profiles that are used
         // throughout the tests of this particular rule
@@ -787,25 +783,29 @@ describe('policy - users', () => {
         // Arrange
         // The denied permission by Operations (ApiEnabled) is already covered by the lower classification
         // in standard. So we expect that Operations is a true superset of Standard
-        $$.mockAuditConfig.definitions.roles = {
+        $$.mockRoles({
           Operations: {
-            allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-            deniedPermissions: ['ApiEnabled'],
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+              userPermissions: {
+                denied: ['ApiEnabled'],
+              },
+            },
           },
           Standard: {
-            allowedClassifications: [PermissionRiskLevel.LOW],
-          },
-        };
-        $$.mockAuditConfig.classifications.userPermissions = {
-          permissions: {
-            ApiEnabled: {
-              classification: PermissionRiskLevel.HIGH,
-            },
-            ViewSetup: {
-              classification: PermissionRiskLevel.CRITICAL,
+            permissions: {
+              allowedClassifications: [PermissionRiskLevel.LOW],
             },
           },
-        };
+        });
+        $$.mockUserPermissions({
+          ApiEnabled: {
+            classification: PermissionRiskLevel.HIGH,
+          },
+          ViewSetup: {
+            classification: PermissionRiskLevel.CRITICAL,
+          },
+        });
 
         // Act
         const result = await resolveAndRun('users', $$);

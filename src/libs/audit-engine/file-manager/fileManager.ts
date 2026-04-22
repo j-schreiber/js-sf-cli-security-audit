@@ -22,10 +22,9 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
 /**
- * The file manager streamlines initialisation of an audit config from
- * a source directory and writing updated content back to disk. The directory
- * structure is configurable, but most of the time using the default file manager
- * will be enough.
+ * Streamlines read and write operations of an audit config from a source directory.
+ * The file manager is initialised with the audit config shape and handles all disk
+ * operations.
  */
 export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
   public constructor(
@@ -44,6 +43,7 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
     // no idea if there is not a better solution than casting to "any"
     // but it works, and tests prove that its somewhat save :).
     const parseResult: any = {};
+    assertPath(dirPath);
     for (const dirName of typedKeys(this.schema)) {
       parseResult[dirName] = this.parseSubdir(dirName, dirPath);
     }
@@ -51,9 +51,8 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
     if (this.refine) {
       const errs = this.refine(parseResult);
       if (errs.length > 0) {
-        const formattedDirPath = !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
         throw messages.createError('error.FailedToValidateAuditConfig', [
-          formattedDirPath,
+          formatDirPath(dirPath),
           errs[0].message,
           errs[0].path.join('.'),
         ]);
@@ -63,8 +62,8 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
   }
 
   /**
-   * Writes a full audit config to disk. The file manager attempts
-   * to save the config based on the injected schema.
+   * Writes a full audit config to disk. The file manager creates
+   * directory and files based on its configuration.
    *
    * @param targetDirPath
    * @param conf AuditConfig to save
@@ -144,7 +143,11 @@ function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
     const maybeContent = conf.dirContent[fileName];
     const filePath = path.join(conf.targetPath, `${fileName}.yml`);
     if (maybeContent) {
-      const entitiesCount = fileDefinition.entities ? countEntities(maybeContent[fileDefinition.entities]) : 0;
+      const entitiesCount = fileDefinition.isCountable
+        ? fileDefinition.entities
+          ? countEntities(maybeContent[fileDefinition.entities])
+          : countEntities(maybeContent)
+        : 0;
       dirSaveResults[fileName] = { filePath, content: maybeContent, totalEntities: entitiesCount };
       fs.writeFileSync(filePath, yaml.dump(maybeContent));
     } else if (fs.existsSync(filePath)) {
@@ -161,22 +164,41 @@ type DirSaveConfig = {
   dirContent: any;
 };
 
+function assertPath(dirPath: PathLike): void {
+  if (dirPath.toString().length > 0 && !fs.existsSync(dirPath)) {
+    throw messages.createError('error.DirectoryDoesNotExistOrIsEmpty', [formatDirPath(dirPath)]);
+  }
+}
+
+function formatDirPath(dirPath: PathLike): string {
+  return !dirPath || dirPath.toString().length === 0 ? '<root-dir>' : dirPath.toString();
+}
+
 function parseFilesDirectory(def: ConfigsFileDir, dirPath: PathLike): Record<string, unknown> {
   const parseResults: Record<string, unknown> = {};
   for (const [fileName, fileConfig] of Object.entries(def.files)) {
-    const filePath = path.join(dirPath.toString(), `${fileName}.yml`);
-    if (!fs.existsSync(filePath)) {
+    const maybeFileContent = readFile(dirPath, fileName);
+    if (!maybeFileContent.content || !maybeFileContent.path) {
       continue;
     }
-    const fileContent = yaml.load(fs.readFileSync(filePath, 'utf-8'));
-    const parseResult = fileConfig.schema.safeParse(fileContent);
+    const parseResult = fileConfig.schema.safeParse(maybeFileContent.content);
     if (parseResult.success) {
       parseResults[fileName] = parseResult.data;
     } else {
-      throwAsSfError(filePath, parseResult.error);
+      throwAsSfError(maybeFileContent.path, parseResult.error);
     }
   }
   return parseResults;
+}
+
+function readFile(basePath: PathLike, fileName: string): { content: unknown; path: string | undefined } {
+  for (const suffix of ['yml', 'yaml']) {
+    const filePath = path.join(basePath.toString(), `${fileName}.${suffix}`);
+    if (fs.existsSync(filePath)) {
+      return { content: yaml.load(fs.readFileSync(filePath, 'utf-8')), path: filePath };
+    }
+  }
+  return { content: undefined, path: undefined };
 }
 
 function isFilesDir(dir: ConfigsFileDir | NestedConfigDir): dir is ConfigsFileDir {
@@ -188,7 +210,7 @@ function isNestedDir(dir: ConfigsFileDir | NestedConfigDir): dir is NestedConfig
 }
 
 function countEntities(content: unknown): number {
-  if (content) {
+  if (content && content != null && typeof content === 'object') {
     return Object.entries(content).length;
   } else {
     return 0;

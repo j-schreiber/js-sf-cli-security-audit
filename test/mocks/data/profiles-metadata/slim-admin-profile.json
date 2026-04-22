@@ -1,0 +1,99 @@
+[
+  {
+    "attributes": {
+      "type": "Profile",
+      "url": "/services/data/v63.0/tooling/sobjects/Profile/00e3X000002HGbgQAG"
+    },
+    "Id": "00e3X000002HGbgQAG",
+    "Name": "System Administrator",
+    "Metadata": {
+      "agentAccesses": [],
+      "applicationVisibilities": [],
+      "categoryGroupVisibilities": [
+        {
+          "dataCategories": null,
+          "dataCategoryGroup": "test",
+          "visibility": "ALL"
+        }
+      ],
+      "classAccesses": [
+        {
+          "apexClass": "ApexClass1",
+          "enabled": true
+        },
+        {
+          "apexClass": "ApexClass2",
+          "enabled": true
+        }
+      ],
+      "description": null,
+      "externalDataSourceAccesses": [],
+      "fieldPermissions": [
+        {
+          "editable": true,
+          "field": "Account.CustomField1__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "Account.CustomField2__c",
+          "readable": true
+        },
+        {
+          "editable": true,
+          "field": "CustomObject__c.CustomField1__c",
+          "readable": true
+        }
+      ],
+      "flowAccesses": [],
+      "loginFlows": null,
+      "loginHours": null,
+      "loginIpRanges": [],
+      "objectPermissions": [
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "Account",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        },
+        {
+          "allowCreate": true,
+          "allowDelete": true,
+          "allowEdit": true,
+          "allowRead": true,
+          "customizeSetup": null,
+          "deleteSetup": null,
+          "modifyAllRecords": true,
+          "object": "CustomObject__c",
+          "viewAllFields": false,
+          "viewAllRecords": true,
+          "viewSetup": null
+        }
+      ],
+      "pageAccesses": [],
+      "profileActionOverrides": null,
+      "recordTypeVisibilities": [],
+      "tabVisibilities": [],
+      "urls": null,
+      "userLicense": "Salesforce",
+      "userPermissions": [
+        {
+          "enabled": true,
+          "name": "ApiEnabled"
+        },
+        {
+          "enabled": true,
+          "name": "ViewSetup"
+        }
+      ],
+      "customPermissions": []
+    }
+  }
+]

@@ -2,10 +2,10 @@
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import SettingsPolicy, { SettingsRuleRegistry } from '../../../src/libs/audit-engine/registry/policies/settings.js';
+import { SettingsRuleRegistry } from '../../../src/libs/audit-engine/registry/policies/settings.js';
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import EnforceSettings from '../../../src/libs/audit-engine/registry/rules/enforceSettings.js';
-import { resolveAndRun } from '../../mocks/testHelpers.js';
+import { resolve, resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -151,15 +151,9 @@ describe('policy - settings', () => {
       resolveListener = $$.context.SANDBOX.stub();
     });
 
-    function resolve(conf: PolicyConfig): ReturnType<SettingsPolicy['resolve']> {
-      const pol = new SettingsPolicy(conf, $$.mockAuditConfig);
-      pol.addListener('entityresolve', resolveListener);
-      return pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
-    }
-
     it('interprets each valid rule as an entity and resolves them in bulk', async () => {
       // Act
-      const result = await resolve(defaultConfig);
+      const result = await resolve('settings', $$);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -171,7 +165,7 @@ describe('policy - settings', () => {
       defaultConfig.rules['SomeInvalidRuleName'] = { enabled: true };
 
       // Act
-      const result = await resolve(defaultConfig);
+      const result = await resolve('settings', $$);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([]);
@@ -183,7 +177,7 @@ describe('policy - settings', () => {
       defaultConfig.rules['EnforceSomeInvalidSettings'] = { enabled: true };
 
       // Act
-      const result = await resolve(defaultConfig);
+      const result = await resolve('settings', $$);
 
       // Assert
       expect(result.ignoredEntities).to.deep.equal([
@@ -194,7 +188,8 @@ describe('policy - settings', () => {
 
     it('gracefully skips policy metadata retrieve if it has no rules', async () => {
       // Act
-      const result = await resolve({ enabled: true, rules: {} });
+      $$.mockAuditConfig.policies.settings = { enabled: true, rules: {} };
+      const result = await resolve('settings', $$);
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
@@ -206,7 +201,7 @@ describe('policy - settings', () => {
     it('skips metadata retrieve of a valid setting if the rule is disabled', async () => {
       // Act
       defaultConfig.rules.EnforceApexSettings.enabled = false;
-      const result = await resolve(defaultConfig);
+      const result = await resolve('settings', $$, resolveListener);
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal(['Security']);
@@ -219,7 +214,8 @@ describe('policy - settings', () => {
     it('gracefully skips policy metadata retrieve if rule has invalid name', async () => {
       // Act
       // valid name would be EnforceApexSettings (mind the trailing "s")
-      const result = await resolve({ enabled: true, rules: { EnforceApexSetting: { enabled: true } } });
+      $$.mockAuditConfig.policies.settings = { enabled: true, rules: { EnforceApexSetting: { enabled: true } } };
+      const result = await resolve('settings', $$);
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal([]);
@@ -236,7 +232,7 @@ describe('policy - settings', () => {
       // Act
       // config now has three enabled rules
       defaultConfig.rules['EnforceConnectedAppSettings'] = { enabled: true };
-      const result = await resolve(defaultConfig);
+      const result = await resolve('settings', $$, resolveListener);
 
       // Assert
       expect(Object.keys(result.resolvedEntities)).to.deep.equal(['ConnectedApp']);

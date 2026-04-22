@@ -13,9 +13,9 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
 
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
-      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
-      customPermissions: opts.auditConfig.classifications.customPermissions?.permissions,
+    this.roleManager = new RoleManager({
+      controls: opts.auditConfig.controls,
+      shape: opts.auditConfig.shape,
     });
   }
 
@@ -25,7 +25,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     for (const user of Object.values(users)) {
       if (!this.roleManager.isValidRole(user.role)) {
         result.errors.push({
-          identifier: [user.username],
+          identifier: [user.username, user.role],
           message: messages.getMessage('error.failed-to-resolve-role', [user.role]),
         });
         continue;

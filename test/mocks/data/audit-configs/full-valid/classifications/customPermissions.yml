@@ -1,7 +1,0 @@
-permissions:
-  Delete_Activated_Invoices:
-    label: Delete Activated Invoices
-    classification: Unknown
-  Modify_Activated_Invoices:
-    label: Modify Activated Invoices
-    classification: Unknown

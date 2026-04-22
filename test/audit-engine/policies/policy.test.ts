@@ -6,6 +6,7 @@ import EnforcePermissionsOnProfileLike from '../../../src/libs/audit-engine/regi
 import { PolicyConfig, UserPrivilegeLevel } from '../../../src/libs/audit-engine/registry/shape/schema.js';
 import { PartialPolicyRuleResult } from '../../../src/libs/audit-engine/registry/context.types.js';
 import { newRuleResult, resolveAndRun } from '../../mocks/testHelpers.js';
+import { OrgDescribe } from '../../../src/salesforce/index.js';
 
 describe('policy - base implementation', () => {
   const $$ = new AuditTestContext();
@@ -16,18 +17,16 @@ describe('policy - base implementation', () => {
   }
 
   beforeEach(async () => {
-    $$.mockAuditConfig.classifications = {
+    $$.mockAuditConfig.inventory = {
       profiles: {
-        profiles: {
-          'System Administrator': {
-            role: UserPrivilegeLevel.ADMIN,
-          },
-          'Standard User': {
-            role: UserPrivilegeLevel.STANDARD_USER,
-          },
-          'Custom Profile': {
-            role: UserPrivilegeLevel.POWER_USER,
-          },
+        'System Administrator': {
+          role: UserPrivilegeLevel.ADMIN,
+        },
+        'Standard User': {
+          role: UserPrivilegeLevel.STANDARD_USER,
+        },
+        'Custom Profile': {
+          role: UserPrivilegeLevel.POWER_USER,
         },
       },
     };
@@ -55,7 +54,10 @@ describe('policy - base implementation', () => {
 
       // Act
       const pol = new ProfilesPolicy(defaultConfig, $$.mockAuditConfig, reg);
-      const policyResult = await pol.executeRules({ targetOrgConnection: $$.targetOrgConnection });
+      const policyResult = await pol.executeRules({
+        targetOrgConnection: $$.targetOrgConnection,
+        orgDescribe: await OrgDescribe.create($$.targetOrgConnection),
+      });
 
       // Assert
       expect(Object.keys(policyResult)).to.deep.equal(['TestRule']);

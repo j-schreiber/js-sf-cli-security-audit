@@ -131,7 +131,6 @@ describe('audit run multi stage output', () => {
     // Act
     const auditRun = new AuditRun({
       policies: { profiles: PROFILES_CONFIG },
-      classifications: {},
     });
     testInstance.startPolicyResolve(auditRun);
     testInstance.startRuleExecution(auditRun);

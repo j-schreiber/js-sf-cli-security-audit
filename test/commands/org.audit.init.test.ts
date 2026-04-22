@@ -44,14 +44,13 @@ describe('org audit init', () => {
     expect(conParam.getUsername()).to.equal($$.targetOrg.username);
     expect(optsParam).to.deep.equal({ preset: 'strict' });
     // result wraps around the lib-init-result
-    expect(result.classifications.userPermissions.content).to.deep.equal(
-      FULL_AUDIT_INIT_RESULT.classifications.userPermissions
-    );
+    expect(result.shape.userPermissions.content).to.deep.equal(FULL_AUDIT_INIT_RESULT.shape.userPermissions);
     expect(result.policies.profiles.content).to.deep.equal(FULL_AUDIT_INIT_RESULT.policies.profiles);
     // relevant summary is printed to terminal
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      `Initialised 3 userPermissions at ${path.normalize('my-test-org/classifications/userPermissions.yml')}.`,
-      `Initialised 1 customPermissions at ${path.normalize('my-test-org/classifications/customPermissions.yml')}.`,
+      `Initialised 3 userPermissions at ${path.normalize('my-test-org/shape/userPermissions.yml')}.`,
+      `Initialised 1 customPermissions at ${path.normalize('my-test-org/shape/customPermissions.yml')}.`,
+      `Initialised 2 profiles at ${path.normalize('my-test-org/inventory/profiles.yml')}.`,
       `Initialised "Profiles" policy with 1 rule(s) at ${path.normalize('my-test-org/policies/profiles.yml')}.`,
       `Initialised "PermissionSets" policy with 1 rule(s) at ${path.normalize(
         'my-test-org/policies/permissionSets.yml'
@@ -67,9 +66,13 @@ describe('org audit init', () => {
     const result = await OrgAuditInit.run(['--target-org', $$.targetOrg.username, '--output-dir', 'my-test-org']);
 
     // Assert
-    for (const classification of Object.values(result.classifications)) {
-      expect(classification.filePath).not.to.be.undefined;
-      expect(fs.existsSync(classification.filePath)).to.be.true;
+    for (const orgShape of Object.values(result.shape)) {
+      expect(orgShape.filePath).not.to.be.undefined;
+      expect(fs.existsSync(orgShape.filePath)).to.be.true;
+    }
+    for (const orgInventory of Object.values(result.inventory)) {
+      expect(orgInventory.filePath).not.to.be.undefined;
+      expect(fs.existsSync(orgInventory.filePath)).to.be.true;
     }
     for (const policy of Object.values(result.policies)) {
       expect(policy.filePath).not.to.be.undefined;
@@ -86,8 +89,8 @@ describe('org audit init', () => {
 
     // Assert
     expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
-      `Initialised 3 userPermissions at ${path.normalize('my-test-org/classifications/userPermissions.yml')}.`,
-      `Initialised 3 profiles at ${path.normalize('my-test-org/classifications/profiles.yml')}.`,
+      `Initialised 3 userPermissions at ${path.normalize('my-test-org/shape/userPermissions.yml')}.`,
+      `Initialised 3 profiles at ${path.normalize('my-test-org/inventory/profiles.yml')}.`,
       `Initialised "Profiles" policy with 1 rule(s) at ${path.normalize('my-test-org/policies/profiles.yml')}.`,
     ]);
   });

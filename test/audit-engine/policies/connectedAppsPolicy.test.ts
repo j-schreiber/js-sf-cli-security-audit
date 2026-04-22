@@ -2,9 +2,8 @@
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';
-import { loadPolicy } from '../../../src/libs/audit-engine/index.js';
 import { PolicyConfig } from '../../../src/libs/audit-engine/registry/shape/schema.js';
-import { resolveAndRun } from '../../mocks/testHelpers.js';
+import { resolve, resolveAndRun } from '../../mocks/testHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
@@ -64,8 +63,7 @@ describe('policy - connected apps', () => {
       defaultConfig.rules.NoUserCanSelfAuthorize.enabled = true;
 
       // Act
-      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('connectedApps', $$);
 
       // Assert
       expect(resolveResult.ignoredEntities).to.deep.equal([]);
@@ -83,8 +81,7 @@ describe('policy - connected apps', () => {
       $$.mocks.mockExternalClientAppOAuthPolicies('external-client-apps-oauth-policies');
 
       // Act
-      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('connectedApps', $$);
 
       // Assert
       const externalApp1 = resolveResult.resolvedEntities['Test External Client App'];
@@ -106,8 +103,7 @@ describe('policy - connected apps', () => {
       $$.mocks.mockExternalClientApps('external-client-apps');
 
       // Act
-      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('connectedApps', $$);
 
       // Assert
       const externalApps = Object.values(resolveResult.resolvedEntities).filter(
@@ -125,8 +121,7 @@ describe('policy - connected apps', () => {
       $$.mocks.mockExternalClientApps('external-client-apps');
 
       // Act
-      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-      const resolveResult = await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      const resolveResult = await resolve('connectedApps', $$);
 
       // Assert
       const externalApps = Object.values(resolveResult.resolvedEntities).filter(
@@ -146,9 +141,7 @@ describe('policy - connected apps', () => {
       const evtListener = $$.context.SANDBOX.stub();
 
       // Act
-      const pol = loadPolicy('connectedApps', $$.mockAuditConfig);
-      pol.on('entityresolve', evtListener);
-      await pol.resolve({ targetOrgConnection: $$.targetOrgConnection });
+      await resolve('connectedApps', $$, evtListener);
 
       // Assert
       expect(evtListener.args.flat()).to.deep.equal([

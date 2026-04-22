@@ -41,7 +41,9 @@ describe('org audit run', () => {
 
   afterEach(async () => {
     $$.reset();
-    clearAuditReports(DEFAULT_WORKING_DIR);
+    ['full-valid', 'with-warnings'].forEach((workingDir) =>
+      clearAuditReports(path.join(AUDIT_CONFIGS_DIR, workingDir))
+    );
   });
 
   describe('exception handling', () => {
@@ -49,7 +51,7 @@ describe('org audit run', () => {
       // Act
       try {
         await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
-        expect.fail('Expected exception,but succeeded');
+        expect.fail('Expected exception, but succeeded');
       } catch (error) {
         assertSfError(error, 'FailedToValidateAuditConfig', '<root-dir>');
       }
@@ -63,6 +65,17 @@ describe('org audit run', () => {
         expect.fail('Expected exception,but succeeded');
       } catch (error) {
         assertSfError(error, 'FailedToValidateAuditConfig', sourceDirPath);
+      }
+    });
+
+    it('aborts gracefully if supplied source dir does not exist', async () => {
+      // Act
+      const sourceDirPath = path.join(AUDIT_CONFIGS_DIR, 'does-not-exist');
+      try {
+        await OrgAuditRun.run(['--target-org', $$.targetOrg.username, '--source-dir', sourceDirPath]);
+        expect.fail('Expected exception,but succeeded');
+      } catch (error) {
+        assertSfError(error, 'DirectoryDoesNotExistOrIsEmpty', sourceDirPath);
       }
     });
 
@@ -400,6 +413,39 @@ describe('org audit run', () => {
           message: 'App has 2 users (total use count 2), but is not installed.',
         },
       ]);
+    });
+
+    it('logs audit run warnings to console and JSON output', async () => {
+      // Act
+      await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'with-warnings'),
+      ]);
+
+      // Assert
+      const expectedWarnings = [
+        'Controls > Roles > DeployEntity > userPermissions > denied > AnInvalidPerm: Permission does not exist on Org.',
+        'Controls > Roles > StandardUser > userPermissions > allowed > AnotherInvalidPermName: Permission does not exist on Org.',
+      ];
+      expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal(expectedWarnings);
+    });
+
+    it('successfully runs audit from root dir if it contains an audit config', async () => {
+      // Arrange
+      // uses the real file-manager parser to initialise the audit config
+      // but mocks all "execute" functionality that makes API calls. This ensures,
+      // that we can jump around directories without confusing the file-based
+      // metadata and query mocks from audit context.
+      process.chdir(DEFAULT_WORKING_DIR);
+      mockResult(COMPLIANT_RESULT);
+
+      // Act
+      const auditResult = await OrgAuditRun.run(['--target-org', $$.targetOrg.username]);
+
+      // Assert
+      expect(auditResult.isCompliant).to.be.true;
     });
   });
 

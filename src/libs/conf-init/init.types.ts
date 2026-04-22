@@ -1,14 +1,15 @@
 import z from 'zod';
 import { AuditConfigShape } from '../audit-engine/index.js';
 
-type AuditClassifications = (typeof AuditConfigShape)['classifications']['files'];
+type Shapes = (typeof AuditConfigShape)['shape']['files'];
+type Inventories = (typeof AuditConfigShape)['inventory']['files'];
 
-export type PermissionClassifications = z.infer<AuditClassifications['userPermissions']['schema']>;
-export type NamedPermissionClassification = PermissionClassifications['permissions']['string'] & { name: string };
+export type PermissionClassifications = z.infer<Shapes['userPermissions']['schema']>;
+export type NamedPermissionClassification = PermissionClassifications['string'] & { name: string };
 export type UnclassifiedPerm = Omit<NamedPermissionClassification, 'classification'>;
-export type ProfileClassifications = z.infer<AuditClassifications['profiles']['schema']>;
-export type PermsetClassifications = z.infer<AuditClassifications['permissionSets']['schema']>;
-export type UserClassifications = z.infer<AuditClassifications['users']['schema']>;
+export type ProfileClassifications = z.infer<Inventories['profiles']['schema']>;
+export type PermsetClassifications = z.infer<Inventories['permissionSets']['schema']>;
+export type UserClassifications = z.infer<Inventories['users']['schema']>;
 
 export enum AuditInitPresets {
   strict = 'strict',

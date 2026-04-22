@@ -14,8 +14,9 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
 
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager(opts.auditConfig.definitions.roles, {
-      userPermissions: opts.auditConfig.classifications.userPermissions?.permissions,
+    this.roleManager = new RoleManager({
+      controls: opts.auditConfig.controls,
+      shape: opts.auditConfig.shape,
     });
   }
 
@@ -36,11 +37,11 @@ export default class EnforcePermissionPresets extends PolicyRule<ResolvedUser> {
   }
 
   private resolveProfileRole(profileName: string): string | undefined {
-    return this.auditConfig.classifications.profiles?.profiles[profileName]?.role;
+    return this.auditConfig.inventory.profiles?.[profileName]?.role;
   }
 
   private resolvePermissionSetRole(permsetName: string): string | undefined {
-    return this.auditConfig.classifications.permissionSets?.permissionSets[permsetName]?.role;
+    return this.auditConfig.inventory.permissionSets?.[permsetName]?.role;
   }
 
   private auditPermissionsEntity(

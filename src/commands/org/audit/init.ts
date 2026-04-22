@@ -4,6 +4,7 @@ import AuditConfig from '../../../libs/conf-init/auditConfig.js';
 import { AuditInitPresets } from '../../../libs/conf-init/init.types.js';
 import { capitalize } from '../../../utils.js';
 import { saveAuditConfig } from '../../../libs/audit-engine/index.js';
+import { FileResult } from '../../../libs/audit-engine/file-manager/fileManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.init');
@@ -51,12 +52,16 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
   }
 
   private printResults(config: AuditConfigSaveResult): void {
-    this.printClassifications(config.classifications);
+    this.printFileResults(config.shape);
+    this.printFileResults(config.inventory);
     this.printPolicies(config.policies);
   }
 
-  private printClassifications(classifications: AuditConfigSaveResult['classifications']): void {
-    Object.entries(classifications).forEach(([key, def]) => {
+  private printFileResults(fileResults: Record<string, FileResult<unknown>>): void {
+    if (!fileResults) {
+      return;
+    }
+    Object.entries(fileResults).forEach(([key, def]) => {
       if (def.totalEntities > 0) {
         this.logSuccess(messages.getMessage('success.classification-summary', [def.totalEntities, key, def.filePath]));
       }
@@ -67,11 +72,7 @@ export default class OrgAuditInit extends SfCommand<OrgAuditInitResult> {
     Object.entries(policies).forEach(([name, def]) => {
       if (def.filePath) {
         this.logSuccess(
-          messages.getMessage('success.policy-summary', [
-            capitalize(name),
-            Object.keys(def.content.rules).length ?? 0,
-            def.filePath,
-          ])
+          messages.getMessage('success.policy-summary', [capitalize(name), def.totalEntities, def.filePath])
         );
       }
     });

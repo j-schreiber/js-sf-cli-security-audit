@@ -1,16 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { Messages } from '@salesforce/core';
-import {
-  PermissionClassifications,
-  PermissionRiskLevel,
-  RoleDefinitions,
-  UserPrivilegeLevel,
-} from '../shape/schema.js';
+import { PermissionClassifications, PermissionRiskLevel, UserPrivilegeLevel } from '../shape/schema.js';
 import { AuditRunLifecycleBus } from '../../auditRunLifecycle.js';
 import {
   NamedPermissionClassification,
   PermissionsListKey,
   ResolvedProfileLike,
+  RoleManagerConfig,
   ScanResult,
   UserRoleCompareResult,
 } from './roleManager.types.js';
@@ -19,18 +15,13 @@ import UserRole, { newRoleFromDefinition, newRoleFromOrdinals } from './userRole
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-type Classifications = {
-  userPermissions: PermissionClassifications;
-  customPermissions: PermissionClassifications;
-};
-
 export default class RoleManager extends EventEmitter {
   private roles: Record<string, UserRole> = {};
 
-  public constructor(private definitions?: RoleDefinitions, private classifications?: Partial<Classifications>) {
+  public constructor(private readonly auditConfig: RoleManagerConfig) {
     super();
-    if (this.definitions) {
-      for (const [roleName, roleDef] of Object.entries(this.definitions)) {
+    if (this.auditConfig.controls.roles) {
+      for (const [roleName] of Object.entries(this.auditConfig.controls.roles)) {
         const normalizedName = normalize(roleName);
         if (this.roles[normalizedName]) {
           AuditRunLifecycleBus.emitResolveWarn(
@@ -40,12 +31,12 @@ export default class RoleManager extends EventEmitter {
             ])
           );
         } else {
-          this.roles[normalizedName] = newRoleFromDefinition(roleName, roleDef, this.classifications?.userPermissions);
+          this.roles[normalizedName] = newRoleFromDefinition(roleName, this.auditConfig);
         }
       }
     } else {
       for (const legacyRole of Object.values(UserPrivilegeLevel)) {
-        this.roles[normalize(legacyRole)] = newRoleFromOrdinals(legacyRole, this.classifications?.userPermissions);
+        this.roles[normalize(legacyRole)] = newRoleFromOrdinals(legacyRole, this.auditConfig.shape?.userPermissions);
       }
     }
   }
@@ -69,18 +60,6 @@ export default class RoleManager extends EventEmitter {
     userPermsResult.violations.push(...customPermsResult.violations);
     userPermsResult.warnings.push(...customPermsResult.warnings);
     return userPermsResult;
-  }
-
-  /**
-   * Checks if a role allows a certain classifcation level. If the role is
-   * not configured or unknown, always returns false.
-   *
-   * @param roleName
-   * @param permission
-   * @returns
-   */
-  public allowsPermission(roleName: string, permission: string): boolean {
-    return this.getRole(roleName).isAllowed(permission);
   }
 
   /**
@@ -126,20 +105,21 @@ export default class RoleManager extends EventEmitter {
 
   private scanPermissions(
     profile: ResolvedProfileLike,
-    permissionListName: PermissionsListKey,
+    permissionType: PermissionsListKey,
     rootIdentifier?: string[]
   ): ScanResult {
     const result: ScanResult = { warnings: [], violations: [] };
-    for (const perm of profile.metadata[permissionListName]) {
+    const role = this.getRole(profile.role);
+    for (const perm of profile.metadata[permissionType]) {
       const identifier = rootIdentifier ? [...rootIdentifier, profile.name, perm.name] : [profile.name, perm.name];
-      const permClassification = this.resolvePerm(perm.name, permissionListName);
+      const permClassification = this.resolvePerm(perm.name, permissionType);
       if (permClassification) {
         if (permClassification.classification === PermissionRiskLevel.BLOCKED) {
           result.violations.push({
             identifier,
             message: messages.getMessage('violations.permission-is-blocked'),
           });
-        } else if (!this.allowsPermission(profile.role, permClassification.name)) {
+        } else if (!role.isAllowed({ name: permClassification.name, type: permissionType })) {
           result.violations.push({
             identifier,
             message: messages.getMessage('violations.classification-preset-mismatch', [
@@ -172,15 +152,15 @@ export default class RoleManager extends EventEmitter {
   }
 
   private resolveUserPerm(permName: string): NamedPermissionClassification | undefined {
-    if (this.classifications?.userPermissions) {
-      return nameClassification(permName, this.classifications.userPermissions[permName]);
+    if (this.auditConfig.shape?.userPermissions) {
+      return nameClassification(permName, this.auditConfig.shape.userPermissions[permName]);
     }
     return undefined;
   }
 
   private resolveCustomPerm(permName: string): NamedPermissionClassification | undefined {
-    if (this.classifications?.customPermissions) {
-      return nameClassification(permName, this.classifications.customPermissions[permName]);
+    if (this.auditConfig.shape?.customPermissions) {
+      return nameClassification(permName, this.auditConfig.shape.customPermissions[permName]);
     }
     return undefined;
   }

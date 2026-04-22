@@ -64,6 +64,10 @@ The "Permission Sets" policy requires at least userPermissions to be initialised
 
 The "Profiles" policy requires a corresponding classification to be initialised.
 
+# error.DirectoryDoesNotExistOrIsEmpty
+
+%s does not exist or the directory is empty.
+
 # error.InvalidConfigFileSchema
 
 Failed to parse %s: %s.

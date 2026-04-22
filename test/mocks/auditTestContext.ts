@@ -8,8 +8,10 @@ import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
 import {
   PermissionSetClassifications,
   ProfileClassifications,
-  RoleDefinitions,
+  PermissionControls,
   UserClassifications,
+  ComposableRolesControl,
+  PermissionClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
 import { MDAPI } from '../../src/salesforce/index.js';
@@ -33,9 +35,11 @@ export default class AuditTestContext {
   public multiStageStub!: ReturnType<typeof stubMultiStageUx>;
   public sfSpinnerStub!: ReturnType<typeof stubSpinner>;
   public mocks: SfConnectionMocks;
-  public mockAuditConfig: AuditRunConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
+  public mockAuditConfig: AuditRunConfig = { policies: {}, shape: {}, inventory: {}, acceptedRisks: {}, controls: {} };
+  private originalCwd;
 
   public constructor(dirPath?: string) {
+    this.originalCwd = process.cwd();
     this.context = new TestContext();
     this.targetOrg = new MockTestOrgData();
     this.targetOrg.instanceUrl = 'https://test-org.my.salesforce.com';
@@ -62,23 +66,47 @@ export default class AuditTestContext {
 
   public reset() {
     this.context.restore();
+    process.chdir(this.originalCwd);
     process.removeAllListeners();
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });
     fs.rmSync(RETRIEVE_CACHE, { force: true, recursive: true });
-    this.mockAuditConfig = { policies: {}, classifications: {}, acceptedRisks: {}, definitions: {} };
+    this.mockAuditConfig = { policies: {}, shape: {}, inventory: {}, acceptedRisks: {}, controls: {} };
     MDAPI.clearCache();
     resetAllEnvironmentVars();
     initDefaultMocks(this.mocks);
   }
 
   /**
-   * Replaces the entire role definitions
+   * Replaces all role controls in the mock audit config.
    *
    * @param roles
    */
-  public mockRoleDefinitions(roles?: RoleDefinitions): void {
-    this.mockAuditConfig.definitions.roles = roles;
+  public mockRoles(roles: ComposableRolesControl): void {
+    this.mockAuditConfig.controls.roles = roles;
+  }
+
+  /**
+   * Replaces the definition of one role control in the mock audit config
+   * without affecting the other roles.
+   *
+   * @param roleName
+   * @param role
+   */
+  public mockRole(roleName: string, role: ComposableRolesControl['string']): void {
+    if (!this.mockAuditConfig.controls.roles) {
+      this.mockAuditConfig.controls.roles = {};
+    }
+    this.mockAuditConfig.controls.roles[roleName] = role;
+  }
+
+  /**
+   * Replaces the permission controls (formerly role definitions)
+   *
+   * @param roles
+   */
+  public mockPermissionControls(perms?: PermissionControls): void {
+    this.mockAuditConfig.controls.permissions = perms;
   }
 
   /**
@@ -87,7 +115,7 @@ export default class AuditTestContext {
    * @param classifications
    */
   public mockProfileClassifications(classifications: ProfileClassifications): void {
-    this.mockAuditConfig.classifications.profiles = undefined;
+    this.mockAuditConfig.inventory.profiles = undefined;
     Object.entries(classifications).forEach(([profileName, classification]) => {
       this.mockProfileClassification(profileName, classification);
     });
@@ -99,7 +127,7 @@ export default class AuditTestContext {
    * @param classifications
    */
   public mockPermSetClassifications(classifications: PermissionSetClassifications): void {
-    this.mockAuditConfig.classifications.permissionSets = undefined;
+    this.mockAuditConfig.inventory.permissionSets = undefined;
     Object.entries(classifications).forEach(([permSetName, classification]) => {
       this.mockPermSetClassification(permSetName, classification);
     });
@@ -112,8 +140,8 @@ export default class AuditTestContext {
    * @param classification
    */
   public mockProfileClassification(profileName: string, classification: ProfileClassifications['string']): void {
-    this.mockAuditConfig.classifications.profiles ??= { profiles: {} };
-    this.mockAuditConfig.classifications.profiles.profiles[profileName] = classification;
+    this.mockAuditConfig.inventory.profiles ??= {};
+    this.mockAuditConfig.inventory.profiles[profileName] = classification;
   }
 
   /**
@@ -123,13 +151,33 @@ export default class AuditTestContext {
    * @param classification
    */
   public mockPermSetClassification(permSetName: string, classification: PermissionSetClassifications['string']): void {
-    this.mockAuditConfig.classifications.permissionSets ??= { permissionSets: {} };
-    this.mockAuditConfig.classifications.permissionSets.permissionSets[permSetName] = classification;
+    this.mockAuditConfig.inventory.permissionSets ??= {};
+    this.mockAuditConfig.inventory.permissionSets[permSetName] = classification;
+  }
+
+  /**
+   * Replaces the complete user classifications in the mock audit config
+   *
+   * @param classifications
+   */
+  public mockUserClassifications(classifications: UserClassifications): void {
+    this.mockAuditConfig.inventory.users = undefined;
+    Object.entries(classifications).forEach(([permSetName, classification]) => {
+      this.mockUserClassification(permSetName, classification);
+    });
   }
 
   public mockUserClassification(username: string, classification: UserClassifications['string']): void {
-    this.mockAuditConfig.classifications.users ??= { users: {} };
-    this.mockAuditConfig.classifications.users.users[username] = classification;
+    this.mockAuditConfig.inventory.users ??= {};
+    this.mockAuditConfig.inventory.users[username] = classification;
+  }
+
+  public mockUserPermissions(classifications: PermissionClassifications): void {
+    this.mockAuditConfig.shape.userPermissions = classifications;
+  }
+
+  public mockCustomPermissions(classifications: PermissionClassifications): void {
+    this.mockAuditConfig.shape.customPermissions = classifications;
   }
 }
 

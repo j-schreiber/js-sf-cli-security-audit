@@ -31,8 +31,8 @@ describe('org audit NUTs', () => {
   function activateClassifications(dirPath: string, role: string) {
     const configDirPath = resolveTestDirFilePath(dirPath);
     const conf = ConfigFileManager.parse(configDirPath);
-    setRoleInClassification(role, conf.classifications.profiles?.profiles);
-    setRoleInClassification(role, conf.classifications.permissionSets?.permissionSets);
+    setRoleInClassification(role, conf.inventory.profiles);
+    setRoleInClassification(role, conf.inventory.permissionSets);
     ConfigFileManager.save(configDirPath, conf);
   }
 
@@ -42,44 +42,51 @@ describe('org audit NUTs', () => {
     const enforceClassificationsRisks: AcceptedRuleRisks = {};
     const enforcePresetsRisks: AcceptedRuleRisks = {};
     const standardProfilesRisks: AcceptedRuleRisks = {};
-    if (conf.classifications.users?.users) {
-      for (const user of Object.keys(conf.classifications.users.users)) {
-        enforceClassificationsRisks[user] = {
-          '*': {
-            '*': { reason: 'Matches all permissions from all profiles or permsets' },
-          },
-        };
-        enforcePresetsRisks[user] = {
-          '*': { reason: 'Matches all profiles or permsets' },
-        };
-        standardProfilesRisks[user] = {
-          '*': { reason: 'Matches all profiles' },
-        };
-      }
-      conf.acceptedRisks.users = {
-        EnforcePermissionClassifications: enforceClassificationsRisks,
-        EnforcePermissionPresets: enforcePresetsRisks,
-        NoStandardProfilesOnActiveUsers: standardProfilesRisks,
+    for (const user of Object.keys(conf.inventory.users!)) {
+      enforceClassificationsRisks[user] = {
+        '*': {
+          '*': { reason: 'Matches all permissions from all profiles or permsets' },
+        },
+      };
+      enforcePresetsRisks[user] = {
+        '*': { reason: 'Matches all profiles or permsets' },
+      };
+      standardProfilesRisks[user] = {
+        '*': { reason: 'Matches all profiles' },
       };
     }
+    conf.acceptedRisks.users = {
+      EnforcePermissionClassifications: enforceClassificationsRisks,
+      EnforcePermissionPresets: enforcePresetsRisks,
+      NoStandardProfilesOnActiveUsers: standardProfilesRisks,
+    };
     ConfigFileManager.save(configDirPath, conf);
   }
 
-  function initCustomRoleDefinitions(auditConfigDirPath: string) {
+  function initAuditControls(auditConfigDirPath: string) {
     const configDirPath = resolveTestDirFilePath(auditConfigDirPath);
     const conf = ConfigFileManager.parse(configDirPath);
-    conf.definitions.roles = {
+    conf.controls.roles = {
       MyOpsRole: {
-        allowedPermissions: ['ApiEnabled', 'ViewSetup'],
-        allowedClassifications: [PermissionRiskLevel.CRITICAL],
+        permissions: ['OpsPermissions'],
       },
       MyStandardRole: {
-        allowedClassifications: [PermissionRiskLevel.LOW],
+        permissions: {
+          allowedClassifications: [PermissionRiskLevel.LOW],
+        },
       },
     };
-    setRoleInClassification('MyStandardRole', conf.classifications.permissionSets?.permissionSets);
-    setRoleInClassification('MyStandardRole', conf.classifications.profiles?.profiles);
-    setRoleInClassification('MyStandardRole', conf.classifications.users?.users);
+    conf.controls.permissions = {
+      OpsPermissions: {
+        allowedClassifications: [PermissionRiskLevel.CRITICAL],
+        userPermissions: {
+          allowed: ['ApiEnabled', 'ViewSetup'],
+        },
+      },
+    };
+    setRoleInClassification('MyStandardRole', conf.inventory.permissionSets);
+    setRoleInClassification('MyStandardRole', conf.inventory.profiles);
+    setRoleInClassification('MyStandardRole', conf.inventory.users);
     ConfigFileManager.save(configDirPath, conf);
   }
 
@@ -125,9 +132,9 @@ describe('org audit NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    assert.isDefined(result.classifications.userPermissions);
-    assert.isDefined(result.classifications.userPermissions.filePath);
-    expect(checkFileExists(result.classifications.userPermissions.filePath)).to.be.true;
+    assert.isDefined(result.shape.userPermissions);
+    assert.isDefined(result.shape.userPermissions.filePath);
+    expect(checkFileExists(result.shape.userPermissions.filePath)).to.be.true;
     assert.isDefined(result.policies.profiles);
     assert.isDefined(result.policies.profiles.filePath);
     expect(checkFileExists(result.policies.profiles.filePath)).to.be.true;
@@ -142,9 +149,9 @@ describe('org audit NUTs', () => {
 
     // Assert
     assert.isDefined(result);
-    assert.isDefined(result.classifications.userPermissions);
-    assert.isDefined(result.classifications.userPermissions.filePath);
-    expect(checkFileExists(result.classifications.userPermissions.filePath)).to.be.true;
+    assert.isDefined(result.shape.userPermissions);
+    assert.isDefined(result.shape.userPermissions.filePath);
+    expect(checkFileExists(result.shape.userPermissions.filePath)).to.be.true;
     assert.isDefined(result.policies.profiles);
     assert.isDefined(result.policies.profiles.filePath);
     expect(checkFileExists(result.policies.profiles.filePath)).to.be.true;
@@ -227,7 +234,7 @@ describe('org audit NUTs', () => {
   it('completes full audit with custom role definitions', async () => {
     // Arrange
     const dirPath = duplicateAuditConfig(entEdAudit);
-    initCustomRoleDefinitions(dirPath);
+    initAuditControls(dirPath);
 
     // Act
     const result = execCmd<OrgAuditRunResult>(
@@ -280,8 +287,8 @@ describe('org audit NUTs', () => {
 
     // Assert
     assert.isDefined(initResult);
-    assert.isDefined(initResult.classifications.userPermissions?.filePath);
-    expect(checkFileExists(initResult.classifications.userPermissions.filePath)).to.be.true;
+    assert.isDefined(initResult.shape.userPermissions?.filePath);
+    expect(checkFileExists(initResult.shape.userPermissions.filePath)).to.be.true;
     expect(checkFileExists(initResult.policies.profiles?.filePath)).to.be.true;
   });
 

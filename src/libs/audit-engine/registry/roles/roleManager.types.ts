@@ -1,6 +1,28 @@
 import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleViolation, RuleComponentMessage } from '../result.types.js';
-import { PermissionClassifications } from '../shape/schema.js';
+import {
+  ComposableRolesControl,
+  PermissionClassifications,
+  ResolvedRoleDefinition,
+  PermissionControls,
+} from '../shape/schema.js';
+
+export type RoleManagerConfig = {
+  controls: {
+    roles?: ComposableRolesControl;
+    permissions?: PermissionControls;
+  };
+  shape: {
+    userPermissions?: PermissionClassifications;
+    customPermissions?: PermissionClassifications;
+  };
+};
+
+export type OrgAuditShape = RoleManagerConfig['shape'];
+export type OrgAuditControls = RoleManagerConfig['controls'];
+export type ComposableRoleDefinition = ComposableRolesControl['string'];
+
+export type DefinitiveRoleDefinition = Required<ResolvedRoleDefinition>;
 
 export type ResolvedProfileLike = {
   name: string;
@@ -38,11 +60,16 @@ export type IUserRole = {
   compareWith(otherRole: IUserRole): UserRoleCompareResult;
 };
 
-export type PartialProfileLike = Pick<Profile, 'userPermissions' | 'customPermissions'>;
+export type PartialProfileLike = Pick<Profile, PermissionsListKey>;
+
+export type TypedPermission = {
+  type: PermissionsListKey;
+  name: string;
+};
 
 /**
  * Moves the "name" from the classifications map to object prop
  */
 export type NamedPermissionClassification = PermissionClassifications['string'] & { name: string };
 
-export type PermissionsListKey = keyof PartialProfileLike;
+export type PermissionsListKey = 'userPermissions' | 'customPermissions';

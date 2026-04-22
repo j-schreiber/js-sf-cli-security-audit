@@ -1,0 +1,16 @@
+DeployEntity:
+  permissions:
+    allowedClassifications:
+      - Critical
+IntegrationUser:
+  permissions:
+    allowedClassifications:
+      - Medium
+Developer:
+  permissions:
+    allowedClassifications:
+      - Critical
+Standard:
+  permissions:
+    allowedClassifications:
+      - Low

@@ -57,10 +57,10 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
     if (!this.config.enabled) {
       return {};
     }
-    const resolveResult = await this.resolve(context);
+    const { resolvedEntities } = await this.resolve(context);
     const ruleResultPromises = new Array<Promise<PartialPolicyRuleResult>>();
     for (const rule of this.resolvedRules.enabledRules) {
-      ruleResultPromises.push(rule.run({ ...context, resolvedEntities: resolveResult.resolvedEntities }));
+      ruleResultPromises.push(rule.run({ ...context, resolvedEntities }));
     }
     const results: PartialRuleResults = {};
     const promises = await Promise.all(ruleResultPromises);

@@ -63,46 +63,46 @@ const ProfileConfig = PermSetConfig.extend({
   allowedLoginIps: z.array(z.object({ from: z.string().regex(IP4RegExp), to: z.string().regex(IP4RegExp) })).optional(),
 });
 
-const PermSetMap = z.record(z.string(), PermSetConfig);
-
-const ProfilesMap = z.record(z.string(), ProfileConfig);
-
 const UserConfig = z.object({ role: z.string() });
-
-const UsersMap = z.record(z.string(), UserConfig);
 
 const UsersPolicyOptions = z.strictObject({
   defaultRoleForMissingUsers: z.string().default(UserPrivilegeLevel.STANDARD_USER),
   analyseLastNDaysOfLoginHistory: z.number().optional(),
 });
 
-const RoleDefinition = z.object({
-  allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
-  allowedPermissions: z.array(z.string()).optional(),
-  deniedPermissions: z.array(z.string()).optional(),
+const IndividualPermissionControlSchema = z.object({
+  allowed: z.array(z.string()).optional(),
+  denied: z.array(z.string()).optional(),
+  required: z.array(z.string()).optional(),
 });
 
-// Definition File Schemata
+// Controls File Schema
 
-export const RoleDefinitionsFileSchema = z.record(z.string(), RoleDefinition);
+export const PermissionControlSchema = z.object({
+  allowedClassifications: z.array(z.enum(PermissionRiskLevel)).optional(),
+  userPermissions: IndividualPermissionControlSchema.optional(),
+  customPermissions: IndividualPermissionControlSchema.optional(),
+});
+
+export const PermissionControlsFileSchema = z.record(z.string(), PermissionControlSchema);
+
+// new, V2
+export const ResolvedRoleDefinitionSchema = z.object({ permissions: PermissionControlSchema.optional() });
+
+export const ComposableRolesFileSchema = z.record(
+  z.string(),
+  z.object({ permissions: z.xor([z.array(z.string()), PermissionControlSchema]).optional() }).strict()
+);
 
 // Classification File Schemata
 
-export const PermissionsClassificationFileSchema = z.object({
-  permissions: PermissionClassifications,
-});
+export const PermissionsClassificationFileSchema = z.record(z.string(), PermClassification);
 
-export const ProfilesClassificationFileSchema = z.object({
-  profiles: ProfilesMap,
-});
+export const ProfilesClassificationFileSchema = z.record(z.string(), ProfileConfig);
 
-export const PermissionSetsClassificationFileSchema = z.object({
-  permissionSets: PermSetMap,
-});
+export const PermissionSetsClassificationFileSchema = z.record(z.string(), PermSetConfig);
 
-export const UserClassificationFileSchema = z.object({
-  users: UsersMap,
-});
+export const UserClassificationFileSchema = z.record(z.string(), UserConfig);
 
 // Policy File Schemata
 
@@ -135,10 +135,10 @@ export const AcceptedRisksSchema: z.ZodType<NestedStructure> = z.lazy(() =>
 );
 
 // Classification Types
-export type PermissionClassifications = z.infer<typeof PermissionClassifications>;
-export type PermissionSetClassifications = z.infer<typeof PermSetMap>;
-export type ProfileClassifications = z.infer<typeof ProfilesMap>;
-export type UserClassifications = z.infer<typeof UsersMap>;
+export type PermissionClassifications = z.infer<typeof PermissionsClassificationFileSchema>;
+export type PermissionSetClassifications = z.infer<typeof PermissionSetsClassificationFileSchema>;
+export type ProfileClassifications = z.infer<typeof ProfilesClassificationFileSchema>;
+export type UserClassifications = z.infer<typeof UserClassificationFileSchema>;
 
 // Policy Types
 export type PolicyConfig = z.infer<typeof PolicyFileSchema>;
@@ -148,5 +148,15 @@ export type UserPolicyConfig = z.infer<typeof UserPolicyFileSchema>;
 export type AcceptedRuleRisks = z.infer<typeof AcceptedRisksSchema>;
 
 // Definitions
-export type RoleDefinitions = z.infer<typeof RoleDefinitionsFileSchema>;
-export type RoledEntityMap = z.infer<typeof PermSetMap>;
+export type PermissionControlSection = z.infer<typeof IndividualPermissionControlSchema>;
+export type ResolvedRoleDefinition = z.infer<typeof ResolvedRoleDefinitionSchema>;
+export type ComposableRolesControl = z.infer<typeof ComposableRolesFileSchema>;
+export type PermissionControl = z.infer<typeof PermissionControlSchema>;
+export type PermissionControls = z.infer<typeof PermissionControlsFileSchema>;
+
+// Guard Functions
+
+export function isPermissionControl(maybeRoleDef: unknown): maybeRoleDef is PermissionControl {
+  const parseResult = PermissionControlSchema.safeParse(maybeRoleDef);
+  return maybeRoleDef !== undefined && parseResult.success === true;
+}

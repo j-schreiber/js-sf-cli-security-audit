@@ -23,7 +23,7 @@ export default class ProfilesPolicy extends Policy<ResolvedProfile> {
 
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
     super('profiles', config, auditConfig, registry);
-    this.classifications = this.auditConfig.classifications.profiles?.profiles ?? {};
+    this.classifications = this.auditConfig.inventory.profiles ?? {};
     this.updateResolveState({ total: Object.keys(this.classifications).length });
   }
 

@@ -1,32 +1,25 @@
 import { Messages } from '@salesforce/core';
 import { ExtractAuditConfigTypes, RefineError } from '../../file-manager/fileManager.types.js';
+import { OrgDescribe } from '../../../../salesforce/index.js';
 import { BaseAuditConfigShape } from './auditConfigShape.js';
-import { RoleDefinitions, RoledEntityMap } from './schema.js';
+import { ComposableRolesControl, isPermissionControl, PermissionSetClassifications } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'auditShapeValidation');
 
 export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditConfigShape>): RefineError[] => {
   const errors: RefineError[] = [];
-  if (parseResult.definitions.roles) {
-    if (parseResult.classifications.profiles) {
+  if (parseResult.controls.roles) {
+    if (parseResult.inventory.profiles) {
+      errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.profiles, 'profiles'));
+    }
+    if (parseResult.inventory.permissionSets) {
       errors.push(
-        ...validateRoledEntity(parseResult.definitions.roles, parseResult.classifications.profiles.profiles, 'profiles')
+        ...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.permissionSets, 'permissionSets')
       );
     }
-    if (parseResult.classifications.permissionSets) {
-      errors.push(
-        ...validateRoledEntity(
-          parseResult.definitions.roles,
-          parseResult.classifications.permissionSets.permissionSets,
-          'permissionSets'
-        )
-      );
-    }
-    if (parseResult.classifications.users) {
-      errors.push(
-        ...validateRoledEntity(parseResult.definitions.roles, parseResult.classifications.users.users, 'users')
-      );
+    if (parseResult.inventory.users) {
+      errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.users, 'users'));
     }
   }
   if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
@@ -38,7 +31,40 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
   return errors;
 };
 
-function validateRoledEntity(roles: RoleDefinitions, entries: RoledEntityMap, entityName: string): RefineError[] {
+export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe: OrgDescribe): RefineError[] {
+  const warnings = new Array<RefineError>();
+  for (const [roleName, roleDef] of Object.entries(roles)) {
+    if (!isPermissionControl(roleDef.permissions) || !roleDef.permissions) {
+      continue;
+    }
+    for (const permissionBlockName of ['userPermissions', 'customPermissions'] as const) {
+      const permBlock = roleDef.permissions[permissionBlockName];
+      if (!permBlock) {
+        continue;
+      }
+      for (const permProp of ['allowed', 'denied', 'required'] as const) {
+        const namedPerms = permBlock[permProp];
+        if (namedPerms) {
+          for (const permName of namedPerms) {
+            if (!orgDescribe.isValid(permName)) {
+              warnings.push({
+                path: ['Controls', 'Roles', roleName, permissionBlockName, permProp, permName],
+                message: messages.getMessage('PermissionDoesNotExistOnOrg'),
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+  return warnings;
+}
+
+function validateRoledEntity(
+  roles: ComposableRolesControl,
+  entries: PermissionSetClassifications,
+  entityName: string
+): RefineError[] {
   const errors: RefineError[] = [];
   for (const [identifier, entity] of Object.entries(entries)) {
     if (!roles[entity.role]) {

@@ -37,11 +37,11 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
-      assert.isDefined(auditConf.classifications.customPermissions);
-      assert.isDefined(auditConf.classifications.profiles);
-      assert.isDefined(auditConf.classifications.permissionSets);
-      assert.isDefined(auditConf.classifications.users);
+      assert.isDefined(auditConf.shape.userPermissions);
+      assert.isDefined(auditConf.shape.customPermissions);
+      assert.isDefined(auditConf.inventory.profiles);
+      assert.isDefined(auditConf.inventory.permissionSets);
+      assert.isDefined(auditConf.inventory.users);
       assert.isDefined(auditConf.policies.profiles);
       assert.isDefined(auditConf.policies.permissionSets);
       assert.isDefined(auditConf.policies.connectedApps);
@@ -72,7 +72,7 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
-      expect(auditConf.classifications.customPermissions).to.be.undefined;
+      expect(auditConf.shape.customPermissions).to.be.undefined;
     });
 
     it('applies the selected preset logic when initialising config', async () => {
@@ -80,11 +80,11 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.strict });
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
+      assert.isDefined(auditConf.shape.userPermissions);
       const strictPreset = new StrictPreset();
       const testedDefaultPerms = ['UseAnyApiClient', 'CustomizeApplication', 'AuthorApex', 'ModifyMetadata'];
       testedDefaultPerms.forEach((permName) => {
-        const perm = auditConf.classifications.userPermissions?.permissions[permName];
+        const perm = auditConf.shape.userPermissions?.[permName];
         assert.isDefined(perm);
         const expectedRiskLevel = strictPreset.initDefault(permName);
         assert.isDefined(expectedRiskLevel);
@@ -98,9 +98,9 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.loose });
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
+      assert.isDefined(auditConf.shape.userPermissions);
       const preset = new LoosePreset();
-      const allPerms = auditConf.classifications.userPermissions?.permissions;
+      const allPerms = auditConf.shape.userPermissions;
       Object.entries(allPerms).forEach(([permName, perm]) => {
         const expectedRiskLevel = preset.initDefault(permName);
         assert.isDefined(expectedRiskLevel);
@@ -113,8 +113,8 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
-      const userPerms = auditConf.classifications.userPermissions?.permissions;
+      assert.isDefined(auditConf.shape.userPermissions);
+      const userPerms = auditConf.shape.userPermissions;
       Object.values(userPerms).forEach((perm) => {
         expect(perm.classification).to.equal(PermissionRiskLevel.UNKNOWN);
       });
@@ -138,7 +138,7 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
+      assert.isDefined(auditConf.shape.userPermissions);
       // these are the permissions from our prod that are part of profiles, but not part of the permset describe
       const missingPermsFromMetadata = [
         'CanApproveUninstalledApps',
@@ -148,7 +148,7 @@ describe('audit config', () => {
         'AllowObjectDetectionTraining',
       ];
       missingPermsFromMetadata.forEach((permName) => {
-        const perm = auditConf.classifications.userPermissions?.permissions[permName];
+        const perm = auditConf.shape.userPermissions?.[permName];
         assert.isDefined(perm);
       });
     });
@@ -158,11 +158,11 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
-      assert.isDefined(auditConf.classifications.users);
+      assert.isDefined(auditConf.inventory.users);
       assert.isDefined(auditConf.policies.users);
-      const userClassification = auditConf.classifications.users;
+      const userClassification = auditConf.inventory.users;
       const userPolicy = auditConf.policies.users;
-      expect(Object.keys(userClassification.users)).to.deep.equal([
+      expect(Object.keys(userClassification)).to.deep.equal([
         'guest-user@example.de',
         'test-user-1@example.de',
         'test-user-2@example.de',
@@ -176,15 +176,11 @@ describe('audit config', () => {
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
 
       // Assert
-      assert.isDefined(auditConf.classifications.profiles);
+      assert.isDefined(auditConf.inventory.profiles);
       assert.isDefined(auditConf.policies.profiles);
-      const classification = auditConf.classifications.profiles;
+      const profiles = auditConf.inventory.profiles;
       const policy = auditConf.policies.profiles;
-      expect(Object.keys(classification.profiles)).to.deep.equal([
-        'Custom Profile',
-        'System Administrator',
-        'Standard User',
-      ]);
+      expect(Object.keys(profiles)).to.deep.equal(['Custom Profile', 'System Administrator', 'Standard User']);
       expect(policy.enabled).to.be.true;
     });
   });
@@ -195,11 +191,11 @@ describe('audit config', () => {
       const auditConf = loadAuditConfig(buildAuditConfigPath('full-valid'));
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
-      assert.isDefined(auditConf.classifications.customPermissions);
-      assert.isDefined(auditConf.classifications.profiles);
-      assert.isDefined(auditConf.classifications.permissionSets);
-      assert.isDefined(auditConf.classifications.users);
+      assert.isDefined(auditConf.shape.userPermissions);
+      assert.isDefined(auditConf.shape.customPermissions);
+      assert.isDefined(auditConf.inventory.profiles);
+      assert.isDefined(auditConf.inventory.permissionSets);
+      assert.isDefined(auditConf.inventory.users);
       assert.isDefined(auditConf.policies.profiles);
       assert.isDefined(auditConf.policies.permissionSets);
       assert.isDefined(auditConf.policies.connectedApps);
@@ -211,10 +207,10 @@ describe('audit config', () => {
       const auditConf = loadAuditConfig(buildAuditConfigPath('minimal'));
 
       // Assert
-      assert.isDefined(auditConf.classifications.userPermissions);
-      assert.isDefined(auditConf.classifications.profiles);
+      assert.isDefined(auditConf.shape.userPermissions);
+      assert.isDefined(auditConf.inventory.profiles);
       assert.isDefined(auditConf.policies.profiles);
-      expect(auditConf.classifications.customPermissions).to.be.undefined;
+      expect(auditConf.shape.customPermissions).to.be.undefined;
       expect(auditConf.policies.permissionSets).to.be.undefined;
       expect(auditConf.policies.connectedApps).to.be.undefined;
     });
@@ -248,36 +244,21 @@ describe('audit config', () => {
     it('rejects to load audit config if assigned roles do not match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
+      auditConf.controls.roles = {
         MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          },
         },
         MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
         },
       };
       saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
 
       // Assert
-      const expectedMsg = validationMessages.getMessage('RoleNotInDefinition', ['Unknown']);
-      expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
-    });
-
-    it('rejects to load audit config if assigned roles do not match custom roles', async () => {
-      // Arrange
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
-        MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
-        },
-        MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
-        },
-      };
-      saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
-
-      // Assert
-      // default config initialises all entities with "Unknown"
       const expectedMsg = validationMessages.getMessage('RoleNotInDefinition', ['Unknown']);
       expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
     });
@@ -285,35 +266,39 @@ describe('audit config', () => {
     it('accepts to load audit config if assigned roles match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.targetOrgConnection);
-      auditConf.definitions.roles = {
+      auditConf.controls.roles = {
         MyOpsRole: {
-          allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.HIGH, PermissionRiskLevel.MEDIUM],
+          },
         },
         MyUserRole: {
-          allowedClassifications: [PermissionRiskLevel.LOW],
+          permissions: {
+            allowedClassifications: [PermissionRiskLevel.LOW],
+          },
         },
       };
-      setRoleInClassification('MyOpsRole', auditConf.classifications.permissionSets?.permissionSets);
-      setRoleInClassification('MyUserRole', auditConf.classifications.profiles?.profiles);
-      setRoleInClassification('MyUserRole', auditConf.classifications.users?.users);
+      setRoleInClassification('MyOpsRole', auditConf.inventory.permissionSets);
+      setRoleInClassification('MyUserRole', auditConf.inventory.profiles);
+      setRoleInClassification('MyUserRole', auditConf.inventory.users);
       saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
 
       // Act
       const loadedConf = loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR);
 
       // Assert
-      assert.isDefined(loadedConf.definitions.roles);
-      expect(Object.keys(loadedConf.definitions.roles)).to.deep.equal(['MyOpsRole', 'MyUserRole']);
+      assert.isDefined(loadedConf.controls.roles);
+      expect(Object.keys(loadedConf.controls.roles)).to.deep.equal(['MyOpsRole', 'MyUserRole']);
     });
   });
 });
 
 function assertFullConfig(auditConf: AuditRunConfig) {
-  assert.isDefined(auditConf.classifications.userPermissions);
-  assert.isDefined(auditConf.classifications.customPermissions);
-  assert.isDefined(auditConf.classifications.profiles);
-  assert.isDefined(auditConf.classifications.permissionSets);
-  assert.isDefined(auditConf.classifications.users);
+  assert.isDefined(auditConf.shape.userPermissions);
+  assert.isDefined(auditConf.shape.customPermissions);
+  assert.isDefined(auditConf.inventory.profiles);
+  assert.isDefined(auditConf.inventory.permissionSets);
+  assert.isDefined(auditConf.inventory.users);
   assert.isDefined(auditConf.policies.profiles);
   assert.isDefined(auditConf.policies.permissionSets);
   assert.isDefined(auditConf.policies.connectedApps);
