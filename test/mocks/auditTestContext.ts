@@ -1,7 +1,7 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
-import { Connection } from '@salesforce/core';
 import { SinonSandbox } from 'sinon';
+import { Connection } from '@salesforce/core';
 import { stubSfCommandUx, stubSpinner } from '@salesforce/sf-plugins-core';
 import { MockTestOrgData, TestContext } from '@salesforce/core/testSetup';
 import { AuditRunConfig } from '../../src/libs/audit-engine/index.js';
@@ -14,9 +14,10 @@ import {
   PermissionClassifications,
 } from '../../src/libs/audit-engine/registry/shape/schema.js';
 import AuditRunMultiStageOutput from '../../src/ux/auditRunMultiStage.js';
-import { MDAPI } from '../../src/salesforce/index.js';
+import { MDAPI, OrgDescribe } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
+import SfConnection from '../../src/salesforce/connection.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 
@@ -28,7 +29,8 @@ import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 export default class AuditTestContext {
   public context: TestContext;
   public targetOrg: MockTestOrgData;
-  public targetOrgConnection!: Connection;
+  public coreConnection!: Connection;
+  public targetOrgConnection!: SfConnection;
   public outputDirectory: PathLike;
   public defaultPath = path.join('my-test-org');
   public sfCommandStubs!: ReturnType<typeof stubSfCommandUx>;
@@ -54,7 +56,8 @@ export default class AuditTestContext {
 
   public async init() {
     await this.context.stubAuths(this.targetOrg);
-    this.targetOrgConnection = await this.targetOrg.getConnection();
+    this.coreConnection = await this.targetOrg.getConnection();
+    this.targetOrgConnection = new SfConnection(this.coreConnection);
     // comment out this line to see console output in unit tests
     this.sfCommandStubs = stubSfCommandUx(this.context.SANDBOX);
     this.multiStageStub = stubMultiStageUx(this.context.SANDBOX);
@@ -67,6 +70,7 @@ export default class AuditTestContext {
   public reset() {
     this.context.restore();
     process.chdir(this.originalCwd);
+    OrgDescribe.orgCache.clear();
     process.removeAllListeners();
     fs.rmSync(this.outputDirectory, { force: true, recursive: true });
     fs.rmSync(this.defaultPath, { force: true, recursive: true });

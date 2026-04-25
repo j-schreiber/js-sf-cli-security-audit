@@ -1,19 +1,35 @@
-import { Connection } from '@salesforce/core';
 import Profiles from '../repositories/profiles/profiles.js';
+import SfConnection from '../connection.js';
 import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
 
 /** Minimum length for perm label to start fuzzy matching */
 const FUZZY_MATCH_MIN_LENGTH = 15;
 export default class OrgDescribe {
+  /**
+   * Caches initialised OrgDescribes by username.
+   */
+  public static orgCache = new Map<string, OrgDescribe>();
   private customPermissions!: Map<string, Permission>;
   private userPermissions!: Map<string, Permission>;
 
   private constructor() {}
 
-  public static async create(con: Connection): Promise<OrgDescribe> {
+  /**
+   * Initialises a new OrgDescribe instance from an existing connection
+   * and caches it for repeated access.
+   *
+   * @param con
+   * @returns
+   */
+  public static async create(con: SfConnection): Promise<OrgDescribe> {
+    const maybeCache = this.orgCache.get(con.coreConnection.instanceUrl);
+    if (maybeCache) {
+      return maybeCache;
+    }
     const inst = new OrgDescribe();
     inst.userPermissions = await fetchUserPermissions(con);
     inst.customPermissions = await fetchCustomPermissions(con);
+    this.orgCache.set(con.coreConnection.instanceUrl, inst);
     return inst;
   }
 
@@ -75,13 +91,13 @@ export default class OrgDescribe {
   }
 }
 
-async function fetchUserPermissions(con: Connection): Promise<Map<string, Permission>> {
+async function fetchUserPermissions(con: SfConnection): Promise<Map<string, Permission>> {
   const describePerms = await parsePermsFromDescribe(con);
   const assignedPerms = await getUserPermsFromProfiles(con);
   return mergeMaps(assignedPerms, describePerms);
 }
 
-async function fetchCustomPermissions(con: Connection): Promise<Map<string, Permission>> {
+async function fetchCustomPermissions(con: SfConnection): Promise<Map<string, Permission>> {
   const result = new Map<string, Permission>();
   const customPerms = await con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
   if (customPerms.records.length > 0) {
@@ -99,7 +115,7 @@ function mergeMaps(...permMaps: Array<Map<string, Permission>>): Map<string, Per
   return new Map(permMaps.flatMap((m) => [...m]));
 }
 
-async function parsePermsFromDescribe(con: Connection): Promise<Map<string, Permission>> {
+async function parsePermsFromDescribe(con: SfConnection): Promise<Map<string, Permission>> {
   const permSet = await con.describe('PermissionSet');
   const describeAvailablePerms = new Map<string, Permission>();
   permSet.fields
@@ -114,7 +130,7 @@ async function parsePermsFromDescribe(con: Connection): Promise<Map<string, Perm
   return describeAvailablePerms;
 }
 
-async function getUserPermsFromProfiles(con: Connection): Promise<Map<string, Permission>> {
+async function getUserPermsFromProfiles(con: SfConnection): Promise<Map<string, Permission>> {
   const assignedPerms = new Map<string, Permission>();
   const profilesRepo = new Profiles(con);
   const profiles = await profilesRepo.resolve({ withMetadata: true });

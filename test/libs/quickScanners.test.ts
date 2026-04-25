@@ -20,7 +20,7 @@ describe('quick scanners', () => {
       // Act
       const scanner = new UserPermissionScanner();
       const result = await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport'],
         deepScan: false,
         includeInactive: false,
@@ -38,7 +38,7 @@ describe('quick scanners', () => {
       // Act
       const scanner = new UserPermissionScanner();
       const result = await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['AuthorApex', 'EmailMass', 'ExportReport', 'ViewSetup'],
         deepScan: true,
         includeInactive: false,
@@ -80,7 +80,7 @@ describe('quick scanners', () => {
 
       // Act
       await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['AuthorApex'],
         deepScan: false,
         includeInactive: false,
@@ -124,7 +124,7 @@ describe('quick scanners', () => {
 
       // Act
       await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['AutorApex', 'SomethingUnknown', 'CustomizeApplication'],
         deepScan: false,
         includeInactive: false,
@@ -147,7 +147,7 @@ describe('quick scanners', () => {
 
       // Act
       await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: [
           'Author Apex',
           'approvaladmin',
@@ -186,7 +186,7 @@ describe('quick scanners', () => {
 
       // Act
       await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['AuthorApex', 'ExportReport'],
         deepScan: false,
         includeInactive: false,
@@ -205,7 +205,7 @@ describe('quick scanners', () => {
 
       // Act
       await scanner.quickScan({
-        targetOrg: $$.targetOrgConnection,
+        targetOrg: $$.coreConnection,
         permissions: ['Manage', 'Import', 'View'],
         deepScan: false,
         includeInactive: false,

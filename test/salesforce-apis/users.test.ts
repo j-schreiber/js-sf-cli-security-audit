@@ -147,7 +147,10 @@ describe('users resolve', () => {
     // Arrange
     // default query with all users in context
     const { queryString } = $$.mocks.mockLoginHistory('logins-with-browser-only');
-    $$.mocks.queryErrors[queryString] = { errorCode: 'EXCEEDED_ID_LIMIT' };
+    $$.mocks.queryErrors[queryString] = {
+      errorCode: 'EXCEEDED_ID_LIMIT',
+      data: { message: 'Too many ids', errorCode: 'EXCEEDED_ID_LIMIT' },
+    };
     // recursive batch-reduce uses Math.floor(), so 3 users create chunkSize = 1
     for (const userId of Object.keys($$.mocks.mockedUsers)) {
       $$.mocks.mockLoginHistory('empty', undefined, [userId]);

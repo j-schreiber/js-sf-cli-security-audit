@@ -1,8 +1,9 @@
 import { EventEmitter } from 'node:events';
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { envVars } from '../../../ux/environment.js';
 import { chunkArray } from '../../utils.js';
+import SfConnection from '../../connection.js';
 import { SfMinimalUser, SfOauthToken } from './connected-app.types.js';
 import {
   ALL_EXISTING_USER_IDS,
@@ -29,7 +30,7 @@ export default class OAuthTokens extends EventEmitter {
   };
   private readonly maxUserCount;
 
-  public constructor(private readonly con: Connection) {
+  public constructor(private readonly con: SfConnection) {
     super();
     this.maxUserCount = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
   }
@@ -42,9 +43,7 @@ export default class OAuthTokens extends EventEmitter {
       const userIds = await this.fetchUserIds();
       allTokens = await this.batchQueryTokens(userIds, definitiveOptions);
     } else {
-      const tokenResult = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY, {
-        autoFetch: true,
-      });
+      const tokenResult = await this.con.query<SfOauthToken>(OAUTH_TOKEN_QUERY);
       allTokens = tokenResult.records;
       if (!tokenResult.done) {
         ResolveLifecycle.emitWarn(
@@ -81,15 +80,13 @@ export default class OAuthTokens extends EventEmitter {
       const subResults = await Promise.all(subResultProms);
       return subResults.flat();
     } else {
-      const direktResult = await this.con.query<SfOauthToken>(formatTokenSoql(userIds), {
-        autoFetch: true,
-      });
+      const direktResult = await this.con.query<SfOauthToken>(formatTokenSoql(userIds));
       return direktResult.records;
     }
   }
 
   private async fetchUserIds(): Promise<string[]> {
-    const userResult = await this.con.query<SfMinimalUser>(ALL_EXISTING_USER_IDS, {
+    const userResult = await this.con.query<SfMinimalUser>(ALL_EXISTING_USER_IDS, false, {
       autoFetch: true,
       maxFetch: this.maxUserCount,
     });

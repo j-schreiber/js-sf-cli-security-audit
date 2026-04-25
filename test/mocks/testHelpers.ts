@@ -39,7 +39,10 @@ export async function resolveAndRun(policy: Policies, context: AuditTestContext)
     targetOrgConnection: context.targetOrgConnection,
     orgDescribe,
   });
-  const partials = await pol.executeRules({ targetOrgConnection: context.targetOrgConnection, orgDescribe });
+  const partials = await pol.executeRules({
+    targetOrgConnection: context.targetOrgConnection,
+    orgDescribe,
+  });
   return pol.finalise(partials, new AcceptedRisks(context.mockAuditConfig.acceptedRisks));
 }
 

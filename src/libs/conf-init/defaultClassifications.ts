@@ -1,6 +1,5 @@
-import { Connection } from '@salesforce/core';
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
-import { OrgDescribe, PermissionSets, Profiles, Users } from '../../salesforce/index.js';
+import { OrgDescribe, PermissionSets, Profiles, SfConnection, Users } from '../../salesforce/index.js';
 import { Inventories, Shapes } from '../audit-engine/registry/definitions.js';
 import { loadPreset } from './presets.js';
 import {
@@ -12,7 +11,7 @@ import {
   UserClassifications,
 } from './init.types.js';
 
-export type Initialiser = (con: Connection, preset?: AuditInitPresets) => Promise<unknown>;
+export type Initialiser = (con: SfConnection, preset?: AuditInitPresets) => Promise<unknown>;
 
 export const ShapeInitialisers: Record<Shapes, Initialiser> = {
   userPermissions: initUserPermissions,
@@ -25,7 +24,7 @@ export const InventoryInitialisers: Record<Inventories, Initialiser> = {
   users: initUsers,
 };
 
-async function initUserPermissions(con: Connection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
+async function initUserPermissions(con: SfConnection, preset?: AuditInitPresets): Promise<PermissionClassifications> {
   const orgManager = await OrgDescribe.create(con);
   const userPerms = orgManager.getUserPermissions();
   const presConfig = loadPreset(preset);
@@ -43,7 +42,7 @@ async function initUserPermissions(con: Connection, preset?: AuditInitPresets): 
   return result;
 }
 
-async function initCustomPermissions(con: Connection): Promise<PermissionClassifications | undefined> {
+async function initCustomPermissions(con: SfConnection): Promise<PermissionClassifications | undefined> {
   const result: PermissionClassifications = {};
   const orgManager = await OrgDescribe.create(con);
   const customPerms = orgManager.getCustomPermissions();
@@ -64,7 +63,7 @@ async function initCustomPermissions(con: Connection): Promise<PermissionClassif
   return result;
 }
 
-async function initProfiles(targetOrgCon: Connection): Promise<ProfileClassifications> {
+async function initProfiles(targetOrgCon: SfConnection): Promise<ProfileClassifications> {
   const profilesRepo = new Profiles(targetOrgCon);
   const profiles = await profilesRepo.resolve();
   const content: ProfileClassifications = {};
@@ -74,7 +73,7 @@ async function initProfiles(targetOrgCon: Connection): Promise<ProfileClassifica
   return content;
 }
 
-async function initPermissionSets(targetOrgCon: Connection): Promise<PermsetClassifications> {
+async function initPermissionSets(targetOrgCon: SfConnection): Promise<PermsetClassifications> {
   const permsetsRepo = new PermissionSets(targetOrgCon);
   const permsets = await permsetsRepo.resolve({ isCustomOnly: true });
   const content: PermsetClassifications = {};
@@ -84,7 +83,7 @@ async function initPermissionSets(targetOrgCon: Connection): Promise<PermsetClas
   return content;
 }
 
-async function initUsers(targetOrgCon: Connection): Promise<UserClassifications> {
+async function initUsers(targetOrgCon: SfConnection): Promise<UserClassifications> {
   const usersRepo = new Users(targetOrgCon);
   const users = await usersRepo.resolve();
   const content: UserClassifications = {};

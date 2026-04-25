@@ -1,12 +1,12 @@
-import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
+import SfConnection from '../../connection.js';
 import { buildProfilesQuery } from './queries.js';
 import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsSchema } from './profile.types.js';
 
 export default class Profiles {
   private readonly mdapi: MDAPI;
 
-  public constructor(private readonly con: Connection) {
+  public constructor(private readonly con: SfConnection) {
     this.mdapi = MDAPI.create(this.con);
   }
 

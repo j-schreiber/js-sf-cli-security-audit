@@ -1,12 +1,12 @@
-import { Connection } from '@salesforce/core';
 import { Metadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import SfConnection from '../connection.js';
 import { MdapiRegistry, Registry } from './metadataRegistry.js';
 
 export default class MDAPI {
   private static readonly retrievers = new Map<string, MDAPI>();
   private readonly cache: MetadataCache;
 
-  public constructor(private readonly connection: Connection, private readonly registry: MdapiRegistry = Registry) {
+  public constructor(private readonly con: SfConnection, private readonly registry: MdapiRegistry = Registry) {
     this.cache = new MetadataCache();
   }
 
@@ -23,11 +23,11 @@ export default class MDAPI {
    * @param connection
    * @returns
    */
-  public static create(connection: Connection): MDAPI {
-    if (!this.retrievers.has(connection.instanceUrl)) {
-      this.retrievers.set(connection.instanceUrl, new MDAPI(connection));
+  public static create(connection: SfConnection): MDAPI {
+    if (!this.retrievers.has(connection.coreConnection.instanceUrl)) {
+      this.retrievers.set(connection.coreConnection.instanceUrl, new MDAPI(connection));
     }
-    return this.retrievers.get(connection.instanceUrl)!;
+    return this.retrievers.get(connection.coreConnection.instanceUrl)!;
   }
 
   /**
@@ -45,7 +45,7 @@ export default class MDAPI {
     const retriever = this.registry.namedTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached(componentNames);
     if (toRetrieve.length > 0) {
-      const retrieveResults = await retriever.resolve(this.connection, toRetrieve);
+      const retrieveResults = await retriever.resolve(this.con, toRetrieve);
       this.cacheResults(retrieveResults);
       return {
         ...cached,
@@ -68,7 +68,7 @@ export default class MDAPI {
     const retriever = this.registry.singletonTypes[typeName];
     const { toRetrieve, cached } = this.fetchCached([typeName]);
     if (toRetrieve.length > 0) {
-      const retrieveResults = await retriever.resolve(this.connection);
+      const retrieveResults = await retriever.resolve(this.con);
       this.cache.set(typeName, retrieveResults);
       return retrieveResults as SingletonReturnTypes[K];
     }

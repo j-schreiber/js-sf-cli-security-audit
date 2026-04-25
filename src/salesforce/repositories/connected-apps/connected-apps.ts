@@ -1,7 +1,7 @@
 import EventEmitter from 'node:events';
-import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
 import { maxDate } from '../../utils.js';
+import SfConnection from '../../connection.js';
 import {
   ConnectedApp,
   OAuthUsageStats,
@@ -24,7 +24,7 @@ export default class ConnectedApps extends EventEmitter {
   private readonly mdapi: MDAPI;
   private readonly oauthTokenRepo: OAuthTokens;
 
-  public constructor(private readonly con: Connection) {
+  public constructor(private readonly con: SfConnection) {
     super();
     this.mdapi = MDAPI.create(this.con);
     this.oauthTokenRepo = new OAuthTokens(this.con);
@@ -143,7 +143,7 @@ export default class ConnectedApps extends EventEmitter {
   }
 }
 
-async function fetchAllInstalledApps(con: Connection): Promise<QueryResults> {
+async function fetchAllInstalledApps(con: SfConnection): Promise<QueryResults> {
   const resultPromises = [
     con.query<SfConnectedApp>(CONNECTED_APPS_QUERY),
     con.query<SfExternalClientApp>(EXTERNAL_CLIENT_APPS_QUERY),

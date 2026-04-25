@@ -4,13 +4,13 @@ import Sinon, { SinonSandbox } from 'sinon';
 import { AuthInfo, Connection } from '@salesforce/core';
 import { TestSession } from '@salesforce/cli-plugins-testkit';
 import OAuthTokens from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
-import { Users } from '../../src/salesforce/index.js';
+import { SfConnection, Users } from '../../src/salesforce/index.js';
 
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 
 describe('salesforce APIs', () => {
   let session: TestSession;
-  let orgConnection: Connection;
+  let orgConnection: SfConnection;
   const SANDBOX: SinonSandbox = Sinon.createSandbox();
 
   before(async () => {
@@ -22,7 +22,7 @@ describe('salesforce APIs', () => {
       devhubAuthStrategy: 'AUTO',
     });
     const authInfo = await AuthInfo.create({ username: session.hubOrg.username });
-    orgConnection = await Connection.create({ authInfo });
+    orgConnection = await SfConnection.create(await Connection.create({ authInfo }));
   });
 
   after(async () => {

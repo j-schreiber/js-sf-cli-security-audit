@@ -281,6 +281,7 @@ export default class SfConnectionMocks {
       }
       if (this.queries[queryParam] === undefined) {
         return Promise.reject({
+          errorCode: 'UNKNOWN_QUERY',
           data: { errorCode: 'UNKNOWN_QUERY', message: `A query was executed that was not mocked: ${queryParam}` },
         });
       }

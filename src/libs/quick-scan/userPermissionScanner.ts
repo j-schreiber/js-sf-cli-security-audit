@@ -1,7 +1,6 @@
 import { EventEmitter } from 'node:events';
-import { Connection } from '@salesforce/core';
 import { Profile, PermissionSet as PermissionSetMetadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { OrgDescribe, PermissionSets, Profiles, User, Users } from '../../salesforce/index.js';
+import { OrgDescribe, PermissionSets, Profiles, SfConnection, User, Users } from '../../salesforce/index.js';
 import { QuickScanOptions, QuickScanResult, UserPermissionAssignment } from './types.js';
 
 type ScannedEntities = {
@@ -51,10 +50,13 @@ export default class UserPermissionScanner extends EventEmitter {
     super();
   }
 
+  // PUBLIC APIS
+
   public async quickScan(opts: QuickScanOptions): Promise<QuickScanResult> {
     this.emitProgress({ status: 'Pending' });
-    const normalizedPerms = await this.normalizePermissions(opts);
-    const scannedEntities = await this.resolveEntities(opts);
+    const sfCon = await SfConnection.create(opts.targetOrg);
+    const normalizedPerms = await this.normalizePermissions(opts, sfCon);
+    const scannedEntities = await this.resolveEntities(opts, sfCon);
     const scanResult: QuickScanResult = {
       permissions: {},
       scannedProfiles: Object.keys(scannedEntities.profiles),
@@ -76,9 +78,11 @@ export default class UserPermissionScanner extends EventEmitter {
     return scanResult;
   }
 
-  private async normalizePermissions(opts: QuickScanOptions): Promise<string[]> {
+  // PRIVATE ZONE
+
+  private async normalizePermissions(opts: QuickScanOptions, sfCon: SfConnection): Promise<string[]> {
     const sanitizedPerms = [];
-    const org = await OrgDescribe.create(opts.targetOrg);
+    const org = await OrgDescribe.create(sfCon);
     for (const permName of opts.permissions) {
       if (org.isValid(permName)) {
         sanitizedPerms.push(permName);
@@ -100,13 +104,13 @@ export default class UserPermissionScanner extends EventEmitter {
     return sanitizedPerms;
   }
 
-  private async resolveEntities(opts: QuickScanOptions): Promise<ScannedEntities> {
+  private async resolveEntities(opts: QuickScanOptions, sfCon: SfConnection): Promise<ScannedEntities> {
     const promises: Array<Promise<unknown>> = [];
     this.emitProgress({ status: 'In Progress' });
-    promises.push(this.resolveProfiles(opts.targetOrg));
-    promises.push(this.resolvePermissionSets(opts.targetOrg));
+    promises.push(this.resolveProfiles(sfCon));
+    promises.push(this.resolvePermissionSets(sfCon));
     if (opts.deepScan) {
-      const usersRepo = new Users(opts.targetOrg);
+      const usersRepo = new Users(sfCon);
       promises.push(
         usersRepo.resolve({
           withLoginHistory: false,
@@ -127,7 +131,7 @@ export default class UserPermissionScanner extends EventEmitter {
     return resolvedEntities;
   }
 
-  private async resolveProfiles(targetOrg: Connection): Promise<Record<string, Profile>> {
+  private async resolveProfiles(targetOrg: SfConnection): Promise<Record<string, Profile>> {
     const profilesRepo = new Profiles(targetOrg);
     const profiles = await profilesRepo.resolve({ withMetadata: true });
     this.emitProgress({ profiles: { total: profiles.size } });
@@ -139,7 +143,7 @@ export default class UserPermissionScanner extends EventEmitter {
     return result;
   }
 
-  private async resolvePermissionSets(targetOrg: Connection): Promise<Record<string, PermissionSetMetadata>> {
+  private async resolvePermissionSets(targetOrg: SfConnection): Promise<Record<string, PermissionSetMetadata>> {
     const permsetsRepo = new PermissionSets(targetOrg);
     permsetsRepo.addListener('entityresolve', (resolveEvt) =>
       this.emitProgress({ permissionSets: resolveEvt as ScanStatusEvent['permissionSets'] })

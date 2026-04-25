@@ -18,3 +18,4 @@ export type { MessageEvent } from './resolve-entity-lifecycle-bus.js';
 // MDAPI
 export { default as MDAPI } from './mdapi/mdapi.js';
 export type { MdapiRegistry } from './mdapi/metadataRegistry.js';
+export { default as SfConnection } from './connection.js';

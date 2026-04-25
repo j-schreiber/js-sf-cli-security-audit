@@ -33,7 +33,7 @@ describe('audit run execution', () => {
     const audit = startAuditRun(dirPath);
 
     // Act
-    const auditResult = await audit.execute($$.targetOrgConnection);
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.true;
@@ -57,7 +57,7 @@ describe('audit run execution', () => {
     const audit = startAuditRun(dirPath);
 
     // Act
-    const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.false;
@@ -75,7 +75,7 @@ describe('audit run execution', () => {
     audit.config.policies.profiles!.enabled = false;
 
     // Act
-    const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.true;
@@ -93,7 +93,7 @@ describe('audit run execution', () => {
     audit.config.policies.connectedApps!.rules.AllUsedAppsUnderManagement.enabled = false;
 
     // Act
-    const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.true;
@@ -113,7 +113,7 @@ describe('audit run execution', () => {
     // Act
     const audit = startAuditRun(buildPath('minimal'));
     audit.config.policies.profiles!.enabled = false;
-    const auditResult = await audit.execute(await $$.targetOrg.getConnection());
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     expect(auditResult.isCompliant).to.be.true;
@@ -130,7 +130,7 @@ describe('audit run execution', () => {
     audit.addListener('stageupdate', stageListener);
 
     // Act
-    await audit.execute($$.targetOrgConnection);
+    await audit.execute($$.coreConnection);
 
     // Assert
     expect(stageListener.callCount).to.equal(5);
@@ -157,7 +157,7 @@ describe('audit run execution', () => {
     // Act
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    const auditResult = await audit.execute($$.targetOrgConnection);
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     const enforcePerms = auditResult.policies.profiles?.executedRules.EnforcePermissionClassifications;
@@ -180,7 +180,7 @@ describe('audit run execution', () => {
     // Act
     const dirPath = buildPath('edge-case-risks');
     const audit = startAuditRun(dirPath);
-    const auditResult = await audit.execute($$.targetOrgConnection);
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     const appsUnderMgmt = auditResult.policies.connectedApps?.executedRules.AllUsedAppsUnderManagement;
@@ -192,7 +192,7 @@ describe('audit run execution', () => {
     // Act
     const dirPath = buildPath('full-valid');
     const audit = startAuditRun(dirPath);
-    const auditResult = await audit.execute($$.targetOrgConnection);
+    const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
     // 4 rules in total define risks, each risk-matcher is counted individually

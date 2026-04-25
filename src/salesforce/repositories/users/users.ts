@@ -1,9 +1,10 @@
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
 import MDAPI from '../../mdapi/mdapi.js';
 import { envVars } from '../../../ux/environment.js';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { chunkArray } from '../../utils.js';
+import SfConnection from '../../connection.js';
 import { ResolveUsersOptions, ResolveUsersOptionsSchema, User, UserLogins } from './user.types.js';
 import { buildScopedLoginHistoryQuery, USERS_QUERY } from './queries.js';
 
@@ -15,8 +16,8 @@ export default class Users {
   private readonly usersMaxFetch;
   private readonly startingBatchSize;
 
-  public constructor(private readonly connection: Connection) {
-    this.mdapiRepo = MDAPI.create(this.connection);
+  public constructor(private readonly con: SfConnection) {
+    this.mdapiRepo = MDAPI.create(this.con);
     this.usersMaxFetch = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
     this.startingBatchSize = 256;
   }
@@ -67,7 +68,7 @@ export default class Users {
   //        PRIVATE ZONE
 
   private async fetchUsers(opts: ResolveUsersOptions): Promise<SfUser[]> {
-    const usersOnOrg = await this.connection.query<SfUser>(USERS_QUERY, {
+    const usersOnOrg = await this.con.query<SfUser>(USERS_QUERY, false, {
       autoFetch: true,
       maxFetch: this.usersMaxFetch,
     });
@@ -118,7 +119,7 @@ export default class Users {
   ): Promise<SfUserLoginsAggregate[]> {
     const initialIdChunks = chunkArray(userIds, chunkSize);
     const loginAggregateProms = initialIdChunks.map((idChunk) =>
-      this.connection.query<SfUserLoginsAggregate>(buildScopedLoginHistoryQuery(idChunk, daysToAnalyse))
+      this.con.query<SfUserLoginsAggregate>(buildScopedLoginHistoryQuery(idChunk, daysToAnalyse))
     );
     const loginAggregates = await Promise.all(loginAggregateProms);
     return loginAggregates.map((queryResult) => queryResult.records).flat();
