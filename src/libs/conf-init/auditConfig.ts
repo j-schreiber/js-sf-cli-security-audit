@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Connection } from '@salesforce/core';
 import { AuditRunConfig, RuleRegistry, Policies, PolicyConfig, PolicyDefinitions } from '../audit-engine/index.js';
+import { SfConnection } from '../../salesforce/index.js';
 import { AuditInitPresets } from './init.types.js';
 import { Initialiser, InventoryInitialisers, ShapeInitialisers } from './defaultClassifications.js';
 import { DefaultPolicyDefinitions } from './defaultPolicies.js';
@@ -28,9 +29,10 @@ export default class AuditConfig {
    * @param con
    */
   public static async init(targetCon: Connection, opts?: AuditInitOptions): Promise<AuditRunConfig> {
+    const sfCon = await SfConnection.create(targetCon);
     const conf: AuditRunConfig = { shape: {}, inventory: {}, policies: {}, acceptedRisks: {}, controls: {} };
-    conf.shape = await this.initSubtype(ShapeInitialisers, targetCon, opts);
-    conf.inventory = await this.initSubtype(InventoryInitialisers, targetCon, opts);
+    conf.shape = await this.initSubtype(ShapeInitialisers, sfCon, opts);
+    conf.inventory = await this.initSubtype(InventoryInitialisers, sfCon, opts);
     for (const policyName of Object.keys(PolicyDefinitions)) {
       const policy = initPolicyConfig(policyName as Policies);
       conf.policies[policyName as Policies] = policy as any;
@@ -38,9 +40,11 @@ export default class AuditConfig {
     return conf;
   }
 
+  // PRIVATE ZONE
+
   private static async initSubtype(
     initialisable: Record<string, Initialiser>,
-    targetCon: Connection,
+    targetCon: SfConnection,
     opts?: AuditInitOptions
   ): Promise<Record<string, unknown>> {
     const initPromises = Object.entries(initialisable).map(([, init]) => init(targetCon, opts?.preset));

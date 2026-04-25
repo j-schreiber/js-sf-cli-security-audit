@@ -13,8 +13,7 @@ import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
 import { startAuditRun } from '../../../libs/audit-engine/index.js';
 import { envVars } from '../../../ux/environment.js';
-import { AuditRunStageUpdate } from '../../../libs/audit-engine/auditRun.js';
-import { MessageEvent } from '../../../salesforce/index.js';
+import { AuditRunStageUpdate, UserMessageEvent } from '../../../libs/audit-engine/auditRun.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
@@ -82,7 +81,7 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       }
     });
 
-    auditRun.on('warning', (warning: MessageEvent) => {
+    auditRun.on('warning', (warning: UserMessageEvent) => {
       this.warn(warning.message);
     });
 

@@ -1,7 +1,7 @@
-import { Connection } from '@salesforce/core';
 import { Optional } from '../../../utils.js';
 import { OrgDescribe } from '../../../salesforce/index.js';
 import AcceptedRisks from '../accepted-risks/acceptedRisks.js';
+import SfConnection from '../../../salesforce/connection.js';
 import { AuditPolicyResult, PolicyRuleExecutionResult } from './result.types.js';
 
 /**
@@ -34,7 +34,7 @@ export type AuditContext = {
   /**
    * Connection to the target org
    */
-  targetOrgConnection: Connection;
+  targetOrgConnection: SfConnection;
 
   /**
    * Global describe of the target org to validate the audit config

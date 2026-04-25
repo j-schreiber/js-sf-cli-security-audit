@@ -1,4 +1,4 @@
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { Record } from '@jsforce/jsforce-node';
 import MDAPI from '../../mdapi/mdapi.js';
 import { envVars } from '../../../ux/environment.js';
@@ -15,11 +15,9 @@ export default class Users {
   private readonly mdapiRepo: MDAPI;
   private readonly usersMaxFetch;
   private readonly startingBatchSize;
-  private readonly con: SfConnection;
 
-  public constructor(coreConnection: Connection) {
-    this.mdapiRepo = MDAPI.create(coreConnection);
-    this.con = new SfConnection(coreConnection);
+  public constructor(private readonly con: SfConnection) {
+    this.mdapiRepo = MDAPI.create(this.con);
     this.usersMaxFetch = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
     this.startingBatchSize = 256;
   }

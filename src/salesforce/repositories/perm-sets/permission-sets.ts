@@ -1,5 +1,4 @@
 import EventEmitter from 'node:events';
-import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
 import { PermissionSet, SfPermissionSet } from '../perm-sets/perm-sets.types.js';
 import SfConnection from '../../connection.js';
@@ -8,12 +7,10 @@ import { PERMISSION_SETS_QUERY } from './queries.js';
 
 export default class PermissionSets extends EventEmitter {
   private readonly mdapi: MDAPI;
-  private readonly con: SfConnection;
 
-  public constructor(coreConnection: Connection) {
+  public constructor(private readonly con: SfConnection) {
     super();
-    this.mdapi = MDAPI.create(coreConnection);
-    this.con = new SfConnection(coreConnection);
+    this.mdapi = MDAPI.create(this.con);
   }
 
   public async resolve(opts?: Partial<ResolvePermSetOptions>): Promise<Map<string, PermissionSet>> {

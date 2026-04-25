@@ -47,7 +47,7 @@ describe('org scan user-perm', () => {
     // ensure contract - all input params are passed to lib
     expect(scannerMock.callCount).to.equal(1);
     const callArgs = scannerMock.args.flat()[0];
-    expect(callArgs.targetOrg.getUsername()).to.equal($$.targetOrgConnection.getUsername());
+    expect(callArgs.targetOrg.getUsername()).to.equal($$.coreConnection.getUsername());
     expect(callArgs.permissions).to.deep.equal(['CustomizeApplication']);
     expect(result).to.equal(mockResult);
   });

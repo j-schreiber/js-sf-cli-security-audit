@@ -2,6 +2,7 @@ import EventEmitter from 'node:events';
 import { Connection } from '@salesforce/core';
 import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.types.js';
 import { OrgDescribe, ResolveLifecycle } from '../../salesforce/index.js';
+import SfConnection from '../../salesforce/connection.js';
 import { AuditRunConfig, Policies } from './registry/definitions.js';
 import Policy, { ResolveEntityResult } from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
@@ -25,6 +26,10 @@ export type EntityResolveEvent = {
   policyName: string;
 };
 
+export type UserMessageEvent = {
+  message: string;
+};
+
 /**
  * Instance of an audit run that manages high-level operations
  */
@@ -35,7 +40,7 @@ export default class AuditRun extends EventEmitter {
   public constructor(config: Partial<AuditRunConfig>) {
     super();
     this.config = { ...{ shape: {}, inventory: {}, policies: {}, acceptedRisks: {}, controls: {} }, ...config };
-    ResolveLifecycle.on('warning', (warning) => this.emit('resolvewarning', warning));
+    ResolveLifecycle.on('resolvewarning', (warning: UserMessageEvent) => this.emitWarning(warning.message));
   }
 
   public getExecutableRulesCount(policyName: Policies): number {
@@ -52,13 +57,14 @@ export default class AuditRun extends EventEmitter {
    * @returns
    */
   public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
+    const sfCon = await SfConnection.create(targetOrgConnection);
     this.emitStageUpdate('initialising');
-    const orgDescribe = await OrgDescribe.create(targetOrgConnection);
+    const orgDescribe = await OrgDescribe.create(sfCon);
     this.verifyAuditConfig(orgDescribe);
     this.emitStageUpdate('resolving');
-    const executablePolicies = await this.resolve(targetOrgConnection, orgDescribe);
+    const executablePolicies = await this.resolve(sfCon, orgDescribe);
     this.emitStageUpdate('executing');
-    const pendingResults = await runPolicies(executablePolicies, targetOrgConnection, orgDescribe);
+    const pendingResults = await runPolicies(executablePolicies, sfCon, orgDescribe);
     this.emitStageUpdate('finalising');
     const result = {
       orgId: targetOrgConnection.getAuthInfoFields().orgId,
@@ -74,9 +80,14 @@ export default class AuditRun extends EventEmitter {
     if (this.config.controls.roles) {
       const roleWarnings = verifyRoleDefinitions(this.config.controls.roles, orgDescribe);
       for (const warning of roleWarnings) {
-        this.emit('warning', { message: `${warning.path.join(' > ')}: ${warning.message}` });
+        this.emitWarning(`${warning.path.join(' > ')}: ${warning.message}`);
       }
     }
+  }
+
+  private emitWarning(message: string): void {
+    const warnMsg: UserMessageEvent = { message };
+    this.emit('warning', warnMsg);
   }
 
   /**
@@ -84,7 +95,7 @@ export default class AuditRun extends EventEmitter {
    *
    * @param targetOrgConnection
    */
-  private async resolve(targetOrgConnection: Connection, orgDescribe: OrgDescribe): Promise<PolicyMap> {
+  private async resolve(targetOrgConnection: SfConnection, orgDescribe: OrgDescribe): Promise<PolicyMap> {
     if (this.executablePolicies) {
       return this.executablePolicies;
     }
@@ -152,7 +163,7 @@ function isCompliant(results: ResultsMap): boolean {
 
 async function runPolicies(
   policies: PolicyMap,
-  targetOrgConnection: Connection,
+  targetOrgConnection: SfConnection,
   orgDescribe: OrgDescribe
 ): Promise<PendingPolicyResults> {
   const resultsArray: Array<Promise<PartialRuleResults>> = [];

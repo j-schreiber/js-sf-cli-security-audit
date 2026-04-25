@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { Connection, Messages } from '@salesforce/core';
+import { Messages } from '@salesforce/core';
 import { ResolveLifecycle } from '../../resolve-entity-lifecycle-bus.js';
 import { envVars } from '../../../ux/environment.js';
 import { chunkArray } from '../../utils.js';
@@ -29,11 +29,9 @@ export default class OAuthTokens extends EventEmitter {
     startingBatchSize: envVars.resolve('SAE_OAUTH_TOKEN_BATCH_SIZE') ?? 256,
   };
   private readonly maxUserCount;
-  private readonly con: SfConnection;
 
-  public constructor(con: Connection) {
+  public constructor(private readonly con: SfConnection) {
     super();
-    this.con = new SfConnection(con);
     this.maxUserCount = envVars.resolve('SAE_MAX_USERS_LIMIT') ?? 100_000;
   }
 

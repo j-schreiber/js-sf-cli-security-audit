@@ -1,4 +1,3 @@
-import { Connection } from '@salesforce/core';
 import { Metadata } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import SfConnection from '../connection.js';
 import { MdapiRegistry, Registry } from './metadataRegistry.js';
@@ -6,11 +5,9 @@ import { MdapiRegistry, Registry } from './metadataRegistry.js';
 export default class MDAPI {
   private static readonly retrievers = new Map<string, MDAPI>();
   private readonly cache: MetadataCache;
-  private readonly con: SfConnection;
 
-  public constructor(connection: Connection, private readonly registry: MdapiRegistry = Registry) {
+  public constructor(private readonly con: SfConnection, private readonly registry: MdapiRegistry = Registry) {
     this.cache = new MetadataCache();
-    this.con = new SfConnection(connection);
   }
 
   /**
@@ -26,11 +23,11 @@ export default class MDAPI {
    * @param connection
    * @returns
    */
-  public static create(connection: Connection): MDAPI {
-    if (!this.retrievers.has(connection.instanceUrl)) {
-      this.retrievers.set(connection.instanceUrl, new MDAPI(connection));
+  public static create(connection: SfConnection): MDAPI {
+    if (!this.retrievers.has(connection.coreConnection.instanceUrl)) {
+      this.retrievers.set(connection.coreConnection.instanceUrl, new MDAPI(connection));
     }
-    return this.retrievers.get(connection.instanceUrl)!;
+    return this.retrievers.get(connection.coreConnection.instanceUrl)!;
   }
 
   /**

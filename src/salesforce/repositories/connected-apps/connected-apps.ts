@@ -1,5 +1,4 @@
 import EventEmitter from 'node:events';
-import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
 import { maxDate } from '../../utils.js';
 import SfConnection from '../../connection.js';
@@ -24,13 +23,11 @@ type QueryResults = {
 export default class ConnectedApps extends EventEmitter {
   private readonly mdapi: MDAPI;
   private readonly oauthTokenRepo: OAuthTokens;
-  private readonly con: SfConnection;
 
-  public constructor(coreConnection: Connection) {
+  public constructor(private readonly con: SfConnection) {
     super();
-    this.con = new SfConnection(coreConnection);
-    this.mdapi = MDAPI.create(coreConnection);
-    this.oauthTokenRepo = new OAuthTokens(coreConnection);
+    this.mdapi = MDAPI.create(this.con);
+    this.oauthTokenRepo = new OAuthTokens(this.con);
   }
 
   /**

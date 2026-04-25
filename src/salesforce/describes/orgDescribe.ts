@@ -1,4 +1,3 @@
-import { Connection } from '@salesforce/core';
 import Profiles from '../repositories/profiles/profiles.js';
 import SfConnection from '../connection.js';
 import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
@@ -22,21 +21,15 @@ export default class OrgDescribe {
    * @param con
    * @returns
    */
-  public static async create(con: Connection): Promise<OrgDescribe> {
-    const maybeUsername = con.getUsername();
-    if (maybeUsername) {
-      const maybeCache = this.orgCache.get(maybeUsername);
-      if (maybeCache) {
-        return maybeCache;
-      }
+  public static async create(con: SfConnection): Promise<OrgDescribe> {
+    const maybeCache = this.orgCache.get(con.coreConnection.instanceUrl);
+    if (maybeCache) {
+      return maybeCache;
     }
-    const sfCon = await SfConnection.create(con);
     const inst = new OrgDescribe();
-    inst.userPermissions = await fetchUserPermissions(sfCon);
-    inst.customPermissions = await fetchCustomPermissions(sfCon);
-    if (maybeUsername) {
-      this.orgCache.set(maybeUsername, inst);
-    }
+    inst.userPermissions = await fetchUserPermissions(con);
+    inst.customPermissions = await fetchCustomPermissions(con);
+    this.orgCache.set(con.coreConnection.instanceUrl, inst);
     return inst;
   }
 
@@ -139,7 +132,7 @@ async function parsePermsFromDescribe(con: SfConnection): Promise<Map<string, Pe
 
 async function getUserPermsFromProfiles(con: SfConnection): Promise<Map<string, Permission>> {
   const assignedPerms = new Map<string, Permission>();
-  const profilesRepo = new Profiles(con.coreConnection);
+  const profilesRepo = new Profiles(con);
   const profiles = await profilesRepo.resolve({ withMetadata: true });
   for (const profile of profiles.values()) {
     if (profile.metadata) {

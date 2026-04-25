@@ -7,8 +7,8 @@ Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'salesforceConnectionErrors');
 
 /**
- * Enhanced connection that wraps around the default `Connection` from core and
- * adds meaningful logging and error bubbling for better UX and debugging.
+ * Wrapper around the default `Connection` from core to add
+ * meaningful logging and error bubbling for better UX and debugging.
  */
 export default class SfConnection {
   public constructor(public readonly coreConnection: Connection, private logger?: Logger) {}

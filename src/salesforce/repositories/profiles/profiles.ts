@@ -1,4 +1,3 @@
-import { Connection } from '@salesforce/core';
 import MDAPI from '../../mdapi/mdapi.js';
 import SfConnection from '../../connection.js';
 import { buildProfilesQuery } from './queries.js';
@@ -6,11 +5,9 @@ import { PermissionSet, Profile, ResolveProfilesOptions, ResolveProfilesOptionsS
 
 export default class Profiles {
   private readonly mdapi: MDAPI;
-  private readonly con: SfConnection;
 
-  public constructor(coreConnection: Connection) {
-    this.con = new SfConnection(coreConnection);
-    this.mdapi = MDAPI.create(coreConnection);
+  public constructor(private readonly con: SfConnection) {
+    this.mdapi = MDAPI.create(this.con);
   }
 
   /**

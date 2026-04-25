@@ -34,7 +34,7 @@ describe('audit config', () => {
   describe('initialise new from org', () => {
     it('inits full config', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       assert.isDefined(auditConf.shape.userPermissions);
@@ -50,7 +50,7 @@ describe('audit config', () => {
 
     it('inits full config and saves files to target dir', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       assertFullConfig(auditConf);
@@ -58,7 +58,7 @@ describe('audit config', () => {
 
     it('inits full config and saves files root dir of no target dir is set', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       assertFullConfig(auditConf);
@@ -69,7 +69,7 @@ describe('audit config', () => {
       $$.mocks.mockCustomPermissions('empty');
 
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       expect(auditConf.shape.customPermissions).to.be.undefined;
@@ -77,7 +77,7 @@ describe('audit config', () => {
 
     it('applies the selected preset logic when initialising config', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.strict });
+      const auditConf = await AuditConfig.init($$.coreConnection, { preset: AuditInitPresets.strict });
 
       // Assert
       assert.isDefined(auditConf.shape.userPermissions);
@@ -95,7 +95,7 @@ describe('audit config', () => {
 
     it('defaults all not explicitly classified perms in loose preset as low', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.loose });
+      const auditConf = await AuditConfig.init($$.coreConnection, { preset: AuditInitPresets.loose });
 
       // Assert
       assert.isDefined(auditConf.shape.userPermissions);
@@ -110,7 +110,7 @@ describe('audit config', () => {
 
     it('initialises only reasons and no classifications with default preset', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+      const auditConf = await AuditConfig.init($$.coreConnection, { preset: AuditInitPresets.none });
 
       // Assert
       assert.isDefined(auditConf.shape.userPermissions);
@@ -135,7 +135,7 @@ describe('audit config', () => {
       // To remedy that, we parse all profiles and all assigned perms and add any used permissions.
 
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection, { preset: AuditInitPresets.none });
+      const auditConf = await AuditConfig.init($$.coreConnection, { preset: AuditInitPresets.none });
 
       // Assert
       assert.isDefined(auditConf.shape.userPermissions);
@@ -155,7 +155,7 @@ describe('audit config', () => {
 
     it('initialises user classification with active users from org', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       assert.isDefined(auditConf.inventory.users);
@@ -173,7 +173,7 @@ describe('audit config', () => {
 
     it('initialises profiles classification with all profiles from org', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
 
       // Assert
       assert.isDefined(auditConf.inventory.profiles);
@@ -227,7 +227,7 @@ describe('audit config', () => {
 
     it('writes fresh initialised audit config to file', async () => {
       // Act
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
       const saveResult = saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
 
       // Assert
@@ -243,7 +243,7 @@ describe('audit config', () => {
 
     it('rejects to load audit config if assigned roles do not match custom roles', async () => {
       // Arrange
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
       auditConf.controls.roles = {
         MyOpsRole: {
           permissions: {
@@ -265,7 +265,7 @@ describe('audit config', () => {
 
     it('accepts to load audit config if assigned roles match custom roles', async () => {
       // Arrange
-      const auditConf = await AuditConfig.init($$.targetOrgConnection);
+      const auditConf = await AuditConfig.init($$.coreConnection);
       auditConf.controls.roles = {
         MyOpsRole: {
           permissions: {
