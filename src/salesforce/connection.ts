@@ -54,7 +54,8 @@ export default class SfConnection {
       if (isConnectionError(error) && error.errorCode === 'EXCEEDED_ID_LIMIT') {
         throw error;
       }
-      throw messages.createError(isTooling ? 'ToolingQuery' : 'Query', [soql], undefined, error as Error);
+      const errMsg = isConnectionError(error) ? error.data.message : 'Unknown error';
+      throw messages.createError('Query', [soql, errMsg], undefined, error as Error);
     }
   }
 
