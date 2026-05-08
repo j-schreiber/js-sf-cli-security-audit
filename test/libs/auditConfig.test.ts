@@ -263,7 +263,7 @@ describe('audit config', () => {
       expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
     });
 
-    it('accepts to load audit config if assigned roles match custom roles', async () => {
+    it('loads audit config if assigned roles match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.coreConnection);
       auditConf.controls.roles = {

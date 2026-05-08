@@ -82,6 +82,18 @@ export default class OrgDescribe {
   }
 
   /**
+   * Checks if the permission is valid custom permission for the org
+   *
+   * @param permissionName
+   */
+  public isValidCustomPerm(permissionName: string): boolean {
+    return (
+      this.customPermissions.has(permissionName.toLowerCase()) &&
+      this.customPermissions.get(permissionName.toLowerCase())?.name === permissionName
+    );
+  }
+
+  /**
    * Finds all custom permissions that exist on the target org.
    *
    * @returns
@@ -102,7 +114,7 @@ async function fetchCustomPermissions(con: SfConnection): Promise<Map<string, Pe
   const customPerms = await con.query<SfCustomPermission>(CUSTOM_PERMS_QUERY);
   if (customPerms.records.length > 0) {
     for (const cp of customPerms.records) {
-      result.set(cp.DeveloperName, {
+      result.set(cp.DeveloperName.toLowerCase(), {
         name: cp.DeveloperName,
         label: cp.MasterLabel,
       });

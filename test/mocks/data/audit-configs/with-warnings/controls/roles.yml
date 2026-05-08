@@ -11,3 +11,7 @@ StandardUser:
     userPermissions:
       allowed:
         - AnotherInvalidPermName
+    customPermissions:
+      denied:
+        - Delete_Activated_Invoices
+        - AnUnknownCustomPerm
