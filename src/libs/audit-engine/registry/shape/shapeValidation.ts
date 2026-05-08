@@ -21,6 +21,15 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
     if (parseResult.inventory.users) {
       errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.users, 'users'));
     }
+    const defaultRole = parseResult.policies.users?.options.defaultRoleForMissingUsers;
+    const defaultRoleExistsAndIsValid =
+      defaultRole !== undefined && parseResult.controls.roles[defaultRole] !== undefined;
+    if (defaultRole && !defaultRoleExistsAndIsValid) {
+      errors.push({
+        message: messages.getMessage('DefaultRoleForMissingUsersDoesNotExist', [defaultRole]),
+        path: ['policies', 'users', 'options', 'defaultRoleForMissingUsers'],
+      });
+    }
   }
   if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
     errors.push({
