@@ -279,6 +279,26 @@ describe('role manager', () => {
       expect(otherWayRound.missingPermsInOther).to.deep.equal([]);
       expect(otherWayRound.missingPermsInThis).to.have.deep.members(['ApiEnabled', 'ViewSetup', 'HighPermName']);
     });
+
+    it('denies permission independent of its classification and case-insensitive', () => {
+      // Arrange
+      testAuditConfig.controls.roles!['My Ops Role'] = {
+        permissions: {
+          userPermissions: { denied: ['someunclassifiedperm'] },
+        },
+      };
+      const rm = new RoleManager(testAuditConfig);
+
+      // Act
+      const testProfile = buildProfileLike('My Ops Role', ['SomeUnclassifiedPerm']);
+      const result = rm.scanProfileLike(testProfile);
+
+      // Assert
+      expect(result.violations).to.have.lengthOf(1);
+      expect(result.violations[0]).to.deep.contain({
+        identifier: [testProfile.name, 'SomeUnclassifiedPerm'],
+      });
+    });
   });
 });
 

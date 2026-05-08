@@ -18,19 +18,45 @@ import {
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
+type UserRolePermissions = {
+  allowed: Set<string>;
+  denied: Set<string>;
+};
+
 export default class UserRole {
   public constructor(
     public roleName: string,
-    private allowedUserPermissions: Set<string>,
-    private allowedCustomPermissions: Set<string>,
+    private userPermissions: UserRolePermissions,
+    private customPermissions: UserRolePermissions,
     private roleOrdinalValue?: number
   ) {}
 
+  /**
+   * Evaluates if a permission is explicitly denied
+   *
+   * @param permission
+   * @returns
+   */
+  public isDenied(permission: TypedPermission): boolean {
+    if (permission.type === 'customPermissions') {
+      return this.customPermissions.denied.has(permission.name.toLowerCase());
+    } else {
+      return this.userPermissions.denied.has(permission.name.toLowerCase());
+    }
+  }
+
+  /**
+   * Evaluates if a permission of type userPermission or customPermission
+   * is allowed for the role.
+   *
+   * @param permission
+   * @returns
+   */
   public isAllowed(permission: TypedPermission): boolean {
     if (permission.type === 'customPermissions') {
-      return this.allowedCustomPermissions.has(permission.name);
+      return this.customPermissions.allowed.has(permission.name);
     } else {
-      return this.allowedUserPermissions.has(permission.name);
+      return this.userPermissions.allowed.has(permission.name);
     }
   }
 
@@ -39,12 +65,12 @@ export default class UserRole {
     const missingPermsInThis = new Array<string>();
     const isOrdinallyHigher =
       this.roleOrdinalValue && otherRole.roleOrdinalValue ? this.roleOrdinalValue >= otherRole.roleOrdinalValue : true;
-    const merged = new Set([...this.allowedUserPermissions, ...otherRole.allowedUserPermissions]);
+    const merged = new Set([...this.userPermissions.allowed, ...otherRole.userPermissions.allowed]);
     for (const perm of merged) {
-      if (!this.allowedUserPermissions.has(perm)) {
+      if (!this.userPermissions.allowed.has(perm)) {
         missingPermsInThis.push(perm);
       }
-      if (!otherRole.allowedUserPermissions.has(perm)) {
+      if (!otherRole.userPermissions.allowed.has(perm)) {
         missingPermsInOther.push(perm);
       }
     }
@@ -75,7 +101,12 @@ export function newRoleFromDefinition(roleName: string, config: RoleManagerConfi
 export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: PermissionClassifications): UserRole {
   const roleOrdinalValue = resolvePresetOrdinalValue(roleName);
   if (!perms || roleName === UserPrivilegeLevel.UNKNOWN) {
-    return new UserRole(roleName, new Set<string>(), new Set<string>(), roleOrdinalValue);
+    return new UserRole(
+      roleName,
+      { allowed: new Set<string>(), denied: new Set<string>() },
+      { allowed: new Set<string>(), denied: new Set<string>() },
+      roleOrdinalValue
+    );
   }
   const allAllowed = new Set<string>();
   for (const [permName, permDef] of Object.entries(perms)) {
@@ -83,7 +114,12 @@ export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: Permis
       allAllowed.add(permName);
     }
   }
-  return new UserRole(roleName, allAllowed, new Set<string>(), roleOrdinalValue);
+  return new UserRole(
+    roleName,
+    { allowed: allAllowed, denied: new Set<string>() },
+    { allowed: new Set<string>(), denied: new Set<string>() },
+    roleOrdinalValue
+  );
 }
 
 function resolvePresetOrdinalValue(value: UserPrivilegeLevel): number {
@@ -120,7 +156,7 @@ function buildAllowedPerms(
   rolePermDef?: PermissionControlSection,
   permClassifications?: PermissionClassifications,
   allowedClassifications?: string[]
-): Set<string> {
+): UserRolePermissions {
   const allowedPerms = new Set<string>();
   if (allowedClassifications && permClassifications) {
     for (const [permName, permDef] of Object.entries(permClassifications)) {
@@ -130,7 +166,7 @@ function buildAllowedPerms(
     }
   }
   if (!rolePermDef) {
-    return allowedPerms;
+    return { allowed: allowedPerms, denied: new Set<string>() };
   }
   if (rolePermDef.allowed) {
     for (const permName of rolePermDef.allowed) {
@@ -147,5 +183,8 @@ function buildAllowedPerms(
       allowedPerms.delete(permName);
     }
   }
-  return allowedPerms;
+  return {
+    allowed: allowedPerms,
+    denied: new Set<string>(rolePermDef.denied ? rolePermDef.denied.map((p) => p.toLowerCase()) : []),
+  };
 }

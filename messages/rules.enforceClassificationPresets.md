@@ -18,6 +18,10 @@ Permission is classified as "%s" and not allowed in role "%s".
 
 Permission is BLOCKED and not allowed for any role.
 
+# violations.permission-is-denied
+
+Permission is denied by role "%s".
+
 # warnings.permission-unknown
 
 Permission classified as UNKNOWN. Update classification to LOW or higher to resolve.
