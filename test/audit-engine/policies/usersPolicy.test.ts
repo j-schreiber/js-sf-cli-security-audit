@@ -376,6 +376,11 @@ describe('policy - users', () => {
     describe('EnforcePermissionClassifications', () => {
       let localUsersPolicyConfig: UserPolicyConfig;
 
+      function ensureRoleForAllUsers(roleName: string): void {
+        $$.mockUserClassifications({});
+        localUsersPolicyConfig.options.defaultRoleForMissingUsers = roleName;
+      }
+
       beforeEach(() => {
         localUsersPolicyConfig = {
           enabled: true,
@@ -510,9 +515,7 @@ describe('policy - users', () => {
 
       it('audits users based role definitions if they exist', async () => {
         // Arrange
-        // all users will be assigned the default role
-        $$.mockUserClassifications({});
-        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
+        ensureRoleForAllUsers('Standard');
         $$.mockRoles({
           Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
         });
@@ -542,6 +545,53 @@ describe('policy - users', () => {
           {
             identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
             message: criticalMismatchMsg('Standard'),
+          },
+        ]);
+      });
+
+      it('reports violation if user has a denied user permission even if it is not classified', async () => {
+        // Arrange
+        ensureRoleForAllUsers('Standard');
+        // must pick permissions that are present in the mock profiles
+        $$.mockRoles({
+          Standard: { permissions: { userPermissions: { denied: ['AuthorApex', 'CustomizeApplication'] } } },
+        });
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator', 'AuthorApex'],
+            message: permScanningMessages.getMessage('violations.permission-is-denied', ['Standard']),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator', 'CustomizeApplication'],
+            message: permScanningMessages.getMessage('violations.permission-is-denied', ['Standard']),
+          },
+        ]);
+      });
+
+      it('reports violation if user has a denied custom permission even if it is not classified', async () => {
+        // Arrange
+        ensureRoleForAllUsers('Standard');
+        $$.mockRoles({
+          Standard: { permissions: { customPermissions: { denied: ['Delete_Activated_Invoices'] } } },
+        });
+
+        // Act
+        const result = await resolveAndRun('users', $$);
+
+        // Assert
+        const ruleResult = result.executedRules.EnforcePermissionClassifications;
+        expect(ruleResult.errors).to.deep.equal([]);
+        expect(ruleResult.violations).to.deep.equal([
+          {
+            identifier: ['test-user-2@example.de', 'Test_Power_User_Permission_Set_1', 'Delete_Activated_Invoices'],
+            message: permScanningMessages.getMessage('violations.permission-is-denied', ['Standard']),
           },
         ]);
       });

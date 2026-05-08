@@ -21,6 +21,15 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
     if (parseResult.inventory.users) {
       errors.push(...validateRoledEntity(parseResult.controls.roles, parseResult.inventory.users, 'users'));
     }
+    const defaultRole = parseResult.policies.users?.options.defaultRoleForMissingUsers;
+    const defaultRoleExistsAndIsValid =
+      defaultRole !== undefined && parseResult.controls.roles[defaultRole] !== undefined;
+    if (defaultRole && !defaultRoleExistsAndIsValid) {
+      errors.push({
+        message: messages.getMessage('DefaultRoleForMissingUsersDoesNotExist', [defaultRole]),
+        path: ['policies', 'users', 'options', 'defaultRoleForMissingUsers'],
+      });
+    }
   }
   if (!parseResult.policies || Object.keys(parseResult.policies).length === 0) {
     errors.push({
@@ -37,8 +46,11 @@ export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe
     if (!isPermissionControl(roleDef.permissions) || !roleDef.permissions) {
       continue;
     }
-    for (const permissionBlockName of ['userPermissions', 'customPermissions'] as const) {
-      const permBlock = roleDef.permissions[permissionBlockName];
+    for (const permissionBlockName of [
+      { listName: 'userPermissions', isValid: (permName: string) => orgDescribe.isValid(permName) },
+      { listName: 'customPermissions', isValid: (permName: string) => orgDescribe.isValidCustomPerm(permName) },
+    ] as const) {
+      const permBlock = roleDef.permissions[permissionBlockName.listName];
       if (!permBlock) {
         continue;
       }
@@ -46,9 +58,9 @@ export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe
         const namedPerms = permBlock[permProp];
         if (namedPerms) {
           for (const permName of namedPerms) {
-            if (!orgDescribe.isValid(permName)) {
+            if (!permissionBlockName.isValid(permName)) {
               warnings.push({
-                path: ['Controls', 'Roles', roleName, permissionBlockName, permProp, permName],
+                path: ['Controls', 'Roles', roleName, permissionBlockName.listName, permProp, permName],
                 message: messages.getMessage('PermissionDoesNotExistOnOrg'),
               });
             }

@@ -84,6 +84,7 @@ describe('org audit NUTs', () => {
         },
       },
     };
+    conf.policies.users!.options.defaultRoleForMissingUsers = 'MyStandardRole';
     setRoleInClassification('MyStandardRole', conf.inventory.permissionSets);
     setRoleInClassification('MyStandardRole', conf.inventory.profiles);
     setRoleInClassification('MyStandardRole', conf.inventory.users);

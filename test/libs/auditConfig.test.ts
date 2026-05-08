@@ -263,7 +263,69 @@ describe('audit config', () => {
       expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
     });
 
-    it('accepts to load audit config if assigned roles match custom roles', async () => {
+    it('rejects to load audit config if default role for users does not exist', async () => {
+      // Arrange
+      const auditConf: AuditRunConfig = {
+        policies: {
+          users: {
+            enabled: true,
+            rules: {
+              EnforcePermissionClassifications: { enabled: true },
+            },
+            options: {
+              defaultRoleForMissingUsers: 'Invalid Role',
+            },
+          },
+        },
+        controls: {
+          roles: {
+            NonPrivileged: {},
+          },
+        },
+        acceptedRisks: {},
+        inventory: {},
+        shape: {},
+      };
+      saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
+
+      // Act
+      const expectedMsg = validationMessages.getMessage('DefaultRoleForMissingUsersDoesNotExist', ['Invalid Role']);
+      expect(() => loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR)).to.throw(expectedMsg);
+    });
+
+    it('loads audit config with default roles and without user policy', async () => {
+      // Arrange
+      const auditConf: AuditRunConfig = {
+        policies: {
+          profiles: {
+            enabled: true,
+            rules: {
+              EnforcePermissionClassifications: { enabled: true },
+            },
+          },
+        },
+        controls: {
+          roles: {
+            NonPrivileged: {},
+          },
+        },
+        acceptedRisks: {},
+        inventory: {},
+        shape: {
+          userPermissions: {},
+        },
+      };
+      saveAuditConfig(DEFAULT_TEST_OUTPUT_DIR, auditConf);
+
+      // Act
+      const loadedConf = loadAuditConfig(DEFAULT_TEST_OUTPUT_DIR);
+
+      // Assert
+      assert.isDefined(loadedConf.policies.profiles);
+      assert.isDefined(loadedConf.controls.roles);
+    });
+
+    it('loads audit config if assigned roles match custom roles', async () => {
       // Arrange
       const auditConf = await AuditConfig.init($$.coreConnection);
       auditConf.controls.roles = {
@@ -278,6 +340,7 @@ describe('audit config', () => {
           },
         },
       };
+      auditConf.policies.users!.options.defaultRoleForMissingUsers = 'MyUserRole';
       setRoleInClassification('MyOpsRole', auditConf.inventory.permissionSets);
       setRoleInClassification('MyUserRole', auditConf.inventory.profiles);
       setRoleInClassification('MyUserRole', auditConf.inventory.users);

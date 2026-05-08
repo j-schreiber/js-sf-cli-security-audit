@@ -1,6 +1,6 @@
 enabled: true
 options:
-  defaultRoleForMissingUsers: Standard User
+  defaultRoleForMissingUsers: Standard
   analyseLastNDaysOfLoginHistory: 14
 rules:
   NoOtherApexApiLogins:

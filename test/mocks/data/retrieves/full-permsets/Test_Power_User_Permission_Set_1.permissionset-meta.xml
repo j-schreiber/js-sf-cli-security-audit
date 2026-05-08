@@ -6,4 +6,8 @@
         <enabled>true</enabled>
         <name>RunFlow</name>
     </userPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Delete_Activated_Invoices</name>
+    </customPermissions>
 </PermissionSet>

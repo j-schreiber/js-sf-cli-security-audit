@@ -133,6 +133,11 @@ export default class RoleManager extends EventEmitter {
             message: messages.getMessage('warnings.permission-unknown'),
           });
         }
+      } else if (role.isDenied({ name: perm.name, type: permissionType })) {
+        result.violations.push({
+          identifier,
+          message: messages.getMessage('violations.permission-is-denied', [role.roleName]),
+        });
       } else {
         result.warnings.push({
           identifier,

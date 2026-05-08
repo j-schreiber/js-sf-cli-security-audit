@@ -2,6 +2,10 @@
 
 %s is not a valid role for audit config.
 
+# DefaultRoleForMissingUsersDoesNotExist
+
+User policy option defaultRoleForMissingUsers is invalid: "%s" does not exist.
+
 # PermissionDoesNotExistOnOrg
 
 Permission does not exist on Org.
