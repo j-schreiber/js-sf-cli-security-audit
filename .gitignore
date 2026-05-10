@@ -35,6 +35,7 @@ lib
 coverage
 test_session*
 report_*.json
+scripts/
 
 # generated docs
 docs
