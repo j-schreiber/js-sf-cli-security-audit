@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import Sinon, { SinonSandbox } from 'sinon';
 import { Messages } from '@salesforce/core';
+import { ProfileObjectPermissions } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
 import RoleManager from '../../src/libs/audit-engine/registry/roles/roleManager.js';
 import { PermissionClassifications } from '../../src/libs/audit-engine/registry/shape/schema.js';
@@ -123,180 +124,294 @@ describe('role manager', () => {
   describe('modern roles', () => {
     let testAuditConfig: RoleManagerConfig;
 
-    beforeEach(() => {
-      testAuditConfig = {
-        controls: {
-          roles: {
-            'My Custom Role': {
-              permissions: { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
+    describe('permissions', () => {
+      beforeEach(() => {
+        testAuditConfig = {
+          controls: {
+            roles: {
+              'My Custom Role': {
+                permissions: { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
+              },
+              'My Ops Role': { permissions: { allowedClassifications: [PermissionRiskLevel.CRITICAL] } },
+              MyComplexRole: {
+                permissions: ['AdminPerms', 'HighAndLower'],
+              },
+              EmptyTestRole: {},
             },
-            'My Ops Role': { permissions: { allowedClassifications: [PermissionRiskLevel.CRITICAL] } },
-            MyComplexRole: {
-              permissions: ['AdminPerms', 'HighAndLower'],
+            permissions: {
+              AdminPerms: {
+                userPermissions: {
+                  allowed: ['ApiEnabled', 'ViewSetup'],
+                },
+                customPermissions: {
+                  allowed: ['My_Custom_Perm'],
+                },
+              },
+              HighAndLower: {
+                allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
+              },
+              StandardUserOnly: {
+                allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
+                userPermissions: {
+                  denied: ['ApiEnabled'],
+                },
+              },
             },
-            EmptyTestRole: {},
           },
+          shape: {
+            userPermissions: {
+              ...userPermissions,
+              ...{
+                ApiEnabled: { classification: PermissionRiskLevel.CRITICAL },
+                ViewSetup: { classification: PermissionRiskLevel.CRITICAL },
+              },
+            },
+          },
+        };
+      });
+
+      it('allows permissions of configured classifications from role definition', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const testProfile = buildProfileLike('MyComplexRole', ['LowPermName', 'HighPermName', 'ViewSetup']);
+        const result = rm.scanProfileLike(testProfile);
+
+        // Assert
+        expect(result.violations).to.deep.equal([]);
+        expect(result.warnings).to.deep.equal([]);
+      });
+
+      it('denies blacklisted permission that would be allowed by classification', () => {
+        // Arrange
+        testAuditConfig.controls.roles!['My Ops Role'] = {
           permissions: {
-            AdminPerms: {
-              userPermissions: {
-                allowed: ['ApiEnabled', 'ViewSetup'],
-              },
-              customPermissions: {
-                allowed: ['My_Custom_Perm'],
-              },
-            },
-            HighAndLower: {
-              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM, PermissionRiskLevel.HIGH],
-            },
-            StandardUserOnly: {
-              allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM],
-              userPermissions: {
-                denied: ['ApiEnabled'],
-              },
-            },
+            userPermissions: { denied: ['CriticalPermName'] },
+            allowedClassifications: [PermissionRiskLevel.CRITICAL],
           },
-        },
-        shape: {
-          userPermissions: {
-            ...userPermissions,
-            ...{
-              ApiEnabled: { classification: PermissionRiskLevel.CRITICAL },
-              ViewSetup: { classification: PermissionRiskLevel.CRITICAL },
-            },
+        };
+        const rm = new RoleManager(testAuditConfig);
+
+        // Act
+        const testProfile = buildProfileLike('My Ops Role', ['CriticalPermName']);
+        const result = rm.scanProfileLike(testProfile);
+
+        // Assert
+        expect(result.violations).to.have.lengthOf(1);
+        expect(result.violations[0]).to.deep.contain({
+          identifier: [testProfile.name, 'CriticalPermName'],
+        });
+      });
+
+      it('throws exception if role references an invalid permission control', () => {
+        // Arrange
+        testAuditConfig.controls.roles!['MyComplexRole'].permissions = ['InvalidPermRef'];
+
+        // Act
+        const expectedMsg = messages.getMessage('RoleReferencesPermissionThatDoesNotExist', [
+          'MyComplexRole',
+          'InvalidPermRef',
+        ]);
+        expect(() => new RoleManager(testAuditConfig)).to.throw(expectedMsg);
+      });
+
+      it('merges all permission controls to one role definition', () => {
+        // Arrange
+        testAuditConfig.controls.roles!['MyComplexRole'].permissions = [
+          'AdminPerms',
+          'HighAndLower',
+          'StandardUserOnly',
+        ];
+
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const roleDef = rm.getRole('MyComplexRole');
+
+        // Assert
+        expect(roleDef.isAllowed({ name: 'LowPermName', type: 'userPermissions' })).to.be.true;
+        expect(roleDef.isAllowed({ name: 'MediumPermName', type: 'userPermissions' })).to.be.true;
+        expect(roleDef.isAllowed({ name: 'HighPermName', type: 'userPermissions' })).to.be.true;
+        expect(roleDef.isAllowed({ name: 'ViewSetup', type: 'userPermissions' })).to.be.true;
+        expect(roleDef.isAllowed({ name: 'ApiEnabled', type: 'userPermissions' })).to.be.false;
+        expect(roleDef.isAllowed({ name: 'CriticalPermName', type: 'userPermissions' })).to.be.false;
+        expect(roleDef.isAllowed({ name: 'My_Custom_Perm', type: 'customPermissions' })).to.be.true;
+      });
+
+      // it('ignores duplicate role definitions after normalisation', () => {
+      //   // Arrange
+      //   const resolveListener = SANDBOX.stub();
+      //   AuditRunLifecycleBus.on('resolvewarning', resolveListener);
+
+      //   // Act
+      //   const rm = new RoleManager(
+      //     {
+      //       'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
+      //       MY_CUSTOM_ROLE: { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
+      //     },
+      //     { userPermissions }
+      //   );
+
+      //   // Assert
+      //   expect(resolveListener.args.flat()).to.deep.equal([
+      //     {
+      //       message: messages.getMessage('DuplicateRoleAfterNormalization', ['My Custom Role', 'MY_CUSTOM_ROLE']),
+      //     },
+      //   ]);
+      //   expect(rm.allowsPermission('My Custom Role', 'LowPermName')).to.be.true;
+      //   expect(rm.allowsPermission('My Custom Role', 'CriticalPermName')).to.be.false;
+      // });
+
+      it('denies all permissions for empty custom role (that allows nothing)', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const role = rm.getRole('EmptyTestRole');
+
+        // Assert
+        for (const permName of Object.keys(userPermissions)) {
+          expect(role.isAllowed({ name: permName, type: 'userPermissions' })).to.be.false;
+        }
+      });
+
+      it('compares modern roles by config and is superset if all allowed are included', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+
+        // Assert
+        const privilegedWithLess = rm.compare('MyComplexRole', 'My Custom Role');
+        expect(privilegedWithLess.isSuperset).to.be.true;
+        expect(privilegedWithLess.missingPermsInOther).to.have.deep.members([
+          'ApiEnabled',
+          'ViewSetup',
+          'HighPermName',
+        ]);
+        expect(privilegedWithLess.missingPermsInThis).to.deep.equal([]);
+        const otherWayRound = rm.compare('My Custom Role', 'MyComplexRole');
+        expect(otherWayRound.isSuperset).to.be.false;
+        expect(otherWayRound.missingPermsInOther).to.deep.equal([]);
+        expect(otherWayRound.missingPermsInThis).to.have.deep.members(['ApiEnabled', 'ViewSetup', 'HighPermName']);
+      });
+
+      it('denies permission independent of its classification and case-insensitive', () => {
+        // Arrange
+        testAuditConfig.controls.roles!['My Ops Role'] = {
+          permissions: {
+            userPermissions: { denied: ['someunclassifiedperm'] },
           },
-        },
-      };
-    });
+        };
+        const rm = new RoleManager(testAuditConfig);
 
-    it('allows permissions of configured classifications from role definition', () => {
-      // Act
-      const rm = new RoleManager(testAuditConfig);
-      const testProfile = buildProfileLike('MyComplexRole', ['LowPermName', 'HighPermName', 'ViewSetup']);
-      const result = rm.scanProfileLike(testProfile);
+        // Act
+        const testProfile = buildProfileLike('My Ops Role', ['SomeUnclassifiedPerm']);
+        const result = rm.scanProfileLike(testProfile);
 
-      // Assert
-      expect(result.violations).to.deep.equal([]);
-      expect(result.warnings).to.deep.equal([]);
-    });
-
-    it('denies blacklisted permission that would be allowed by classification', () => {
-      // Arrange
-      testAuditConfig.controls.roles!['My Ops Role'] = {
-        permissions: {
-          userPermissions: { denied: ['CriticalPermName'] },
-          allowedClassifications: [PermissionRiskLevel.CRITICAL],
-        },
-      };
-      const rm = new RoleManager(testAuditConfig);
-
-      // Act
-      const testProfile = buildProfileLike('My Ops Role', ['CriticalPermName']);
-      const result = rm.scanProfileLike(testProfile);
-
-      // Assert
-      expect(result.violations).to.have.lengthOf(1);
-      expect(result.violations[0]).to.deep.contain({
-        identifier: [testProfile.name, 'CriticalPermName'],
+        // Assert
+        expect(result.violations).to.have.lengthOf(1);
+        expect(result.violations[0]).to.deep.contain({
+          identifier: [testProfile.name, 'SomeUnclassifiedPerm'],
+        });
       });
     });
 
-    it('throws exception if role references an invalid permission control', () => {
-      // Arrange
-      testAuditConfig.controls.roles!['MyComplexRole'].permissions = ['InvalidPermRef'];
+    describe('object access', () => {
+      beforeEach(() => {
+        testAuditConfig = {
+          controls: {
+            roles: {
+              CustomRole: {
+                strict: true,
+                objectAccess: {
+                  Contact: {
+                    allowCreate: true,
+                    allowRead: true,
+                    allowEdit: true,
+                    allowDelete: false,
+                  },
+                },
+              },
+              OpsRole: {
+                objectAccess: ['AccountReadOnly'],
+              },
+              ComplexRole: {
+                objectAccess: ['AccountReadOnly', 'CannotDeleteOpps'],
+              },
+            },
+            objectAccess: {
+              AccountReadOnly: {
+                Account: {
+                  allowCreate: false,
+                  allowRead: true,
+                  allowEdit: false,
+                  allowDelete: false,
+                },
+              },
+              CannotDeleteOpps: {
+                Opportunity: {
+                  allowCreate: true,
+                  allowRead: true,
+                  allowEdit: true,
+                  allowDelete: false,
+                },
+                Quote: {
+                  allowCreate: true,
+                  allowRead: true,
+                  allowEdit: true,
+                  allowDelete: false,
+                },
+              },
+            },
+          },
+          shape: {},
+        };
+      });
 
-      // Act
-      const expectedMsg = messages.getMessage('RoleReferencesPermissionThatDoesNotExist', [
-        'MyComplexRole',
-        'InvalidPermRef',
-      ]);
-      expect(() => new RoleManager(testAuditConfig)).to.throw(expectedMsg);
-    });
+      it('allows access to account when role grants the access', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        // role allows read only, profile only grants read
+        const testProfile = buildProfileForObjectPerms('OpsRole', [
+          { object: 'Account', allowRead: true, allowEdit: false, allowCreate: false, allowDelete: false },
+        ]);
+        const result = rm.scanProfileLike(testProfile);
 
-    it('merges all permission controls to one role definition', () => {
-      // Arrange
-      testAuditConfig.controls.roles!['MyComplexRole'].permissions = ['AdminPerms', 'HighAndLower', 'StandardUserOnly'];
+        // Assert
+        expect(result.violations).to.deep.equal([]);
+        expect(result.warnings).to.deep.equal([]);
+      });
 
-      // Act
-      const rm = new RoleManager(testAuditConfig);
-      const roleDef = rm.getRole('MyComplexRole');
+      it('denies access to account when role does not grant the access', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        // role allows read only, profile grants read, edit, create
+        const testProfile = buildProfileForObjectPerms('OpsRole', [
+          { object: 'Account', allowRead: true, allowEdit: true, allowCreate: true, allowDelete: false },
+        ]);
+        const result = rm.scanProfileLike(testProfile);
 
-      // Assert
-      expect(roleDef.isAllowed({ name: 'LowPermName', type: 'userPermissions' })).to.be.true;
-      expect(roleDef.isAllowed({ name: 'MediumPermName', type: 'userPermissions' })).to.be.true;
-      expect(roleDef.isAllowed({ name: 'HighPermName', type: 'userPermissions' })).to.be.true;
-      expect(roleDef.isAllowed({ name: 'ViewSetup', type: 'userPermissions' })).to.be.true;
-      expect(roleDef.isAllowed({ name: 'ApiEnabled', type: 'userPermissions' })).to.be.false;
-      expect(roleDef.isAllowed({ name: 'CriticalPermName', type: 'userPermissions' })).to.be.false;
-      expect(roleDef.isAllowed({ name: 'My_Custom_Perm', type: 'customPermissions' })).to.be.true;
-    });
+        // Assert
+        expect(result.violations).to.deep.equal([
+          {
+            identifier: ['Test Profile', 'objectAccess', 'Account', 'allowCreate'],
+            message: messages.getMessage('violations.object-access-denied', ['OpsRole']),
+          },
+          {
+            identifier: ['Test Profile', 'objectAccess', 'Account', 'allowEdit'],
+            message: messages.getMessage('violations.object-access-denied', ['OpsRole']),
+          },
+        ]);
+        expect(result.warnings).to.deep.equal([]);
+      });
 
-    // it('ignores duplicate role definitions after normalisation', () => {
-    //   // Arrange
-    //   const resolveListener = SANDBOX.stub();
-    //   AuditRunLifecycleBus.on('resolvewarning', resolveListener);
+      it('does not report violation when profile does not grant access and role does not allow it', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        // ensures that the comparison is not "same boolean value" but checks only explicit grant
+        const testProfile = buildProfileForObjectPerms('CustomRole', [
+          { object: 'Contact', allowRead: false, allowEdit: false, allowCreate: false, allowDelete: false },
+        ]);
+        const result = rm.scanProfileLike(testProfile);
 
-    //   // Act
-    //   const rm = new RoleManager(
-    //     {
-    //       'My Custom Role': { allowedClassifications: [PermissionRiskLevel.LOW, PermissionRiskLevel.MEDIUM] },
-    //       MY_CUSTOM_ROLE: { allowedClassifications: [PermissionRiskLevel.CRITICAL] },
-    //     },
-    //     { userPermissions }
-    //   );
-
-    //   // Assert
-    //   expect(resolveListener.args.flat()).to.deep.equal([
-    //     {
-    //       message: messages.getMessage('DuplicateRoleAfterNormalization', ['My Custom Role', 'MY_CUSTOM_ROLE']),
-    //     },
-    //   ]);
-    //   expect(rm.allowsPermission('My Custom Role', 'LowPermName')).to.be.true;
-    //   expect(rm.allowsPermission('My Custom Role', 'CriticalPermName')).to.be.false;
-    // });
-
-    it('denies all permissions for empty custom role (that allows nothing)', () => {
-      // Act
-      const rm = new RoleManager(testAuditConfig);
-      const role = rm.getRole('EmptyTestRole');
-
-      // Assert
-      for (const permName of Object.keys(userPermissions)) {
-        expect(role.isAllowed({ name: permName, type: 'userPermissions' })).to.be.false;
-      }
-    });
-
-    it('compares modern roles by config and is superset if all allowed are included', () => {
-      // Act
-      const rm = new RoleManager(testAuditConfig);
-
-      // Assert
-      const privilegedWithLess = rm.compare('MyComplexRole', 'My Custom Role');
-      expect(privilegedWithLess.isSuperset).to.be.true;
-      expect(privilegedWithLess.missingPermsInOther).to.have.deep.members(['ApiEnabled', 'ViewSetup', 'HighPermName']);
-      expect(privilegedWithLess.missingPermsInThis).to.deep.equal([]);
-      const otherWayRound = rm.compare('My Custom Role', 'MyComplexRole');
-      expect(otherWayRound.isSuperset).to.be.false;
-      expect(otherWayRound.missingPermsInOther).to.deep.equal([]);
-      expect(otherWayRound.missingPermsInThis).to.have.deep.members(['ApiEnabled', 'ViewSetup', 'HighPermName']);
-    });
-
-    it('denies permission independent of its classification and case-insensitive', () => {
-      // Arrange
-      testAuditConfig.controls.roles!['My Ops Role'] = {
-        permissions: {
-          userPermissions: { denied: ['someunclassifiedperm'] },
-        },
-      };
-      const rm = new RoleManager(testAuditConfig);
-
-      // Act
-      const testProfile = buildProfileLike('My Ops Role', ['SomeUnclassifiedPerm']);
-      const result = rm.scanProfileLike(testProfile);
-
-      // Assert
-      expect(result.violations).to.have.lengthOf(1);
-      expect(result.violations[0]).to.deep.contain({
-        identifier: [testProfile.name, 'SomeUnclassifiedPerm'],
+        // Assert
+        expect(result.violations).to.deep.equal([]);
+        expect(result.warnings).to.deep.equal([]);
       });
     });
   });
@@ -309,6 +424,22 @@ function buildProfileLike(roleName: string, enabledUserPerms: string[]): Resolve
     metadata: {
       userPermissions: enabledUserPerms.map((name) => ({ enabled: true, name })),
       customPermissions: [],
+      objectPermissions: [],
+    },
+  };
+}
+
+function buildProfileForObjectPerms(
+  roleName: string,
+  objectPermissions: ProfileObjectPermissions[]
+): ResolvedProfileLike {
+  return {
+    name: 'Test Profile',
+    role: roleName,
+    metadata: {
+      userPermissions: [],
+      customPermissions: [],
+      objectPermissions,
     },
   };
 }

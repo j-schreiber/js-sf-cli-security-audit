@@ -5,12 +5,14 @@ import {
   PermissionClassifications,
   ResolvedRoleDefinition,
   PermissionControls,
+  ObjectAccessControls,
 } from '../shape/schema.js';
 
 export type RoleManagerConfig = {
   controls: {
     roles?: ComposableRolesControl;
     permissions?: PermissionControls;
+    objectAccess?: ObjectAccessControls;
   };
   shape: {
     userPermissions?: PermissionClassifications;
@@ -60,7 +62,7 @@ export type IUserRole = {
   compareWith(otherRole: IUserRole): UserRoleCompareResult;
 };
 
-export type PartialProfileLike = Pick<Profile, PermissionsListKey>;
+export type PartialProfileLike = Pick<Profile, PermissionsListKey | 'objectPermissions'>;
 
 export type TypedPermission = {
   type: PermissionsListKey;

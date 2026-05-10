@@ -6,6 +6,8 @@ import {
   UserPrivilegeLevel,
   isPermissionControl,
   PermissionControlSection,
+  ObjectAccessControl,
+  isObjectAccessControl,
 } from '../shape/schema.js';
 import {
   DefinitiveRoleDefinition,
@@ -23,13 +25,39 @@ type UserRolePermissions = {
   denied: Set<string>;
 };
 
+type DefinitiveObjectAccessDef = Required<ObjectAccessControl['string']>;
+
+type UserRoleConfig = {
+  userPermissions: UserRolePermissions;
+  customPermissions: UserRolePermissions;
+  objectAccess: ObjectAccessControl;
+  roleOrdinalValue?: number;
+  isStrict: boolean;
+};
+
 export default class UserRole {
-  public constructor(
-    public roleName: string,
-    private userPermissions: UserRolePermissions,
-    private customPermissions: UserRolePermissions,
-    private roleOrdinalValue?: number
-  ) {}
+  private config: UserRoleConfig;
+  private objectAccess: Record<string, DefinitiveObjectAccessDef>;
+
+  public constructor(public roleName: string, config: Partial<UserRoleConfig>) {
+    this.config = {
+      userPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
+      customPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
+      isStrict: false,
+      objectAccess: {},
+      ...config,
+    };
+    this.objectAccess = {};
+    for (const [objName, objDef] of Object.entries(config.objectAccess ?? {})) {
+      this.objectAccess[objName] = {
+        allowRead: false,
+        allowCreate: false,
+        allowDelete: false,
+        allowEdit: false,
+        ...objDef,
+      };
+    }
+  }
 
   /**
    * Evaluates if a permission is explicitly denied
@@ -39,9 +67,9 @@ export default class UserRole {
    */
   public isDenied(permission: TypedPermission): boolean {
     if (permission.type === 'customPermissions') {
-      return this.customPermissions.denied.has(permission.name.toLowerCase());
+      return this.config.customPermissions.denied.has(permission.name.toLowerCase());
     } else {
-      return this.userPermissions.denied.has(permission.name.toLowerCase());
+      return this.config.userPermissions.denied.has(permission.name.toLowerCase());
     }
   }
 
@@ -54,23 +82,32 @@ export default class UserRole {
    */
   public isAllowed(permission: TypedPermission): boolean {
     if (permission.type === 'customPermissions') {
-      return this.customPermissions.allowed.has(permission.name);
+      return this.config.customPermissions.allowed.has(permission.name);
     } else {
-      return this.userPermissions.allowed.has(permission.name);
+      return this.config.userPermissions.allowed.has(permission.name);
     }
   }
 
+  /**
+   * Runs a deep analysis of all access controls (permissions, object access, etc)
+   * of the role and determins which role is more permissive (or if they are intersecting)
+   *
+   * @param otherRole
+   * @returns
+   */
   public compareWith(otherRole: UserRole): UserRoleCompareResult {
     const missingPermsInOther = new Array<string>();
     const missingPermsInThis = new Array<string>();
     const isOrdinallyHigher =
-      this.roleOrdinalValue && otherRole.roleOrdinalValue ? this.roleOrdinalValue >= otherRole.roleOrdinalValue : true;
-    const merged = new Set([...this.userPermissions.allowed, ...otherRole.userPermissions.allowed]);
+      this.config.roleOrdinalValue && otherRole.config.roleOrdinalValue
+        ? this.config.roleOrdinalValue >= otherRole.config.roleOrdinalValue
+        : true;
+    const merged = new Set([...this.config.userPermissions.allowed, ...otherRole.config.userPermissions.allowed]);
     for (const perm of merged) {
-      if (!this.userPermissions.allowed.has(perm)) {
+      if (!this.config.userPermissions.allowed.has(perm)) {
         missingPermsInThis.push(perm);
       }
-      if (!otherRole.userPermissions.allowed.has(perm)) {
+      if (!otherRole.config.userPermissions.allowed.has(perm)) {
         missingPermsInOther.push(perm);
       }
     }
@@ -80,33 +117,41 @@ export default class UserRole {
       missingPermsInOther,
     };
   }
+
+  public allowsObjectAccess(objName: string, accessType: keyof DefinitiveObjectAccessDef): boolean {
+    const allowedObjectAccess = this.config.objectAccess[objName];
+    // if object is not explicitly defined, we allow access for roles that are "not strict"
+    if (!allowedObjectAccess) {
+      return !this.config.isStrict;
+    }
+    return allowedObjectAccess[accessType] ?? false;
+  }
 }
 
 export function newRoleFromDefinition(roleName: string, config: RoleManagerConfig): UserRole {
-  const { permissions } = resolveRole(roleName, config.controls);
-  const userPerms = buildAllowedPerms(
+  const { permissions, objectAccess } = resolveRole(roleName, config.controls);
+  const userPermissions = buildAllowedPerms(
     permissions?.userPermissions,
     config.shape.userPermissions,
     permissions?.allowedClassifications
   );
-  const customPerms = buildAllowedPerms(
+  const customPermissions = buildAllowedPerms(
     permissions?.customPermissions,
     config.shape.customPermissions,
     permissions?.allowedClassifications
   );
-
-  return new UserRole(roleName, userPerms, customPerms);
+  return new UserRole(roleName, { userPermissions, customPermissions, objectAccess });
 }
 
 export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: PermissionClassifications): UserRole {
   const roleOrdinalValue = resolvePresetOrdinalValue(roleName);
   if (!perms || roleName === UserPrivilegeLevel.UNKNOWN) {
-    return new UserRole(
-      roleName,
-      { allowed: new Set<string>(), denied: new Set<string>() },
-      { allowed: new Set<string>(), denied: new Set<string>() },
-      roleOrdinalValue
-    );
+    return new UserRole(roleName, {
+      userPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
+      customPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
+      roleOrdinalValue,
+      objectAccess: {},
+    });
   }
   const allAllowed = new Set<string>();
   for (const [permName, permDef] of Object.entries(perms)) {
@@ -114,12 +159,12 @@ export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: Permis
       allAllowed.add(permName);
     }
   }
-  return new UserRole(
-    roleName,
-    { allowed: allAllowed, denied: new Set<string>() },
-    { allowed: new Set<string>(), denied: new Set<string>() },
-    roleOrdinalValue
-  );
+  return new UserRole(roleName, {
+    userPermissions: { allowed: allAllowed, denied: new Set<string>() },
+    customPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
+    roleOrdinalValue,
+    objectAccess: {},
+  });
 }
 
 function resolvePresetOrdinalValue(value: UserPrivilegeLevel): number {
@@ -149,7 +194,20 @@ function resolveRole(roleName: string, controls: OrgAuditControls): DefinitiveRo
       }
     }
   }
-  return { permissions };
+  const objectAccess: ObjectAccessControl = {};
+  if (isObjectAccessControl(rawRoleDef.objectAccess)) {
+    merge(objectAccess, rawRoleDef.objectAccess);
+  } else {
+    for (const objRef of rawRoleDef.objectAccess ?? []) {
+      const referencedObjDef = controls.objectAccess?.[objRef];
+      if (referencedObjDef) {
+        merge(objectAccess, referencedObjDef);
+      } else {
+        throw messages.createError('RoleReferencesPermissionThatDoesNotExist', [roleName, objRef]);
+      }
+    }
+  }
+  return { permissions, objectAccess, strict: rawRoleDef.strict ?? false };
 }
 
 function buildAllowedPerms(

@@ -10,6 +10,10 @@ Tried to access a role that does not exist: %s.
 
 Role %s references permission control %s that does not exist.
 
+# RoleReferencesObjectAccessThatDoesNotExist
+
+Role %s references object access control %s that does not exist.
+
 # violations.classification-preset-mismatch
 
 Permission is classified as "%s" and not allowed in role "%s".
@@ -21,6 +25,10 @@ Permission is BLOCKED and not allowed for any role.
 # violations.permission-is-denied
 
 Permission is denied by role "%s".
+
+# violations.object-access-denied
+
+Permission on object is granted, but assigned role "%s" does not allow it.
 
 # warnings.permission-unknown
 

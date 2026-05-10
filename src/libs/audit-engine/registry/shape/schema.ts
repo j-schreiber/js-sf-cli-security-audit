@@ -84,14 +84,35 @@ export const PermissionControlSchema = z.object({
   customPermissions: IndividualPermissionControlSchema.optional(),
 });
 
+export const ObjectAccessControlSchema = z.record(
+  z.string(),
+  z.object({
+    allowRead: z.boolean().optional(),
+    allowCreate: z.boolean().optional(),
+    allowEdit: z.boolean().optional(),
+    allowDelete: z.boolean().optional(),
+  })
+);
+
 export const PermissionControlsFileSchema = z.record(z.string(), PermissionControlSchema);
 
-// new, V2
-export const ResolvedRoleDefinitionSchema = z.object({ permissions: PermissionControlSchema.optional() });
+export const ObjectAccessControlFileSchema = z.record(z.string(), ObjectAccessControlSchema);
+
+export const ResolvedRoleDefinitionSchema = z.object({
+  strict: z.boolean().optional(),
+  permissions: PermissionControlSchema.optional(),
+  objectAccess: ObjectAccessControlSchema.optional(),
+});
 
 export const ComposableRolesFileSchema = z.record(
   z.string(),
-  z.object({ permissions: z.xor([z.array(z.string()), PermissionControlSchema]).optional() }).strict()
+  z
+    .object({
+      strict: z.boolean().optional(),
+      permissions: z.xor([z.array(z.string()), PermissionControlSchema]).optional(),
+      objectAccess: z.xor([z.array(z.string()), ObjectAccessControlSchema]).optional(),
+    })
+    .strict()
 );
 
 // Classification File Schemata
@@ -153,10 +174,17 @@ export type ResolvedRoleDefinition = z.infer<typeof ResolvedRoleDefinitionSchema
 export type ComposableRolesControl = z.infer<typeof ComposableRolesFileSchema>;
 export type PermissionControl = z.infer<typeof PermissionControlSchema>;
 export type PermissionControls = z.infer<typeof PermissionControlsFileSchema>;
+export type ObjectAccessControl = z.infer<typeof ObjectAccessControlSchema>;
+export type ObjectAccessControls = z.infer<typeof ObjectAccessControlFileSchema>;
 
 // Guard Functions
 
 export function isPermissionControl(maybeRoleDef: unknown): maybeRoleDef is PermissionControl {
   const parseResult = PermissionControlSchema.safeParse(maybeRoleDef);
   return maybeRoleDef !== undefined && parseResult.success === true;
+}
+
+export function isObjectAccessControl(maybeObjectDef: unknown): maybeObjectDef is ObjectAccessControl {
+  const parseResult = ObjectAccessControlSchema.safeParse(maybeObjectDef);
+  return maybeObjectDef !== undefined && parseResult.success === true;
 }

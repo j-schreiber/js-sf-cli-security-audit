@@ -52,14 +52,18 @@ export default class RoleManager extends EventEmitter {
    * @returns
    */
   public scanProfileLike(profileLike: ResolvedProfileLike, rootIdentifier?: string[]): ScanResult {
+    const result: ScanResult = { violations: [], warnings: [] };
     if (!profileLike.metadata) {
-      return { violations: [], warnings: [] };
+      return result;
     }
-    const userPermsResult = this.scanPermissions(profileLike, 'userPermissions', rootIdentifier);
-    const customPermsResult = this.scanPermissions(profileLike, 'customPermissions', rootIdentifier);
-    userPermsResult.violations.push(...customPermsResult.violations);
-    userPermsResult.warnings.push(...customPermsResult.warnings);
-    return userPermsResult;
+    for (const permKey of ['userPermissions', 'customPermissions'] as const) {
+      const { violations, warnings } = this.scanPermissions(profileLike, permKey, rootIdentifier);
+      result.violations.push(...violations);
+      result.warnings.push(...warnings);
+    }
+    const { violations } = this.scanObjectAccess(profileLike, rootIdentifier);
+    result.violations.push(...violations);
+    return result;
   }
 
   /**
@@ -143,6 +147,25 @@ export default class RoleManager extends EventEmitter {
           identifier,
           message: messages.getMessage('warnings.permission-not-classified'),
         });
+      }
+    }
+    return result;
+  }
+
+  private scanObjectAccess(profileLike: ResolvedProfileLike, rootIdentifier?: string[]): ScanResult {
+    const result: ScanResult = { warnings: [], violations: [] };
+    const role = this.getRole(profileLike.role);
+    for (const objectAccess of profileLike.metadata.objectPermissions ?? []) {
+      const identifier = rootIdentifier
+        ? [...rootIdentifier, profileLike.name, 'objectAccess', objectAccess.object]
+        : [profileLike.name, 'objectAccess', objectAccess.object];
+      for (const accessType of ['allowRead', 'allowCreate', 'allowEdit', 'allowDelete'] as const) {
+        if (objectAccess[accessType] && !role.allowsObjectAccess(objectAccess.object, accessType)) {
+          result.violations.push({
+            identifier: [...identifier, accessType],
+            message: messages.getMessage('violations.object-access-denied', [role.roleName]),
+          });
+        }
       }
     }
     return result;
