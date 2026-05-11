@@ -10,11 +10,12 @@ import { PermissionSetClassifications, PolicyConfig, UserPrivilegeLevel } from '
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export type ClassifiedPermissionSet = PermissionSet & {
+export type ResolvedPermissionSet = PermissionSet & {
   role: string;
+  type: 'PermissionSet';
 };
 
-export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet> {
+export default class PermissionSetsPolicy extends Policy<ResolvedPermissionSet> {
   private totalEntities: number;
   private readonly classifications: PermissionSetClassifications;
 
@@ -24,7 +25,7 @@ export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet
     this.totalEntities = Object.keys(this.classifications).length;
   }
 
-  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ClassifiedPermissionSet>> {
+  protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedPermissionSet>> {
     this.emit('entityresolve', {
       total: this.totalEntities,
       resolved: 0,
@@ -42,13 +43,14 @@ export default class PermissionSetsPolicy extends Policy<ClassifiedPermissionSet
       resolved: 0,
     });
     const resolvedPermsets = await permsetsRepo.resolve({ withMetadata: true, filterNames: classifiedPermsets });
-    const resolvedEntities: Record<string, ClassifiedPermissionSet> = {};
+    const resolvedEntities: Record<string, ResolvedPermissionSet> = {};
     for (const permsetName of classifiedPermsets) {
       const metadata = resolvedPermsets.get(permsetName);
       if (metadata) {
         resolvedEntities[permsetName] = {
           ...metadata,
           role: this.classifications[permsetName].role,
+          type: 'PermissionSet',
         };
       } else {
         ignoredEntities[permsetName] = {

@@ -26,15 +26,26 @@ export type ComposableRoleDefinition = ComposableRolesControl['string'];
 
 export type DefinitiveRoleDefinition = Required<ResolvedRoleDefinition>;
 
-export type ResolvedProfileLike = {
+export type ProfileLike = {
   name: string;
-  role: string;
+  type: 'Profile' | 'PermissionSet';
+  metadata?: PartialProfileLike;
+};
+
+export type RefinedProfileLike = {
+  name: string;
+  type: 'Profile' | 'PermissionSet';
   metadata: PartialProfileLike;
+};
+
+export type ResolvedProfileLike = ProfileLike & {
+  role: string;
 };
 
 export type ScanResult = {
   violations: PolicyRuleViolation[];
   warnings: RuleComponentMessage[];
+  errors: RuleComponentMessage[];
 };
 
 export type UserRoleCompareResult = {
@@ -75,3 +86,7 @@ export type TypedPermission = {
 export type NamedPermissionClassification = PermissionClassifications['string'] & { name: string };
 
 export type PermissionsListKey = 'userPermissions' | 'customPermissions';
+
+export function isRefinedProfileLike(p: ProfileLike): p is RefinedProfileLike {
+  return p.metadata !== undefined;
+}

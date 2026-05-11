@@ -43,8 +43,8 @@ export default class UserRole {
     this.config = {
       userPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
       customPermissions: { allowed: new Set<string>(), denied: new Set<string>() },
-      isStrict: false,
       objectAccess: {},
+      isStrict: false,
       ...config,
     };
     this.objectAccess = {};
@@ -129,7 +129,7 @@ export default class UserRole {
 }
 
 export function newRoleFromDefinition(roleName: string, config: RoleManagerConfig): UserRole {
-  const { permissions, objectAccess } = resolveRole(roleName, config.controls);
+  const { permissions, objectAccess, strict } = resolveRole(roleName, config.controls);
   const userPermissions = buildAllowedPerms(
     permissions?.userPermissions,
     config.shape.userPermissions,
@@ -140,7 +140,7 @@ export function newRoleFromDefinition(roleName: string, config: RoleManagerConfi
     config.shape.customPermissions,
     permissions?.allowedClassifications
   );
-  return new UserRole(roleName, { userPermissions, customPermissions, objectAccess });
+  return new UserRole(roleName, { userPermissions, customPermissions, objectAccess, isStrict: strict });
 }
 
 export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: PermissionClassifications): UserRole {

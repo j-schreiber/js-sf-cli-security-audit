@@ -10,7 +10,7 @@ import { PolicyConfig, ProfileClassifications, UserPrivilegeLevel } from '../sha
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
 
-export type ResolvedProfile = Profile & ProfileClassifications['string'];
+export type ResolvedProfile = Profile & ProfileClassifications['string'] & { type: string };
 
 type ResolveState = {
   total: number;
@@ -64,6 +64,7 @@ export default class ProfilesPolicy extends Policy<ResolvedProfile> {
         resolvedEntities[profileName] = {
           ...profiles.get(profileName)!,
           ...this.classifications[profileName],
+          type: 'Profile',
         };
       } else {
         ignoredEntities[profileName] = {

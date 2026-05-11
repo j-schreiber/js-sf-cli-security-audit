@@ -7,7 +7,7 @@ import { Registry } from '../../src/salesforce/mdapi/metadataRegistry.js';
 import { MDAPI } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { assertSfError, parseXmlFile } from '../mocks/testHelpers.js';
-import { RETRIEVES_BASE } from '../mocks/data/paths.js';
+import { RETRIEVES_BASE, SRC_MOCKS_BASE_PATH } from '../mocks/data/paths.js';
 
 describe('mdapi retriever', () => {
   const $$ = new AuditTestContext();
@@ -24,9 +24,10 @@ describe('mdapi retriever', () => {
     it('produces permission set from source file without root node', async () => {
       // Act
       const permsetPath = path.join(
-        RETRIEVES_BASE,
-        'full-permsets',
-        'Test_Admin_Permission_Set_1.permissionset-meta.xml'
+        SRC_MOCKS_BASE_PATH,
+        'full',
+        'permissionsets',
+        'Test_Admin_Permission_Set_1.permissionset'
       );
       const parsedPermset = Registry.namedTypes.PermissionSet.parse(permsetPath);
 
@@ -38,9 +39,10 @@ describe('mdapi retriever', () => {
     it('fills missing content from XML parser with empty list', async () => {
       // Act
       const permsetPath = path.join(
-        RETRIEVES_BASE,
-        'full-permsets',
-        'Test_Standard_User_Permission_Set_1.permissionset-meta.xml'
+        SRC_MOCKS_BASE_PATH,
+        'full',
+        'permissionsets',
+        'Test_Standard_User_Permission_Set_1.permissionset'
       );
       const parsedPermset = Registry.namedTypes.PermissionSet.parse(permsetPath);
 

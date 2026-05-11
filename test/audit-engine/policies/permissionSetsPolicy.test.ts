@@ -73,12 +73,14 @@ describe('policy - permission sets', () => {
         role: 'Admin',
         name: 'Test_Admin_Permission_Set_1',
         metadata: adminPermset,
+        type: 'PermissionSet',
       },
       Test_Power_User_Permission_Set_1: {
         isCustom: true,
         role: 'Power User',
         name: 'Test_Power_User_Permission_Set_1',
         metadata: poweruserPermset,
+        type: 'PermissionSet',
       },
     };
     expect(ruleSpy.args.flat()[0]).to.deep.contain({
