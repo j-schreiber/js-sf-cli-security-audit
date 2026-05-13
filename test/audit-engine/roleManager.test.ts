@@ -5,7 +5,11 @@ import { ProfileObjectPermissions } from '@jsforce/jsforce-node/lib/api/metadata
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../../src/libs/audit-engine/index.js';
 import RoleManager from '../../src/libs/audit-engine/registry/roles/roleManager.js';
 import { PermissionClassifications } from '../../src/libs/audit-engine/registry/shape/schema.js';
-import { ProfileLike, RoleManagerConfig } from '../../src/libs/audit-engine/registry/roles/roleManager.types.js';
+import {
+  ExtendedObjectAccessPermissions,
+  ProfileLike,
+  RoleManagerConfig,
+} from '../../src/libs/audit-engine/registry/roles/roleManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
@@ -522,7 +526,7 @@ describe('role manager', () => {
         expect(result.errors).to.deep.equal([]);
       });
 
-      it('does not report violation when profile does not grant access and role does not allow it', () => {
+      it('allows granted object permissions when role allows them', () => {
         // Act
         const rm = new RoleManager(testAuditConfig);
         // ensures that the comparison is not "same boolean value" but checks only explicit grant
@@ -533,6 +537,56 @@ describe('role manager', () => {
 
         // Assert
         expect(result.violations).to.deep.equal([]);
+        expect(result.warnings).to.deep.equal([]);
+        expect(result.errors).to.deep.equal([]);
+      });
+
+      it('allows granted "viewAllFields" permission when role allows it', () => {
+        // Arrange
+        testAuditConfig.controls.objectAccess!['AccountReadOnly']['Account'].viewAllFields = true;
+
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const testProfile = coerceProfileLikeWithExtendedPermissions([
+          {
+            object: 'Account',
+            viewAllFields: true,
+            allowRead: true,
+            allowCreate: false,
+            allowEdit: false,
+            allowDelete: false,
+          },
+        ]);
+        const result = rm.scanObjectAccess('OpsRole', [testProfile]);
+
+        // Assert
+        expect(result.violations).to.deep.equal([]);
+        expect(result.warnings).to.deep.equal([]);
+        expect(result.errors).to.deep.equal([]);
+      });
+
+      it('denies granted "viewAllFields" permission when role does not allow it', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const testProfile = coerceProfileLikeWithExtendedPermissions([
+          {
+            object: 'Account',
+            viewAllFields: true,
+            allowRead: true,
+            allowCreate: false,
+            allowEdit: false,
+            allowDelete: false,
+          },
+        ]);
+        const result = rm.scanObjectAccess('OpsRole', [testProfile]);
+
+        // Assert
+        expect(result.violations).to.deep.equal([
+          {
+            identifier: [testProfile.name, 'Account', 'viewAllFields'],
+            message: messages.getMessage('violations.object-access-denied', ['OpsRole']),
+          },
+        ]);
         expect(result.warnings).to.deep.equal([]);
         expect(result.errors).to.deep.equal([]);
       });
@@ -566,4 +620,24 @@ function buildProfileForObjectPerms(objectPermissions: ProfileObjectPermissions[
     },
     type: 'Profile',
   };
+}
+
+/**
+ * The "wrong" type is deliberate: Metadata API returns object permissions with "viewAllFields"
+ * property that does not exist in the type schema from jsforce (as of 3.14.10). This allows to
+ * to audit for it in a type-safe way.
+ *
+ * @param objectPermissions
+ * @returns
+ */
+function coerceProfileLikeWithExtendedPermissions(objectPermissions: ExtendedObjectAccessPermissions[]): ProfileLike {
+  return {
+    name: 'Test Profile',
+    type: 'Profile',
+    metadata: {
+      objectPermissions,
+      userPermissions: [],
+      customPermissions: [],
+    },
+  } as unknown as ProfileLike;
 }

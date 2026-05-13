@@ -91,6 +91,7 @@ export const ObjectAccessControlSchema = z.record(
     allowCreate: z.boolean().optional(),
     allowEdit: z.boolean().optional(),
     allowDelete: z.boolean().optional(),
+    viewAllFields: z.boolean().optional(),
   })
 );
 

@@ -17,8 +17,6 @@ import UserRole, { newRoleFromDefinition, newRoleFromOrdinals } from './userRole
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
 
-const ObjectAccessKeys = ['allowRead', 'allowCreate', 'allowEdit', 'allowDelete'] as const;
-
 type ProfileLikeRefineResult = {
   role: UserRole | undefined;
   profileLikes: RefinedProfileLike[];
@@ -258,12 +256,16 @@ function scanProfileObjectPermissions(
 ): ScanResult['violations'] {
   const violations: ScanResult['violations'] = [];
   for (const objectAccess of profileLike.metadata.objectPermissions ?? []) {
-    for (const accessType of ObjectAccessKeys) {
-      if (objectAccess[accessType] && !role.allowsObjectAccess(objectAccess.object, accessType)) {
-        violations.push({
-          identifier: [...identifier, objectAccess.object, accessType],
-          message: messages.getMessage('violations.object-access-denied', [role.roleName]),
-        });
+    const allowedAccess = role.getObjectAccess(objectAccess.object);
+    for (const accessKey of ['allowRead', 'allowCreate', 'allowEdit', 'allowDelete', 'viewAllFields'] as const) {
+      if (Object.hasOwn(objectAccess, accessKey)) {
+        const grantedAccess = objectAccess[accessKey as keyof typeof objectAccess];
+        if (grantedAccess && !allowedAccess[accessKey]) {
+          violations.push({
+            identifier: [...identifier, objectAccess.object, accessKey],
+            message: messages.getMessage('violations.object-access-denied', [role.roleName]),
+          });
+        }
       }
     }
   }

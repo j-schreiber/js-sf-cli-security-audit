@@ -15,6 +15,7 @@ import {
   RoleManagerConfig,
   TypedPermission,
   UserRoleCompareResult,
+  DefinitiveObjectAccessDef,
 } from './roleManager.types.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -24,8 +25,6 @@ type UserRolePermissions = {
   allowed: Set<string>;
   denied: Set<string>;
 };
-
-type DefinitiveObjectAccessDef = Required<ObjectAccessControl['string']>;
 
 type UserRoleConfig = {
   userPermissions: UserRolePermissions;
@@ -54,6 +53,7 @@ export default class UserRole {
         allowCreate: false,
         allowDelete: false,
         allowEdit: false,
+        viewAllFields: false,
         ...objDef,
       };
     }
@@ -125,6 +125,21 @@ export default class UserRole {
       return !this.config.isStrict;
     }
     return allowedObjectAccess[accessType] ?? false;
+  }
+
+  public getObjectAccess(objName: string): DefinitiveObjectAccessDef {
+    const allowedObjectAccess = this.objectAccess[objName];
+    // if object is not explicitly defined, we allow access for roles that are "not strict"
+    if (!allowedObjectAccess) {
+      return {
+        allowCreate: !this.config.isStrict,
+        allowEdit: !this.config.isStrict,
+        allowRead: !this.config.isStrict,
+        allowDelete: !this.config.isStrict,
+        viewAllFields: !this.config.isStrict,
+      };
+    }
+    return allowedObjectAccess;
   }
 }
 

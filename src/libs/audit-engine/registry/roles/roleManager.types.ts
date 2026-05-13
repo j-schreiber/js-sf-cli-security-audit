@@ -1,4 +1,4 @@
-import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { Profile, ProfileObjectPermissions } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleViolation, RuleComponentMessage } from '../result.types.js';
 import {
   ComposableRolesControl,
@@ -6,6 +6,7 @@ import {
   ResolvedRoleDefinition,
   PermissionControls,
   ObjectAccessControls,
+  ObjectAccessControl,
 } from '../shape/schema.js';
 
 export type RoleManagerConfig = {
@@ -25,6 +26,8 @@ export type OrgAuditControls = RoleManagerConfig['controls'];
 export type ComposableRoleDefinition = ComposableRolesControl['string'];
 
 export type DefinitiveRoleDefinition = Required<ResolvedRoleDefinition>;
+
+export type DefinitiveObjectAccessDef = Required<ObjectAccessControl['string']>;
 
 export type ProfileLike = {
   name: string;
@@ -78,6 +81,14 @@ export type PartialProfileLike = Pick<Profile, PermissionsListKey | 'objectPermi
 export type TypedPermission = {
   type: PermissionsListKey;
   name: string;
+};
+
+/**
+ * JsForce does not yet expose "viewAllFields" property. This override augments
+ * the standard export to be able to audit for it.
+ */
+export type ExtendedObjectAccessPermissions = ProfileObjectPermissions & {
+  viewAllFields?: boolean | null | undefined;
 };
 
 /**
