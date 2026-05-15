@@ -4,10 +4,9 @@ import {
   PermissionClassifications,
   PermissionRiskLevel,
   UserPrivilegeLevel,
-  isPermissionControl,
   PermissionControlSection,
   ObjectAccessControl,
-  isObjectAccessControl,
+  ComposableRolesControl,
 } from '../shape/schema.js';
 import {
   DefinitiveRoleDefinition,
@@ -195,33 +194,42 @@ function resolveRole(roleName: string, controls: OrgAuditControls): DefinitiveRo
   if (!rawRoleDef) {
     throw messages.createError('TriedToAccessRoleThatDoesNotExist', [roleName]);
   }
-  const permissions = {};
-  if (isPermissionControl(rawRoleDef.permissions)) {
-    merge(permissions, rawRoleDef.permissions);
-  } else {
-    for (const permRef of rawRoleDef.permissions ?? []) {
-      const referencedPerm = controls.permissions?.[permRef];
-      if (referencedPerm) {
-        merge(permissions, referencedPerm);
-      } else {
-        throw messages.createError('RoleReferencesPermissionThatDoesNotExist', [roleName, permRef]);
-      }
+  const aggregatedRoleDef: Partial<DefinitiveRoleDefinition> = { strict: rawRoleDef.strict ?? false };
+  for (const controlType of ['permissions', 'objectAccess'] as const) {
+    try {
+      aggregatedRoleDef[controlType] = resolveReferences(rawRoleDef[controlType], controls[controlType]);
+    } catch (err) {
+      const errorDetails = err instanceof Error ? err.message : 'Unknown';
+      throw messages.createError('RoleReferencesControlThatDoesNotExist', [roleName, controlType, errorDetails]);
     }
   }
-  const objectAccess: ObjectAccessControl = {};
-  if (isObjectAccessControl(rawRoleDef.objectAccess)) {
-    merge(objectAccess, rawRoleDef.objectAccess);
-  } else {
-    for (const objRef of rawRoleDef.objectAccess ?? []) {
-      const referencedObjDef = controls.objectAccess?.[objRef];
-      if (referencedObjDef) {
-        merge(objectAccess, referencedObjDef);
+  return aggregatedRoleDef as DefinitiveRoleDefinition;
+}
+
+type controlTypeKey = 'permissions' | 'objectAccess';
+type ComposableRoleDef = ComposableRolesControl['string'][controlTypeKey];
+type ComposableAuditControls = OrgAuditControls[controlTypeKey];
+
+function resolveReferences<K extends controlTypeKey>(
+  roleDef: ComposableRoleDef,
+  controls: ComposableAuditControls
+): DefinitiveRoleDefinition[K] {
+  const mergedControl = {};
+  const definitiveControls = controls ?? {};
+  const definitiveRoleDef: ComposableRoleDef = roleDef ?? {};
+  if (Array.isArray(definitiveRoleDef)) {
+    for (const controlRef of definitiveRoleDef) {
+      const referencedControl = definitiveControls[controlRef];
+      if (referencedControl) {
+        merge(mergedControl, referencedControl);
       } else {
-        throw messages.createError('RoleReferencesPermissionThatDoesNotExist', [roleName, objRef]);
+        throw new Error(controlRef);
       }
     }
+  } else {
+    merge(mergedControl, definitiveRoleDef);
   }
-  return { permissions, objectAccess, strict: rawRoleDef.strict ?? false };
+  return mergedControl;
 }
 
 function buildAllowedPerms(

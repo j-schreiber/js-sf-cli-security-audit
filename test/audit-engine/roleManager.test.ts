@@ -296,8 +296,9 @@ describe('role manager', () => {
         testAuditConfig.controls.roles!['MyComplexRole'].permissions = ['InvalidPermRef'];
 
         // Act
-        const expectedMsg = messages.getMessage('RoleReferencesPermissionThatDoesNotExist', [
+        const expectedMsg = messages.getMessage('RoleReferencesControlThatDoesNotExist', [
           'MyComplexRole',
+          'permissions',
           'InvalidPermRef',
         ]);
         expect(() => new RoleManager(testAuditConfig)).to.throw(expectedMsg);
