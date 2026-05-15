@@ -1,16 +1,19 @@
-import { Profile } from '@jsforce/jsforce-node/lib/api/metadata.js';
+import { Profile, ProfileObjectPermissions } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { PolicyRuleViolation, RuleComponentMessage } from '../result.types.js';
 import {
   ComposableRolesControl,
   PermissionClassifications,
   ResolvedRoleDefinition,
   PermissionControls,
+  ObjectAccessControls,
+  ObjectAccessControl,
 } from '../shape/schema.js';
 
 export type RoleManagerConfig = {
   controls: {
     roles?: ComposableRolesControl;
     permissions?: PermissionControls;
+    objectAccess?: ObjectAccessControls;
   };
   shape: {
     userPermissions?: PermissionClassifications;
@@ -24,15 +27,28 @@ export type ComposableRoleDefinition = ComposableRolesControl['string'];
 
 export type DefinitiveRoleDefinition = Required<ResolvedRoleDefinition>;
 
-export type ResolvedProfileLike = {
+export type DefinitiveObjectAccessDef = Required<ObjectAccessControl['string']>;
+
+export type ProfileLike = {
   name: string;
-  role: string;
+  type: 'Profile' | 'PermissionSet';
+  metadata?: PartialProfileLike;
+};
+
+export type RefinedProfileLike = {
+  name: string;
+  type: 'Profile' | 'PermissionSet';
   metadata: PartialProfileLike;
+};
+
+export type ResolvedProfileLike = ProfileLike & {
+  role: string;
 };
 
 export type ScanResult = {
   violations: PolicyRuleViolation[];
   warnings: RuleComponentMessage[];
+  errors: RuleComponentMessage[];
 };
 
 export type UserRoleCompareResult = {
@@ -60,11 +76,19 @@ export type IUserRole = {
   compareWith(otherRole: IUserRole): UserRoleCompareResult;
 };
 
-export type PartialProfileLike = Pick<Profile, PermissionsListKey>;
+export type PartialProfileLike = Pick<Profile, PermissionsListKey | 'objectPermissions'>;
 
 export type TypedPermission = {
   type: PermissionsListKey;
   name: string;
+};
+
+/**
+ * JsForce does not yet expose "viewAllFields" property. This override augments
+ * the standard export to be able to audit for it.
+ */
+export type ExtendedObjectAccessPermissions = ProfileObjectPermissions & {
+  viewAllFields?: boolean | null | undefined;
 };
 
 /**
@@ -73,3 +97,7 @@ export type TypedPermission = {
 export type NamedPermissionClassification = PermissionClassifications['string'] & { name: string };
 
 export type PermissionsListKey = 'userPermissions' | 'customPermissions';
+
+export function isRefinedProfileLike(p: ProfileLike): p is RefinedProfileLike {
+  return p.metadata !== undefined;
+}

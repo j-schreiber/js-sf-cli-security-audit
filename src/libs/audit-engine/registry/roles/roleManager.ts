@@ -3,9 +3,11 @@ import { Messages } from '@salesforce/core';
 import { PermissionClassifications, PermissionRiskLevel, UserPrivilegeLevel } from '../shape/schema.js';
 import { AuditRunLifecycleBus } from '../../auditRunLifecycle.js';
 import {
+  isRefinedProfileLike,
   NamedPermissionClassification,
   PermissionsListKey,
-  ResolvedProfileLike,
+  ProfileLike,
+  RefinedProfileLike,
   RoleManagerConfig,
   ScanResult,
   UserRoleCompareResult,
@@ -14,6 +16,12 @@ import UserRole, { newRoleFromDefinition, newRoleFromOrdinals } from './userRole
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'rules.enforceClassificationPresets');
+
+type ProfileLikeRefineResult = {
+  role: UserRole | undefined;
+  profileLikes: RefinedProfileLike[];
+  errors: ScanResult['errors'];
+};
 
 export default class RoleManager extends EventEmitter {
   private roles: Record<string, UserRole> = {};
@@ -46,20 +54,61 @@ export default class RoleManager extends EventEmitter {
    * get a unified scan result with violations (risk level not allowed) and warnings
    * (risk level not classified)
    *
-   * @param profileLike
-   * @param auditRun
+   * @param role The desired role
+   * @param profileLikes List or single instance of profiles to audit
    * @param rootIdentifier Optional root identifier for messages to prepend.
    * @returns
    */
-  public scanProfileLike(profileLike: ResolvedProfileLike, rootIdentifier?: string[]): ScanResult {
-    if (!profileLike.metadata) {
-      return { violations: [], warnings: [] };
+  public scanPermissions(
+    role: string,
+    profileLikes: ProfileLike[] | ProfileLike,
+    identifier: string[] = []
+  ): ScanResult {
+    const profileLikesInput = Array.isArray(profileLikes) ? profileLikes : [profileLikes];
+    const result: ScanResult = { violations: [], warnings: [], errors: [] };
+    const refineResult = this.assertProfileLikeIntegrity(role, profileLikesInput, identifier);
+    result.errors.push(...refineResult.errors);
+    if (refineResult.role && refineResult.profileLikes.length > 0) {
+      for (const profileLike of refineResult.profileLikes) {
+        const localIdentifier = [...identifier, profileLike.name];
+        for (const permKey of ['userPermissions', 'customPermissions'] as const) {
+          const { violations, warnings } = this.scanPermissionList(
+            refineResult.role,
+            profileLike,
+            permKey,
+            localIdentifier
+          );
+          result.violations.push(...violations);
+          result.warnings.push(...warnings);
+        }
+      }
     }
-    const userPermsResult = this.scanPermissions(profileLike, 'userPermissions', rootIdentifier);
-    const customPermsResult = this.scanPermissions(profileLike, 'customPermissions', rootIdentifier);
-    userPermsResult.violations.push(...customPermsResult.violations);
-    userPermsResult.warnings.push(...customPermsResult.warnings);
-    return userPermsResult;
+
+    return result;
+  }
+
+  /**
+   * Scans object permissions of a profile or permission set and compares with
+   * the permissions that are allowed by the role.
+   *
+   * @param profileLike
+   * @param rootIdentifier
+   * @returns
+   */
+  public scanObjectAccess(role: string, profileLikes: ProfileLike[], rootIdentifier: string[] = []): ScanResult {
+    const result: ScanResult = { violations: [], warnings: [], errors: [] };
+    const refineResult = this.assertProfileLikeIntegrity(role, profileLikes, rootIdentifier);
+    result.errors.push(...refineResult.errors);
+    if (refineResult.role && refineResult.profileLikes.length > 0) {
+      for (const profileLike of refineResult.profileLikes) {
+        const violations = scanProfileObjectPermissions(refineResult.role, profileLike, [
+          ...rootIdentifier,
+          profileLike.name,
+        ]);
+        result.violations.push(...violations);
+      }
+    }
+    return result;
   }
 
   /**
@@ -103,15 +152,44 @@ export default class RoleManager extends EventEmitter {
 
   //          PRIVATE ZONE
 
-  private scanPermissions(
-    profile: ResolvedProfileLike,
+  private assertProfileLikeIntegrity(
+    role: string,
+    profileLikes: ProfileLike[],
+    identifier: string[]
+  ): ProfileLikeRefineResult {
+    const refineResult: ProfileLikeRefineResult = { errors: [], profileLikes: [], role: undefined };
+    if (this.isValidRole(role)) {
+      refineResult.role = this.getRole(role);
+    } else {
+      refineResult.errors.push(
+        ...profileLikes.map((pl) => ({
+          identifier: [...identifier, pl.name],
+          message: messages.getMessage('error.failed-to-resolve-role', [role]),
+        }))
+      );
+    }
+    for (const pl of profileLikes) {
+      if (isRefinedProfileLike(pl)) {
+        refineResult.profileLikes.push(pl);
+      } else {
+        refineResult.errors.push({
+          identifier: [...identifier, pl.name],
+          message: messages.getMessage('errors.profile-like-has-no-metadata', [pl.type]),
+        });
+      }
+    }
+    return refineResult;
+  }
+
+  private scanPermissionList(
+    role: UserRole,
+    profile: RefinedProfileLike,
     permissionType: PermissionsListKey,
-    rootIdentifier?: string[]
-  ): ScanResult {
-    const result: ScanResult = { warnings: [], violations: [] };
-    const role = this.getRole(profile.role);
+    rootIdentifier: string[]
+  ): Pick<ScanResult, 'warnings' | 'violations'> {
+    const result: Pick<ScanResult, 'warnings' | 'violations'> = { warnings: [], violations: [] };
     for (const perm of profile.metadata[permissionType]) {
-      const identifier = rootIdentifier ? [...rootIdentifier, profile.name, perm.name] : [profile.name, perm.name];
+      const identifier = [...rootIdentifier, perm.name];
       const permClassification = this.resolvePerm(perm.name, permissionType);
       if (permClassification) {
         if (permClassification.classification === PermissionRiskLevel.BLOCKED) {
@@ -124,7 +202,7 @@ export default class RoleManager extends EventEmitter {
             identifier,
             message: messages.getMessage('violations.classification-preset-mismatch', [
               permClassification.classification,
-              profile.role,
+              role.roleName,
             ]),
           });
         } else if (permClassification.classification === PermissionRiskLevel.UNKNOWN) {
@@ -169,6 +247,29 @@ export default class RoleManager extends EventEmitter {
     }
     return undefined;
   }
+}
+
+function scanProfileObjectPermissions(
+  role: UserRole,
+  profileLike: RefinedProfileLike,
+  identifier: string[]
+): ScanResult['violations'] {
+  const violations: ScanResult['violations'] = [];
+  for (const objectAccess of profileLike.metadata.objectPermissions ?? []) {
+    const allowedAccess = role.getObjectAccess(objectAccess.object);
+    for (const accessKey of ['allowRead', 'allowCreate', 'allowEdit', 'allowDelete', 'viewAllFields'] as const) {
+      if (Object.hasOwn(objectAccess, accessKey)) {
+        const grantedAccess = objectAccess[accessKey as keyof typeof objectAccess];
+        if (grantedAccess && !allowedAccess[accessKey]) {
+          violations.push({
+            identifier: [...identifier, objectAccess.object, accessKey],
+            message: messages.getMessage('violations.object-access-denied', [role.roleName]),
+          });
+        }
+      }
+    }
+  }
+  return violations;
 }
 
 function nameClassification(

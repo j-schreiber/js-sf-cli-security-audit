@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { PermissionSets } from '../../src/salesforce/index.js';
 import { parsePermSetFromFile } from '../mocks/testHelpers.js';
@@ -65,5 +65,35 @@ describe('permission sets resolve', () => {
     expect(permSets.size).to.equal(2);
     expect(permSets.has('Test_Admin_Permission_Set_1')).to.be.true;
     expect(permSets.has('Test_Standard_User_Permission_Set_2')).to.be.true;
+  });
+
+  it('resolves object permissions as array even if perm-set source only has one entry', async () => {
+    // Act
+    const repo = new PermissionSets($$.targetOrgConnection);
+    const permSets = await repo.resolve({
+      filterNames: ['Test_Admin_Permission_Set_1'],
+      withMetadata: true,
+    });
+
+    // Assert
+    const adminPermset = permSets.get('Test_Admin_Permission_Set_1');
+    assert.isDefined(adminPermset);
+    assert.isDefined(adminPermset.metadata);
+    expect(adminPermset.metadata.objectPermissions).to.have.lengthOf(1);
+  });
+
+  it('resolves object permissions as empty array even if perm-set has no entries', async () => {
+    // Act
+    const repo = new PermissionSets($$.targetOrgConnection);
+    const permSets = await repo.resolve({
+      filterNames: ['Test_Admin_Permission_Set_2'],
+      withMetadata: true,
+    });
+
+    // Assert
+    const adminPermset = permSets.get('Test_Admin_Permission_Set_2');
+    assert.isDefined(adminPermset);
+    assert.isDefined(adminPermset.metadata);
+    expect(adminPermset.metadata.objectPermissions).to.have.lengthOf(0);
   });
 });

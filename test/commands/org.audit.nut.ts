@@ -74,6 +74,14 @@ describe('org audit NUTs', () => {
         permissions: {
           allowedClassifications: [PermissionRiskLevel.LOW],
         },
+        objectAccess: {
+          Account: {
+            allowRead: true,
+            allowCreate: true,
+            allowDelete: true,
+            allowEdit: true,
+          },
+        },
       },
     };
     conf.controls.permissions = {

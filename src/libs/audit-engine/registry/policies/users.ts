@@ -76,7 +76,7 @@ function buildResolveOptions(policyConfig: UserPolicyConfig): Partial<ResolveUse
   if (policyConfig.rules['EnforcePermissionPresets']) {
     opts.withPermissions = true;
   }
-  if (policyConfig.rules['EnforcePermissionClassifications']) {
+  if (policyConfig.rules['EnforcePermissionClassifications'] || policyConfig.rules['EnforceObjectAccess']) {
     opts.withPermissions = true;
     opts.withPermissionsMetadata = true;
   }

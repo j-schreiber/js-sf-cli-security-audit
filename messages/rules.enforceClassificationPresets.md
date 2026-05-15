@@ -6,9 +6,9 @@ Duplicate role identifier after normalization found: %s was already defined, %s 
 
 Tried to access a role that does not exist: %s.
 
-# RoleReferencesPermissionThatDoesNotExist
+# RoleReferencesControlThatDoesNotExist
 
-Role %s references permission control %s that does not exist.
+Role "%s" references a %s control that does not exist: %s
 
 # violations.classification-preset-mismatch
 
@@ -22,6 +22,10 @@ Permission is BLOCKED and not allowed for any role.
 
 Permission is denied by role "%s".
 
+# violations.object-access-denied
+
+Assigned role "%s" does not allow granted permission.
+
 # warnings.permission-unknown
 
 Permission classified as UNKNOWN. Update classification to LOW or higher to resolve.
@@ -33,3 +37,7 @@ Permission is assigned, but was not found in classification. Refresh or add manu
 # error.failed-to-resolve-role
 
 The assigned role "%s" was not valid for this audit. Check your role definitions.
+
+# errors.profile-like-has-no-metadata
+
+%s has no metadata and cannot be audited.

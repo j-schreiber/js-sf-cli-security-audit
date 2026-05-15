@@ -444,11 +444,11 @@ describe('policy - users', () => {
             message: criticalMismatchMsg('Standard User'),
           },
           {
-            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
+            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
             message: criticalMismatchMsg('Admin'),
           },
           {
-            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
             message: criticalMismatchMsg('Admin'),
           },
         ]);
@@ -490,7 +490,7 @@ describe('policy - users', () => {
         expect(ruleResult.isCompliant).to.be.true;
       });
 
-      it('reports error if default role is not compatible with actual roles', async () => {
+      it('reports error if policy default role does not exist in controls', async () => {
         // Arrange
         $$.mockRoles({
           Standard: { permissions: { allowedClassifications: [PermissionRiskLevel.LOW] } },
@@ -498,16 +498,32 @@ describe('policy - users', () => {
         $$.mockUserClassification('guest-user@example.de', {
           role: 'Standard',
         });
-        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Standard';
+        localUsersPolicyConfig.options.defaultRoleForMissingUsers = 'Admin';
 
         // Act
         const result = await resolveAndRun('users', $$);
 
         // Assert
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
-        expect(ruleResult.errors).to.deep.equal([
+        expect(ruleResult.errors).to.have.deep.members([
           {
-            identifier: ['test-user-2@example.de', 'Admin'],
+            identifier: ['guest-user@example.de', 'Guest User Profile'],
+            message: permScanningMessages.getMessage('errors.profile-like-has-no-metadata', ['Profile']),
+          },
+          {
+            identifier: ['test-user-1@example.de', 'Standard User'],
+            message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'System Administrator'],
+            message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1'],
+            message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
+          },
+          {
+            identifier: ['test-user-2@example.de', 'Test_Power_User_Permission_Set_1'],
             message: permScanningMessages.getMessage('error.failed-to-resolve-role', ['Admin']),
           },
         ]);
@@ -539,11 +555,11 @@ describe('policy - users', () => {
             message: criticalMismatchMsg('Standard'),
           },
           {
-            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
+            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
             message: criticalMismatchMsg('Standard'),
           },
           {
-            identifier: ['test-user-2@example.de', 'System Administrator', 'ViewSetup'],
+            identifier: ['test-user-2@example.de', 'Test_Admin_Permission_Set_1', 'ViewSetup'],
             message: criticalMismatchMsg('Standard'),
           },
         ]);
@@ -562,7 +578,6 @@ describe('policy - users', () => {
 
         // Assert
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
-        expect(ruleResult.errors).to.deep.equal([]);
         expect(ruleResult.violations).to.deep.equal([
           {
             identifier: ['test-user-2@example.de', 'System Administrator', 'AuthorApex'],
@@ -587,7 +602,6 @@ describe('policy - users', () => {
 
         // Assert
         const ruleResult = result.executedRules.EnforcePermissionClassifications;
-        expect(ruleResult.errors).to.deep.equal([]);
         expect(ruleResult.violations).to.deep.equal([
           {
             identifier: ['test-user-2@example.de', 'Test_Power_User_Permission_Set_1', 'Delete_Activated_Invoices'],

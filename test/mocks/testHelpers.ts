@@ -19,7 +19,7 @@ import { loadPolicy, Policies, PolicyDefinitions } from '../../src/libs/audit-en
 import { OrgDescribe } from '../../src/salesforce/index.js';
 import Policy, { ResolveEntityResult } from '../../src/libs/audit-engine/registry/policy.js';
 
-import { MOCK_DATA_BASE_PATH, RETRIEVES_BASE } from './data/paths.js';
+import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH } from './data/paths.js';
 import AuditTestContext from './auditTestContext.js';
 
 type PolicyEntity<P extends Policies> = InstanceType<(typeof PolicyDefinitions)[P]['handler']> extends Policy<infer T>
@@ -83,7 +83,7 @@ export function setRoleInClassification(role: string, maybeProfileLikes?: Permis
 }
 
 export function parsePermSetFromFile(permSetName: string): PermissionSet {
-  const permsetPath = path.join(RETRIEVES_BASE, 'full-permsets', `${permSetName}.permissionset-meta.xml`);
+  const permsetPath = path.join(SRC_MOCKS_BASE_PATH, 'full', 'permissionsets', `${permSetName}.permissionset`);
   return Registry.namedTypes.PermissionSet.parse(permsetPath)!;
 }
 

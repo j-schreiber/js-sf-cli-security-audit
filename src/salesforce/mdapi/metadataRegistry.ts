@@ -15,13 +15,16 @@ const NamedTypesRegistry = {
     rootNodeName: 'PermissionSet',
     parser: new XMLParser({
       isArray: (jpath): boolean =>
-        ['userPermissions', 'fieldPermissions', 'customPermissions', 'classAccesses'].includes(jpath),
+        ['userPermissions', 'fieldPermissions', 'customPermissions', 'classAccesses', 'objectPermissions'].includes(
+          jpath
+        ),
     }),
     parsePostProcessor: (parseResult): PermissionSet => ({
       ...parseResult,
       userPermissions: parseResult.userPermissions ?? [],
       customPermissions: parseResult.customPermissions ?? [],
       classAccesses: parseResult.classAccesses ?? [],
+      objectPermissions: parseResult.objectPermissions ?? [],
     }),
   }),
   Profile: new NamedMetadataQueryable<ProfileXml, 'Profile'>({
@@ -32,6 +35,7 @@ const NamedTypesRegistry = {
       userPermissions: parseResult.userPermissions ?? [],
       customPermissions: parseResult.customPermissions ?? [],
       classAccesses: parseResult.classAccesses ?? [],
+      objectPermissions: parseResult.objectPermissions ?? [],
     }),
   }),
   Settings: new GenericSettingsMetadata(),
