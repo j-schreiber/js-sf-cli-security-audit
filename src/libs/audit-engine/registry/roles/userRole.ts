@@ -118,15 +118,14 @@ export default class UserRole {
     };
   }
 
-  public allowsObjectAccess(objName: string, accessType: keyof DefinitiveObjectAccessDef): boolean {
-    const allowedObjectAccess = this.config.objectAccess[objName];
-    // if object is not explicitly defined, we allow access for roles that are "not strict"
-    if (!allowedObjectAccess) {
-      return !this.config.isStrict;
-    }
-    return allowedObjectAccess[accessType] ?? false;
-  }
-
+  /**
+   * Returns coerced object access for the role. If the object is
+   * not explicitly defined, the "strict" flag determins if the role
+   * allows access or not.
+   *
+   * @param objName
+   * @returns
+   */
   public getObjectAccess(objName: string): DefinitiveObjectAccessDef {
     const allowedObjectAccess = this.objectAccess[objName];
     // if object is not explicitly defined, we allow access for roles that are "not strict"

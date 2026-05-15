@@ -452,6 +452,58 @@ describe('role manager', () => {
         };
       });
 
+      it('merges full object access with the last access control', () => {
+        // Arrange
+        // when object access for a role is resolved, the last access control
+        // always takes precedence.
+        testAuditConfig.controls.objectAccess!['AccountFullAccess'] = {
+          Account: {
+            allowRead: true,
+            allowEdit: true,
+            viewAllFields: true,
+          },
+        };
+        testAuditConfig.controls.roles!['OpsRole'].objectAccess = ['AccountReadOnly', 'AccountFullAccess'];
+
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const accPerms = rm.getRole('OpsRole').getObjectAccess('Account');
+
+        // Assert
+        expect(accPerms).to.deep.equal({
+          allowRead: true,
+          allowEdit: true,
+          viewAllFields: true,
+          allowDelete: false,
+          allowCreate: false,
+        });
+      });
+
+      it('merges partial object access with the last access control', () => {
+        // Arrange
+        // does not specify access that was **granted**
+        testAuditConfig.controls.objectAccess!['OtherAccountAccess'] = {
+          Account: {
+            allowEdit: true,
+            viewAllFields: true,
+          },
+        };
+        testAuditConfig.controls.roles!['OpsRole'].objectAccess = ['AccountReadOnly', 'OtherAccountAccess'];
+
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const accPerms = rm.getRole('OpsRole').getObjectAccess('Account');
+
+        // Assert
+        expect(accPerms).to.deep.equal({
+          allowRead: true,
+          allowEdit: true,
+          viewAllFields: true,
+          allowDelete: false,
+          allowCreate: false,
+        });
+      });
+
       it('allows access to account when role grants the access', () => {
         // Act
         const rm = new RoleManager(testAuditConfig);
