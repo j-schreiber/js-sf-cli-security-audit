@@ -20,7 +20,7 @@ To build from source, follow these steps
 
 ```bash
 git clone https://github.com/j-schreiber/js-sf-cli-security-audit
-mkdir sf-cli-security-audit
+cd js-sf-cli-security-audit
 yarn && yarn build
 sf plugins link .
 ```
