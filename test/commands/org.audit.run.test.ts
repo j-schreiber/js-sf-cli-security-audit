@@ -11,7 +11,6 @@ import { assertSfError } from '../mocks/testHelpers.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'org.audit.run');
 
-const DEFAULT_DATA_PATH = path.join('test', 'mocks', 'data', 'audit-lib-results', 'run');
 const AUDIT_CONFIGS_DIR = path.join('test', 'mocks', 'data', 'audit-configs');
 const DEFAULT_WORKING_DIR = path.join(AUDIT_CONFIGS_DIR, 'full-valid');
 
@@ -21,7 +20,8 @@ const PLAIN_IDENTIFIERS_RESULT = parseMockAuditConfig('plain-string-identifiers.
 const EMPTY_RESULT = parseMockAuditConfig('empty-policy-no-rules.json');
 
 function parseMockAuditConfig(filePath: string): AuditResult {
-  return readAuditResultFromFile(path.join(DEFAULT_DATA_PATH, filePath));
+  const dataPath = path.join('test', 'mocks', 'data', 'audit-lib-results', 'run');
+  return readAuditResultFromFile(path.join(dataPath, filePath));
 }
 
 function readAuditResultFromFile(fullFilePath: string): AuditResult {
@@ -142,8 +142,22 @@ describe('org audit run', () => {
       expect($$.sfCommandStubs.table.callCount).to.equal(5);
       expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
         data: [
-          { policy: 'Profiles', isCompliant: false, rulesExecuted: 2, auditedEntities: 3, ignoredEntities: 1 },
-          { policy: 'PermissionSets', isCompliant: false, rulesExecuted: 1, auditedEntities: 3, ignoredEntities: 0 },
+          {
+            policy: 'Profiles',
+            isCompliant: false,
+            executedRules: 2,
+            violatedRules: 1,
+            auditedEntities: 3,
+            ignoredEntities: 1,
+          },
+          {
+            policy: 'PermissionSets',
+            isCompliant: false,
+            executedRules: 1,
+            violatedRules: 1,
+            auditedEntities: 3,
+            ignoredEntities: 0,
+          },
         ],
       });
       expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({
@@ -283,7 +297,16 @@ describe('org audit run', () => {
       ]);
       expect($$.sfCommandStubs.table.callCount).to.equal(1);
       expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
-        data: [{ policy: 'Profiles', isCompliant: true, rulesExecuted: 0, auditedEntities: 3, ignoredEntities: 1 }],
+        data: [
+          {
+            policy: 'Profiles',
+            isCompliant: true,
+            executedRules: 0,
+            violatedRules: 0,
+            auditedEntities: 3,
+            ignoredEntities: 1,
+          },
+        ],
       });
     });
 
@@ -301,7 +324,14 @@ describe('org audit run', () => {
       expect($$.sfCommandStubs.table.callCount).to.equal(2);
       expect($$.sfCommandStubs.table.args.flat()[0]).to.deep.contain({
         data: [
-          { policy: 'PermissionSets', isCompliant: true, rulesExecuted: 1, auditedEntities: 3, ignoredEntities: 0 },
+          {
+            policy: 'PermissionSets',
+            isCompliant: true,
+            executedRules: 1,
+            violatedRules: 0,
+            auditedEntities: 3,
+            ignoredEntities: 0,
+          },
         ],
       });
       expect($$.sfCommandStubs.table.args.flat()[1]).to.deep.contain({

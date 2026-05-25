@@ -197,7 +197,8 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
 type PolicyResultsSummary = {
   policy: string;
   isCompliant: boolean;
-  rulesExecuted: number;
+  executedRules: number;
+  violatedRules: number;
   auditedEntities: number;
 };
 
@@ -213,11 +214,15 @@ function transposePoliciesToTable(result: AuditResult): PolicyResultsSummary[] {
   return Object.entries(result.policies)
     .filter(([, policyDetails]) => policyDetails.enabled)
     .map(([policyName, policyDetails]) => {
-      const rulesExecuted = policyDetails?.executedRules ? Object.keys(policyDetails.executedRules).length : 0;
+      const executedRules = policyDetails?.executedRules ? Object.keys(policyDetails.executedRules).length : 0;
+      const violatedRules = policyDetails?.executedRules
+        ? Object.values(policyDetails.executedRules).filter((rule) => !rule.isCompliant).length
+        : 0;
       return {
         policy: capitalize(policyName),
         isCompliant: policyDetails.isCompliant,
-        rulesExecuted,
+        executedRules,
+        violatedRules,
         auditedEntities: policyDetails.auditedEntities?.length ?? 0,
         ignoredEntities: policyDetails.ignoredEntities?.length ?? 0,
       };

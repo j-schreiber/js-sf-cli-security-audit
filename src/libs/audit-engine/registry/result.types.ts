@@ -151,16 +151,6 @@ export type AuditPolicyResult = {
   skippedRules: PolicyRuleSkipResult[];
 
   /**
-   * If the policy was not enabled, a brief message that explains why.
-   */
-  disabledReason?: string;
-
-  /**
-   * Path to the config file that was processed for this audit.
-   */
-  configPath?: string;
-
-  /**
    * A full list of audited entities. Use together with violations to see, which
    * entities were not compliant.
    */
