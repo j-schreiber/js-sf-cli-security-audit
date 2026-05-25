@@ -7,6 +7,8 @@ describe('org metadata describe', () => {
 
   beforeEach(async () => {
     await $$.init();
+    $$.mocks.describes['account'] = { name: 'Account' };
+    $$.mocks.describes['validcustomobject__c'] = { name: 'ValidCustomObject__c' };
   });
 
   afterEach(async () => {
@@ -67,5 +69,27 @@ describe('org metadata describe', () => {
       // eslint-disable-next-line no-await-in-loop
       expect(org.isValid(perm)).to.be.false;
     }
+  });
+
+  it('validates a list of object names against a target org', async () => {
+    // Act
+    const org = await OrgDescribe.create($$.targetOrgConnection);
+    const results = await org.describeSObjects(['Account', 'ValidCustomObject__c', 'InvalidObj__c']);
+
+    // Assert
+    expect(results.successes).to.deep.equal(['Account', 'ValidCustomObject__c']);
+    expect(results.errors).to.deep.equal([
+      { name: 'invalidobj__c', reason: 'Failed to describe SObject invalidobj__c with error message: Unknown error' },
+    ]);
+  });
+
+  it('deduplicates a case-insensitive list of object names for describe', async () => {
+    // Act
+    const org = await OrgDescribe.create($$.targetOrgConnection);
+    const results = await org.describeSObjects(['Account', 'ACCOUNT', 'account']);
+
+    // Assert
+    expect(results.successes).to.deep.equal(['Account']);
+    expect(results.errors).to.deep.equal([]);
   });
 });
