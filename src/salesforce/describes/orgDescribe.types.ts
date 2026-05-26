@@ -19,7 +19,7 @@ export type SObjectsDescribeResult = {
    */
   successes: string[];
   /**
-   * Map of validated sobject names and corresponding
+   * Map of lowercase sobject names and corresponding
    * describe results.
    */
   describes: Record<string, DescribeSObjectResult>;

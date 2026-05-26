@@ -151,6 +151,7 @@ describe('role manager', () => {
               AdminPerms: {
                 userPermissions: {
                   allowed: ['ApiEnabled', 'ViewSetup'],
+                  denied: ['AuthorApex'],
                 },
                 customPermissions: {
                   allowed: ['My_Custom_Perm'],
@@ -177,6 +178,24 @@ describe('role manager', () => {
             },
           },
         };
+      });
+
+      it('unifies composable role definition to a single object', () => {
+        // Act
+        const rm = new RoleManager(testAuditConfig);
+        const roles = rm.getRoleDefinitions();
+
+        // Assert
+        expect(Object.keys(roles)).to.deep.equal(['My Custom Role', 'My Ops Role', 'MyComplexRole', 'EmptyTestRole']);
+        const testRoleDef = roles['MyComplexRole'];
+        expect(testRoleDef.permissions.userPermissions?.allowed).to.deep.equal([
+          'LowPermName',
+          'MediumPermName',
+          'HighPermName',
+          'ApiEnabled',
+          'ViewSetup',
+        ]);
+        expect(testRoleDef.permissions.userPermissions?.denied).to.deep.equal(['AuthorApex']);
       });
 
       it('passes root identifier to violations identifier if it is set', () => {

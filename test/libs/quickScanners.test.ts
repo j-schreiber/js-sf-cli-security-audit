@@ -137,7 +137,7 @@ describe('quick scanners', () => {
       ]);
     });
 
-    it('emits normalizer event and no warn event for simple typos', async () => {
+    it('emits normalizer event and no warn event for label inputs with spaces', async () => {
       // Arrange
       const scanner = new UserPermissionScanner();
       const warnListener = $$.context.SANDBOX.stub();
@@ -150,7 +150,6 @@ describe('quick scanners', () => {
         targetOrg: $$.coreConnection,
         permissions: [
           'Author Apex',
-          'approvaladmin',
           'customize application',
           'Manage Dashboards in Public Folders',
           'Run Macros on Multiple Records',
@@ -166,13 +165,36 @@ describe('quick scanners', () => {
       expect(warnListener.args.flat()).to.deep.equal([]);
       expect(normalizeListener.args.flat()).to.deep.equal([
         { input: 'Author Apex', normalized: 'AuthorApex' },
-        { input: 'approvaladmin', normalized: 'ApprovalAdmin' },
         { input: 'customize application', normalized: 'CustomizeApplication' },
         { input: 'Manage Dashboards in Public Folders', normalized: 'ManageDashbdsInPubFolders' },
         { input: 'Run Macros on Multiple Records', normalized: 'BulkMacrosAllowed' },
         { input: 'ExportReports', normalized: 'ExportReport' },
         { input: 'Manage Auth. Providers', normalized: 'ManageAuthProviders' },
         { input: 'Gives AI agents access', normalized: 'MngBenVerfForAssistiveAgnt' },
+      ]);
+    });
+
+    it('emits normalizer events and no warn event for simple lower-case inputs', async () => {
+      // Arrange
+      const scanner = new UserPermissionScanner();
+      const warnListener = $$.context.SANDBOX.stub();
+      const normalizeListener = $$.context.SANDBOX.stub();
+      scanner.addListener('permissionNotFound', warnListener);
+      scanner.addListener('permissionNormalized', normalizeListener);
+
+      // Act
+      await scanner.quickScan({
+        targetOrg: $$.coreConnection,
+        permissions: ['authorapex', 'approvaladmin'],
+        deepScan: false,
+        includeInactive: false,
+      });
+
+      // Assert
+      expect(warnListener.args.flat()).to.deep.equal([]);
+      expect(normalizeListener.args.flat()).to.deep.equal([
+        { input: 'authorapex', normalized: 'AuthorApex' },
+        { input: 'approvaladmin', normalized: 'ApprovalAdmin' },
       ]);
     });
 

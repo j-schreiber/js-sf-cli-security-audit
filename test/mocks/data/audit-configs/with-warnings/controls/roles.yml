@@ -6,6 +6,11 @@ DeployEntity:
       denied:
         - ModifyAllData
         - AnInvalidPerm
+  objectAccess:
+    Account:
+      allowRead: false
+    MyCustomObject__c:
+      allowRead: false
 StandardUser:
   permissions:
     userPermissions:

@@ -116,15 +116,13 @@ export default class OrgDescribe {
     for (const settledPromise of describes) {
       if (settledPromise.status === 'fulfilled') {
         result.successes.push(settledPromise.value.name);
-        result.describes[settledPromise.value.name] = settledPromise.value;
+        result.describes[settledPromise.value.name.toLowerCase()] = settledPromise.value;
       } else {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const { reason } = settledPromise;
         const name = normalisedNames[describes.indexOf(settledPromise)];
         const reasonMessage = hasMessage(reason) ? reason.message : 'Failed to resolve with unknown error';
-        if ('message' in settledPromise.reason) {
-          result.errors.push({ name, reason: reasonMessage });
-        }
+        result.errors.push({ name, reason: reasonMessage });
       }
     }
     return result;

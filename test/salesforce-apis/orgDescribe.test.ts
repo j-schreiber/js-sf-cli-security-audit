@@ -81,6 +81,8 @@ describe('org metadata describe', () => {
     expect(results.errors).to.deep.equal([
       { name: 'invalidobj__c', reason: 'Failed to describe SObject invalidobj__c with error message: Unknown error' },
     ]);
+    // describes are always lower-case, so we can check case-insensitive
+    expect(Object.keys(results.describes)).to.deep.equal(['account', 'validcustomobject__c']);
   });
 
   it('deduplicates a case-insensitive list of object names for describe', async () => {
@@ -91,5 +93,7 @@ describe('org metadata describe', () => {
     // Assert
     expect(results.successes).to.deep.equal(['Account']);
     expect(results.errors).to.deep.equal([]);
+    const accDescribe = results.describes['account'];
+    assert.isDefined(accDescribe);
   });
 });
