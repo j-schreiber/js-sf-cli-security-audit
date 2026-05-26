@@ -76,6 +76,7 @@ describe('policy - settings', () => {
           ruleConfig: {},
           settingName: 'Security',
           auditConfig: $$.mockAuditConfig,
+          roles: $$.initRoleManager(),
         })
       );
     });
@@ -139,6 +140,7 @@ describe('policy - settings', () => {
           auditConfig: $$.mockAuditConfig,
           settingName: 'Security',
           ruleConfig: rules.EnforceSecuritySettings.options,
+          roles: $$.initRoleManager(),
         })
       );
     });

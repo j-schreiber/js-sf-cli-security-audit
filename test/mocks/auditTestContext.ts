@@ -18,6 +18,7 @@ import { MDAPI, OrgDescribe } from '../../src/salesforce/index.js';
 import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
 import SfConnection from '../../src/salesforce/connection.js';
+import RoleManager from '../../src/libs/audit-engine/registry/roles/roleManager.js';
 import SfConnectionMocks from './sfConnectionMocks.js';
 import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 
@@ -102,6 +103,17 @@ export default class AuditTestContext {
       this.mockAuditConfig.controls.roles = {};
     }
     this.mockAuditConfig.controls.roles[roleName] = role;
+  }
+
+  /**
+   * Initialises a new role manager instance with the current
+   * mock audit config. TODO: refactor to a smarter way that
+   * instantiates only one role manager per audit run.
+   *
+   * @returns
+   */
+  public initRoleManager(): RoleManager {
+    return new RoleManager({ controls: this.mockAuditConfig.controls, shape: this.mockAuditConfig.shape });
   }
 
   /**
