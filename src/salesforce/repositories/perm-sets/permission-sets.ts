@@ -5,7 +5,7 @@ import SfConnection from '../../connection.js';
 import { ResolvePermSetOptions, ResolvePermSetOptionsSchema } from './perm-sets.types.js';
 import { PERMISSION_SETS_QUERY } from './queries.js';
 
-export default class PermissionSets extends EventEmitter {
+export default class PermissionSets extends EventEmitter<{ entityresolve: [{ total: number; resolved: number }] }> {
   private readonly mdapi: MDAPI;
 
   public constructor(private readonly con: SfConnection) {

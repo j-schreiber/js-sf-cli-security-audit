@@ -12,13 +12,7 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'po
 
 export type ResolvedProfile = Profile & ProfileClassifications['string'] & { type: string };
 
-type ResolveState = {
-  total: number;
-  resolved: number;
-};
-
 export default class ProfilesPolicy extends Policy<ResolvedProfile> {
-  private resolveState: ResolveState = { total: 0, resolved: 0 };
   private readonly classifications: ProfileClassifications;
 
   public constructor(public config: PolicyConfig, public auditConfig: AuditRunConfig, registry: RuleRegistry) {
@@ -76,10 +70,5 @@ export default class ProfilesPolicy extends Policy<ResolvedProfile> {
     const result = { resolvedEntities, ignoredEntities: Object.values(ignoredEntities) };
     this.updateResolveState({ resolved: getTotal(result) });
     return result;
-  }
-
-  private updateResolveState(update: Partial<ResolveState>): void {
-    this.resolveState = { ...this.resolveState, ...update };
-    this.emit('entityresolve', this.resolveState);
   }
 }

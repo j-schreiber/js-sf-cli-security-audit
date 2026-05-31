@@ -27,19 +27,19 @@ export default class UsersPolicy extends Policy<ResolvedUser> {
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedUser>> {
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: 0,
     });
     const usersRepo = new Users(context.targetOrgConnection);
     const allUsersOnOrg = await usersRepo.resolve(this.resolveOptions);
     this.totalEntities = allUsersOnOrg.size;
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: 0,
     });
     const result = this.finaliseResolvedUsers(allUsersOnOrg);
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: getTotal(result),
     });

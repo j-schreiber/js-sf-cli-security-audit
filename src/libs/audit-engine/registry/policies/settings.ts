@@ -62,14 +62,14 @@ export default class SettingsPolicy extends Policy<SalesforceSetting> {
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<SalesforceSetting>> {
     const legitSettings = getSettingsFromEnabledRules(this.config.rules);
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: legitSettings.length,
       resolved: 0,
     });
     const settingsRetriever = MDAPI.create(context.targetOrgConnection);
     const actuallyResolvedSettings = await settingsRetriever.resolve('Settings', legitSettings);
     this.removeInvalidSettingsFromResolvedRules(actuallyResolvedSettings);
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: legitSettings.length,
       resolved: Object.keys(actuallyResolvedSettings).length,
     });

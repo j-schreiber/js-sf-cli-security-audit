@@ -26,19 +26,19 @@ export default class PermissionSetsPolicy extends Policy<ResolvedPermissionSet> 
   }
 
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ResolvedPermissionSet>> {
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: 0,
     });
     const permsetsRepo = new PermissionSets(context.targetOrgConnection);
-    permsetsRepo.addListener('entityresolve', (statusEvt) => this.emit('entityresolve', statusEvt));
+    permsetsRepo.addListener('entityresolve', (statusEvt) => this.updateResolveState(statusEvt));
     const allPermsets = await permsetsRepo.resolve();
     const ignoredEntities = this.buildIgnoredEntities(allPermsets);
     const classifiedPermsets = Object.keys(this.classifications).filter(
       (permsetName) => ignoredEntities[permsetName] === undefined
     );
     this.totalEntities = Object.keys(ignoredEntities).length + classifiedPermsets.length;
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: 0,
     });
@@ -59,7 +59,7 @@ export default class PermissionSetsPolicy extends Policy<ResolvedPermissionSet> 
         };
       }
     }
-    this.emit('entityresolve', {
+    this.updateResolveState({
       total: this.totalEntities,
       resolved: this.totalEntities,
     });

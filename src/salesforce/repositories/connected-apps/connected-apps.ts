@@ -20,7 +20,7 @@ type QueryResults = {
   externalAppOauthPolicies: SfExternalAppOauthPolicy[];
 };
 
-export default class ConnectedApps extends EventEmitter {
+export default class ConnectedApps extends EventEmitter<{ entityresolve: [{ total: number; resolved: number }] }> {
   private readonly mdapi: MDAPI;
   private readonly oauthTokenRepo: OAuthTokens;
 

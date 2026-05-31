@@ -4,7 +4,7 @@ export type MessageEvent = {
   message: string;
 };
 
-export default class ResolveEntityLifecycle extends EventEmitter {
+export default class ResolveEntityLifecycle extends EventEmitter<{ resolvewarning: [MessageEvent] }> {
   public constructor() {
     super();
   }
