@@ -10,6 +10,10 @@ User policy option defaultRoleForMissingUsers is invalid: "%s" does not exist.
 
 Permission does not exist on Org.
 
+# ObjectDoesNotExistOnOrg
+
+Object was not found on Org.
+
 # FailedToParseAuditConfig
 
 Failed to parse audit config at location %s: %s (%s).

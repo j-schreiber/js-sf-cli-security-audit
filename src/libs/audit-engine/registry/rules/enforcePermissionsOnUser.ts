@@ -1,18 +1,11 @@
 import { PartialPolicyRuleResult, RuleAuditContext } from '../context.types.js';
-import RoleManager from '../roles/roleManager.js';
 import { ProfileLike } from '../roles/roleManager.types.js';
 import { ResolvedUser } from '../policies/users.js';
 import PolicyRule, { RuleOptions } from './policyRule.js';
 
 export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
-  private readonly roleManager;
-
   public constructor(opts: RuleOptions) {
     super(opts);
-    this.roleManager = new RoleManager({
-      controls: opts.auditConfig.controls,
-      shape: opts.auditConfig.shape,
-    });
   }
 
   public run(context: RuleAuditContext<ResolvedUser>): Promise<PartialPolicyRuleResult> {
@@ -20,7 +13,7 @@ export default class EnforcePermissionsOnUser extends PolicyRule<ResolvedUser> {
     const users = context.resolvedEntities;
     for (const user of Object.values(users)) {
       const profileLikes = buildProfileLikes(user);
-      const { violations, warnings, errors } = this.roleManager.scanPermissions(user.role, profileLikes, [
+      const { violations, warnings, errors } = this.opts.roles.scanPermissions(user.role, profileLikes, [
         user.username,
       ]);
       result.errors.push(...errors);

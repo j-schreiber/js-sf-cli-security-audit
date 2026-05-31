@@ -3,6 +3,7 @@ import { AuditRunConfig } from './definitions.js';
 import { EntityResolveError, PolicyRuleSkipResult } from './result.types.js';
 import { RowLevelPolicyRule } from './context.types.js';
 import { PolicyConfig } from './shape/schema.js';
+import RoleManager from './roles/roleManager.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -59,7 +60,12 @@ export default class RuleRegistry {
     Object.entries(ruleObjs).forEach(([ruleName, ruleConfig]) => {
       if (this.availableRules[ruleName] && ruleConfig.enabled) {
         enabledRules.push(
-          new this.availableRules[ruleName]({ auditConfig, ruleDisplayName: ruleName, ruleConfig: ruleConfig.options })
+          new this.availableRules[ruleName]({
+            auditConfig,
+            roles: new RoleManager({ controls: auditConfig.controls, shape: auditConfig.shape }),
+            ruleDisplayName: ruleName,
+            ruleConfig: ruleConfig.options,
+          })
         );
       } else if (ruleConfig.enabled === false) {
         skippedRules.push({ name: ruleName, skipReason: messages.getMessage('skip-reason.rule-not-enabled') });

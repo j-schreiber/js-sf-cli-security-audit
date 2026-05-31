@@ -3,6 +3,7 @@ import { Messages } from '@salesforce/core';
 import { PermissionClassifications, PermissionRiskLevel, UserPrivilegeLevel } from '../shape/schema.js';
 import { AuditRunLifecycleBus } from '../../auditRunLifecycle.js';
 import {
+  DefinitiveRoleDefinition,
   isRefinedProfileLike,
   NamedPermissionClassification,
   PermissionsListKey,
@@ -148,6 +149,19 @@ export default class RoleManager extends EventEmitter {
       return this.roles[normalisedRoleName];
     }
     throw messages.createError('TriedToAccessRoleThatDoesNotExist', [roleName]);
+  }
+
+  /**
+   * Returns fully resolved roles
+   *
+   * @returns Record of roles (mapped by identifier)
+   */
+  public getRoleDefinitions(): Readonly<Record<string, DefinitiveRoleDefinition>> {
+    const roleDefs: Record<string, DefinitiveRoleDefinition> = {};
+    for (const role of Object.values(this.roles)) {
+      roleDefs[role.roleName] = role.getDefinition();
+    }
+    return roleDefs;
   }
 
   //          PRIVATE ZONE

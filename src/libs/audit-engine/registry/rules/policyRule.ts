@@ -4,11 +4,13 @@ import { PolicyRuleViolation, PolicyRuleViolationMute, RuleComponentMessage } fr
 import { PartialPolicyRuleResult, RowLevelPolicyRule, RuleAuditContext } from '../context.types.js';
 import { AuditRunConfig } from '../definitions.js';
 import { throwAsSfError } from '../schema.js';
+import RoleManager from '../roles/roleManager.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 
 export type RuleOptions = {
   auditConfig: AuditRunConfig;
+  roles: RoleManager;
   ruleDisplayName: string;
   ruleConfig?: unknown;
 };

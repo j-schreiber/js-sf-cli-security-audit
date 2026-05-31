@@ -4,11 +4,12 @@ import { AuditPolicyResult, AuditResult } from '../audit-engine/registry/result.
 import { OrgDescribe, ResolveLifecycle } from '../../salesforce/index.js';
 import SfConnection from '../../salesforce/connection.js';
 import { AuditRunConfig, Policies } from './registry/definitions.js';
-import Policy, { ResolveEntityResult } from './registry/policy.js';
+import Policy from './registry/policy.js';
 import { loadPolicy } from './registry/definitions.js';
 import { PartialRuleResults } from './registry/context.types.js';
 import AcceptedRisks from './accepted-risks/acceptedRisks.js';
 import { verifyRoleDefinitions } from './registry/shape/shapeValidation.js';
+import RoleManager from './registry/roles/roleManager.js';
 
 type ResultsMap = Record<string, AuditPolicyResult>;
 type PendingPolicyResults = Record<string, PartialRuleResults>;
@@ -60,7 +61,7 @@ export default class AuditRun extends EventEmitter {
     const sfCon = await SfConnection.create(targetOrgConnection);
     this.emitStageUpdate('initialising');
     const orgDescribe = await OrgDescribe.create(sfCon);
-    this.verifyAuditConfig(orgDescribe);
+    await this.verifyAuditConfig(orgDescribe);
     this.emitStageUpdate('resolving');
     const executablePolicies = await this.resolve(sfCon, orgDescribe);
     this.emitStageUpdate('executing');
@@ -76,9 +77,10 @@ export default class AuditRun extends EventEmitter {
 
   // PRIVATE ZONE
 
-  private verifyAuditConfig(orgDescribe: OrgDescribe): void {
+  private async verifyAuditConfig(orgDescribe: OrgDescribe): Promise<void> {
     if (this.config.controls.roles) {
-      const roleWarnings = verifyRoleDefinitions(this.config.controls.roles, orgDescribe);
+      const rm = new RoleManager({ controls: this.config.controls, shape: this.config.shape });
+      const roleWarnings = await verifyRoleDefinitions(rm.getRoleDefinitions(), orgDescribe);
       for (const warning of roleWarnings) {
         this.emitWarning(`${warning.path.join(' > ')}: ${warning.message}`);
       }
@@ -100,10 +102,9 @@ export default class AuditRun extends EventEmitter {
       return this.executablePolicies;
     }
     this.executablePolicies = this.loadPolicies();
-    const resolveResultPromises: Array<Promise<ResolveEntityResult<unknown>>> = [];
-    Object.values(this.executablePolicies).forEach((executable) => {
-      resolveResultPromises.push(executable.resolve({ targetOrgConnection, orgDescribe }));
-    });
+    const resolveResultPromises = Object.values(this.executablePolicies).map((executable) =>
+      executable.resolve({ targetOrgConnection, orgDescribe })
+    );
     await Promise.all(resolveResultPromises);
     return this.executablePolicies;
   }

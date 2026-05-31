@@ -1,6 +1,6 @@
 import Profiles from '../repositories/profiles/profiles.js';
 import SfConnection from '../connection.js';
-import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission } from './orgDescribe.types.js';
+import { CUSTOM_PERMS_QUERY, Permission, SfCustomPermission, SObjectsDescribeResult } from './orgDescribe.types.js';
 
 /** Minimum length for perm label to start fuzzy matching */
 const FUZZY_MATCH_MIN_LENGTH = 15;
@@ -12,7 +12,7 @@ export default class OrgDescribe {
   private customPermissions!: Map<string, Permission>;
   private userPermissions!: Map<string, Permission>;
 
-  private constructor() {}
+  private constructor(private readonly con: SfConnection) {}
 
   /**
    * Initialises a new OrgDescribe instance from an existing connection
@@ -26,7 +26,7 @@ export default class OrgDescribe {
     if (maybeCache) {
       return maybeCache;
     }
-    const inst = new OrgDescribe();
+    const inst = new OrgDescribe(con);
     inst.userPermissions = await fetchUserPermissions(con);
     inst.customPermissions = await fetchCustomPermissions(con);
     this.orgCache.set(con.coreConnection.instanceUrl, inst);
@@ -101,6 +101,36 @@ export default class OrgDescribe {
   public getCustomPermissions(): Permission[] {
     return Array.from(this.customPermissions.values());
   }
+
+  /**
+   * Sanitise and describe a list of sobject names.
+   *
+   * @param objectNames
+   * @returns
+   */
+  public async describeSObjects(objectNames: string[]): Promise<SObjectsDescribeResult> {
+    const result: SObjectsDescribeResult = { successes: [], errors: [], describes: {} };
+    const normalisedNames = normalise(objectNames);
+    const describePromises = normalisedNames.map((uniqueObjectName) => this.con.describe(uniqueObjectName));
+    const describes = await Promise.allSettled(describePromises);
+    for (const settledPromise of describes) {
+      if (settledPromise.status === 'fulfilled') {
+        result.successes.push(settledPromise.value.name);
+        result.describes[settledPromise.value.name.toLowerCase()] = settledPromise.value;
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const { reason } = settledPromise;
+        const name = normalisedNames[describes.indexOf(settledPromise)];
+        const reasonMessage = hasMessage(reason) ? reason.message : 'Failed to resolve with unknown error';
+        result.errors.push({ name, reason: reasonMessage });
+      }
+    }
+    return result;
+  }
+}
+
+function hasMessage(obj: unknown): obj is { message: string } {
+  return typeof obj === 'object' && obj !== null && 'message' in obj;
 }
 
 async function fetchUserPermissions(con: SfConnection): Promise<Map<string, Permission>> {
@@ -125,6 +155,10 @@ async function fetchCustomPermissions(con: SfConnection): Promise<Map<string, Pe
 
 function mergeMaps(...permMaps: Array<Map<string, Permission>>): Map<string, Permission> {
   return new Map(permMaps.flatMap((m) => [...m]));
+}
+
+function normalise(anyStrings: string[]): string[] {
+  return Array.from(new Set<string>(anyStrings.map((inputString) => inputString.toLowerCase())));
 }
 
 async function parsePermsFromDescribe(con: SfConnection): Promise<Map<string, Permission>> {

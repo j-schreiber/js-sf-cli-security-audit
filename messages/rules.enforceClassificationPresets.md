@@ -8,7 +8,7 @@ Tried to access a role that does not exist: %s.
 
 # RoleReferencesControlThatDoesNotExist
 
-Role "%s" references a %s control that does not exist: %s
+Role "%s" references %s control that does not exist: %s
 
 # violations.classification-preset-mismatch
 

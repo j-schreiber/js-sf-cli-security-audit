@@ -2,7 +2,7 @@ import { Messages } from '@salesforce/core';
 import { ExtractAuditConfigTypes, RefineError } from '../../file-manager/fileManager.types.js';
 import { OrgDescribe } from '../../../../salesforce/index.js';
 import { BaseAuditConfigShape } from './auditConfigShape.js';
-import { ComposableRolesControl, isPermissionControl, PermissionSetClassifications } from './schema.js';
+import { ComposableRolesControl, PermissionSetClassifications, ResolvedRoleDefinition } from './schema.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'auditShapeValidation');
@@ -40,31 +40,50 @@ export const validator = (parseResult: ExtractAuditConfigTypes<typeof BaseAuditC
   return errors;
 };
 
-export function verifyRoleDefinitions(roles: ComposableRolesControl, orgDescribe: OrgDescribe): RefineError[] {
+export async function verifyRoleDefinitions(
+  roles: Record<string, ResolvedRoleDefinition>,
+  orgDescribe: OrgDescribe
+): Promise<RefineError[]> {
   const warnings = new Array<RefineError>();
+  const objectNames: string[] = [];
   for (const [roleName, roleDef] of Object.entries(roles)) {
-    if (!isPermissionControl(roleDef.permissions) || !roleDef.permissions) {
-      continue;
+    if (roleDef.objectAccess) {
+      objectNames.push(...Object.keys(roleDef.objectAccess));
     }
-    for (const permissionBlockName of [
-      { listName: 'userPermissions', isValid: (permName: string) => orgDescribe.isValid(permName) },
-      { listName: 'customPermissions', isValid: (permName: string) => orgDescribe.isValidCustomPerm(permName) },
-    ] as const) {
-      const permBlock = roleDef.permissions[permissionBlockName.listName];
-      if (!permBlock) {
-        continue;
-      }
-      for (const permProp of ['allowed', 'denied', 'required'] as const) {
-        const namedPerms = permBlock[permProp];
-        if (namedPerms) {
-          for (const permName of namedPerms) {
-            if (!permissionBlockName.isValid(permName)) {
-              warnings.push({
-                path: ['Controls', 'Roles', roleName, permissionBlockName.listName, permProp, permName],
-                message: messages.getMessage('PermissionDoesNotExistOnOrg'),
-              });
+    if (roleDef.permissions) {
+      for (const permissionBlockName of [
+        { listName: 'userPermissions', isValid: (permName: string) => orgDescribe.isValid(permName) },
+        { listName: 'customPermissions', isValid: (permName: string) => orgDescribe.isValidCustomPerm(permName) },
+      ] as const) {
+        const permBlock = roleDef.permissions[permissionBlockName.listName];
+        if (!permBlock) {
+          continue;
+        }
+        for (const permProp of ['allowed', 'denied', 'required'] as const) {
+          const namedPerms = permBlock[permProp];
+          if (namedPerms) {
+            for (const permName of namedPerms) {
+              if (!permissionBlockName.isValid(permName)) {
+                warnings.push({
+                  path: ['Controls', 'Roles', roleName, permissionBlockName.listName, permProp, permName],
+                  message: messages.getMessage('PermissionDoesNotExistOnOrg'),
+                });
+              }
             }
           }
+        }
+      }
+    }
+  }
+  const describes = await orgDescribe.describeSObjects(objectNames);
+  for (const [roleName, roleDef] of Object.entries(roles)) {
+    if (roleDef.objectAccess) {
+      for (const objectName of Object.keys(roleDef.objectAccess)) {
+        if (!describes.describes[objectName.toLowerCase()]) {
+          warnings.push({
+            path: ['Controls', 'Roles', roleName, 'objectAccess', objectName],
+            message: messages.getMessage('ObjectDoesNotExistOnOrg'),
+          });
         }
       }
     }

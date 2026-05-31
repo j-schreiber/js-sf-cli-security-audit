@@ -1,5 +1,6 @@
 import {
   ComposableRolesFileSchema,
+  ObjectAccessControlFileSchema,
   PermissionControlsFileSchema,
   PermissionsClassificationFileSchema,
   PermissionSetsClassificationFileSchema,
@@ -19,6 +20,7 @@ export const BaseAuditConfigShape = {
     files: {
       roles: { schema: ComposableRolesFileSchema },
       permissions: { schema: PermissionControlsFileSchema },
+      objectAccess: { schema: ObjectAccessControlFileSchema },
     },
   },
   shape: {

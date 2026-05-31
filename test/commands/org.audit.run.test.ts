@@ -455,10 +455,14 @@ describe('org audit run', () => {
       ]);
 
       // Assert
+      // the test context has no describes mocked besides PermissionSet
+      // that's why all objects are reported as "unknown"
       const expectedWarnings = [
         'Controls > Roles > DeployEntity > userPermissions > denied > AnInvalidPerm: Permission does not exist on Org.',
         'Controls > Roles > StandardUser > userPermissions > allowed > AnotherInvalidPermName: Permission does not exist on Org.',
         'Controls > Roles > StandardUser > customPermissions > denied > AnUnknownCustomPerm: Permission does not exist on Org.',
+        'Controls > Roles > DeployEntity > objectAccess > Account: Object was not found on Org.',
+        'Controls > Roles > DeployEntity > objectAccess > MyCustomObject__c: Object was not found on Org.',
       ];
       expect($$.sfCommandStubs.warn.args.flat()).to.deep.equal(expectedWarnings);
     });

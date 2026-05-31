@@ -8,6 +8,7 @@ import { AuditContext } from '../context.types.js';
 import { EntityResolveError } from '../result.types.js';
 import { AuditRunConfig } from '../definitions.js';
 import { PolicyConfig } from '../shape/schema.js';
+import RoleManager from '../roles/roleManager.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'policies.general');
@@ -31,6 +32,7 @@ export class SettingsRuleRegistry extends RuleRegistry {
         result.enabledRules.push(
           new EnforceSettings({
             auditConfig: auditContext,
+            roles: new RoleManager({ controls: auditContext.controls, shape: auditContext.shape }),
             ruleDisplayName: ruleName,
             settingName,
             ruleConfig: SettingsRuleConfigSchema.parse(ruleConfig.options ?? {}),

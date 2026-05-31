@@ -11,6 +11,8 @@ Power User:
       - Medium
       - Low
 Standard:
+  objectAccess:
+    - AccountReadOnly
   permissions:
     allowedClassifications:
       - Low

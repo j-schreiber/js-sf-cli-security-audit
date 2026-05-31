@@ -34,8 +34,25 @@ type UserRoleConfig = {
 };
 
 export default class UserRole {
+  /**
+   * Merged role config from inline role and all composable controls.
+   * Resolves allowed classifications to actual permissions from the org,
+   * but keeps capitalisation (lower/upper case verbatim)
+   */
   private config: UserRoleConfig;
+  /**
+   * Fully resolved object access, with partial definitions
+   * filled to default access ("allow: false")
+   */
   private objectAccess: Record<string, DefinitiveObjectAccessDef>;
+  /**
+   * Fully resolved allowed and denied user permissions in lower case
+   */
+  private normalizedUserPermissions: UserRolePermissions;
+  /**
+   * Fully resolved allowed and denied custom permissions in lower case
+   */
+  private normalizedCustomPermissions: UserRolePermissions;
 
   public constructor(public roleName: string, config: Partial<UserRoleConfig>) {
     this.config = {
@@ -44,6 +61,14 @@ export default class UserRole {
       objectAccess: {},
       isStrict: false,
       ...config,
+    };
+    this.normalizedUserPermissions = {
+      allowed: toLowerCaseSet(this.config.userPermissions.allowed),
+      denied: toLowerCaseSet(this.config.userPermissions.denied),
+    };
+    this.normalizedCustomPermissions = {
+      allowed: toLowerCaseSet(this.config.customPermissions.allowed),
+      denied: toLowerCaseSet(this.config.customPermissions.denied),
     };
     this.objectAccess = {};
     for (const [objName, objDef] of Object.entries(config.objectAccess ?? {})) {
@@ -66,9 +91,9 @@ export default class UserRole {
    */
   public isDenied(permission: TypedPermission): boolean {
     if (permission.type === 'customPermissions') {
-      return this.config.customPermissions.denied.has(permission.name.toLowerCase());
+      return this.normalizedCustomPermissions.denied.has(permission.name.toLowerCase());
     } else {
-      return this.config.userPermissions.denied.has(permission.name.toLowerCase());
+      return this.normalizedUserPermissions.denied.has(permission.name.toLowerCase());
     }
   }
 
@@ -81,9 +106,9 @@ export default class UserRole {
    */
   public isAllowed(permission: TypedPermission): boolean {
     if (permission.type === 'customPermissions') {
-      return this.config.customPermissions.allowed.has(permission.name);
+      return this.normalizedCustomPermissions.allowed.has(permission.name.toLowerCase());
     } else {
-      return this.config.userPermissions.allowed.has(permission.name);
+      return this.normalizedUserPermissions.allowed.has(permission.name.toLowerCase());
     }
   }
 
@@ -139,6 +164,27 @@ export default class UserRole {
     }
     return allowedObjectAccess;
   }
+
+  /**
+   * Returns the fully resolved role definition
+   *
+   * @returns
+   */
+  public getDefinition(): DefinitiveRoleDefinition {
+    const userPermissions = {
+      allowed: Array.from(this.config.userPermissions.allowed),
+      denied: Array.from(this.config.userPermissions.denied),
+    };
+    const customPermissions = {
+      allowed: Array.from(this.config.customPermissions.allowed),
+      denied: Array.from(this.config.customPermissions.denied),
+    };
+    return {
+      objectAccess: this.objectAccess,
+      strict: this.config.isStrict,
+      permissions: { userPermissions, customPermissions },
+    };
+  }
 }
 
 export function newRoleFromDefinition(roleName: string, config: RoleManagerConfig): UserRole {
@@ -178,6 +224,10 @@ export function newRoleFromOrdinals(roleName: UserPrivilegeLevel, perms?: Permis
     roleOrdinalValue,
     objectAccess: {},
   });
+}
+
+function toLowerCaseSet(names: Set<string>): Set<string> {
+  return new Set<string>(Array.from(names).map((permName) => permName.toLowerCase()));
 }
 
 function resolvePresetOrdinalValue(value: UserPrivilegeLevel): number {
@@ -265,6 +315,6 @@ function buildAllowedPerms(
   }
   return {
     allowed: allowedPerms,
-    denied: new Set<string>(rolePermDef.denied ? rolePermDef.denied.map((p) => p.toLowerCase()) : []),
+    denied: new Set<string>(rolePermDef.denied ?? []),
   };
 }
