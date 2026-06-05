@@ -1,0 +1,20 @@
+[
+  {
+    "attributes": {
+      "type": "CustomObject",
+      "url": "/services/data/v66.0/tooling/sobjects/CustomObject/01I000000000000AAA"
+    },
+    "Id": "01I000000000000AAA",
+    "DeveloperName": "MyCustomObject__c",
+    "SharingModel": "Edit"
+  },
+  {
+    "attributes": {
+      "type": "CustomObject",
+      "url": "/services/data/v66.0/tooling/sobjects/CustomObject/01I000000000001AAA"
+    },
+    "Id": "01I000000000001AAA",
+    "DeveloperName": "MyOtherCustomObject__c",
+    "SharingModel": "Edit"
+  }
+]

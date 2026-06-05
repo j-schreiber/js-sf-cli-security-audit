@@ -103,7 +103,8 @@ export default class OrgDescribe {
   }
 
   /**
-   * Sanitise and describe a list of sobject names.
+   * Sanitise and describe a list of sobject names and returns
+   * fully qualified sobject describes for each valid name.
    *
    * @param objectNames
    * @returns

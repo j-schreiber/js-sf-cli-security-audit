@@ -19,7 +19,7 @@ import { RETRIEVE_CACHE } from '../../src/salesforce/mdapi/constants.js';
 import { SUPPORTED_ENV_VARS } from '../../src/ux/environment.js';
 import SfConnection from '../../src/salesforce/connection.js';
 import RoleManager from '../../src/libs/audit-engine/registry/roles/roleManager.js';
-import SfConnectionMocks from './sfConnectionMocks.js';
+import SfConnectionMocks, { SfConnectionMockConfig } from './sfConnectionMocks.js';
 import { MOCK_DATA_BASE_PATH } from './data/paths.js';
 
 /**
@@ -65,6 +65,7 @@ export default class AuditTestContext {
     this.sfSpinnerStub = stubSpinner(this.context.SANDBOX);
     fs.mkdirSync(this.outputDirectory, { recursive: true });
     await this.mocks.stubMetadataRetrieve('full');
+    this.mocks.stubListMetadata();
     this.mocks.restoreStubs();
   }
 
@@ -205,11 +206,15 @@ export default class AuditTestContext {
  * @returns
  */
 function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
-  const defaults = {
+  const defaults: SfConnectionMockConfig = {
     describes: {
       PermissionSet: 'test/mocks/data/describeResults/PermissionSet.json',
     },
-    queries: {} as Record<string, string>,
+    metadataLists: {
+      CustomObject: 'test/mocks/data/metadata-list-results/custom-object.json',
+      SharingRules: 'test/mocks/data/metadata-list-results/sharing-rules.json',
+    },
+    queries: {},
   };
   mocks.prepareMocks(defaults);
   mocks.mockCustomPermissions('custom-permissions');

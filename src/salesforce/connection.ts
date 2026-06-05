@@ -1,7 +1,11 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { DescribeSObjectResult, QueryOptions, QueryResult, Record as JsForceRecord } from '@jsforce/jsforce-node';
+import { FileProperties } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { Connection, Logger, Messages } from '@salesforce/core';
 import { ComponentSet, RetrieveResult } from '@salesforce/source-deploy-retrieve';
-import { RETRIEVE_CACHE } from './mdapi/constants.js';
+import { createDigest } from '../utils.js';
+import { RETRIEVE_CACHE, TMP_DIR } from './mdapi/constants.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'salesforceConnectionErrors');
@@ -11,6 +15,12 @@ const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'sa
  * meaningful logging and error bubbling for better UX and debugging.
  */
 export default class SfConnection {
+  /**
+   * This flag is enabled by SAE_
+   * temporary directory within .jsc for easy query-debugging.
+   */
+  public static devMode: boolean = false;
+
   public constructor(public readonly coreConnection: Connection, private logger?: Logger) {}
 
   /**
@@ -45,6 +55,9 @@ export default class SfConnection {
       const result = isTooling
         ? await this.coreConnection.tooling.query<T>(soql, definitiveOpts)
         : await this.coreConnection.query<T>(soql, definitiveOpts);
+      if (SfConnection.devMode) {
+        writeFileSafe(path.join(TMP_DIR, 'queries'), createDigest(soql, 16) + '.json', result);
+      }
       return result;
     } catch (error) {
       logger.error(`Failed to execute query: ${soql}`);
@@ -70,6 +83,9 @@ export default class SfConnection {
     logger.debug('Describing: ' + sobjectName);
     try {
       const result = await this.coreConnection.describe(sobjectName);
+      if (SfConnection.devMode) {
+        writeFileSafe(path.join(TMP_DIR, 'describes'), `${sobjectName}.json`, result);
+      }
       return result;
     } catch (error) {
       logger.error(`Failed to describe: ${sobjectName}`);
@@ -110,6 +126,19 @@ export default class SfConnection {
     }
   }
 
+  /**
+   * Lists available metadata of a specific type on the target org
+   *
+   * @param type
+   * @returns
+   */
+  public async listMetadata(type: string): Promise<FileProperties[]> {
+    const logger = await this.getLogger();
+    logger.debug('List available metadata on org for: ' + type);
+    const types = await this.coreConnection.metadata.list({ type });
+    return types;
+  }
+
   private async getLogger(): Promise<Logger> {
     if (!this.logger) {
       this.logger = await Logger.child('jsc:sae');
@@ -140,4 +169,9 @@ function formatComponentSet(cmpSet: ComponentSet): string {
   return Object.entries(types)
     .map(([typeName, cmps]) => `[${typeName}: ${cmps.join(',')}]`)
     .join('; ');
+}
+
+function writeFileSafe(filePath: string, fileName: string, data: unknown): void {
+  mkdirSync(filePath, { recursive: true });
+  writeFileSync(path.join(filePath, fileName), JSON.stringify(data, null, 2));
 }

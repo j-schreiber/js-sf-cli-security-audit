@@ -1,0 +1,58 @@
+[
+  {
+    "attributes": {
+      "type": "EntityDefinition",
+      "url": "/services/data/v66.0/tooling/sobjects/EntityDefinition/Account"
+    },
+    "DurableId": "Account",
+    "MasterLabel": "Account",
+    "QualifiedApiName": "Account",
+    "ExternalSharingModel": "ReadWrite",
+    "InternalSharingModel": "ReadWrite",
+    "KeyPrefix": "001",
+    "IsRetrieveable": true,
+    "IsCustomizable": true
+  },
+  {
+    "attributes": {
+      "type": "EntityDefinition",
+      "url": "/services/data/v66.0/tooling/sobjects/EntityDefinition/RecordActnSelItemExtrc"
+    },
+    "DurableId": "RecordActnSelItemExtrc",
+    "MasterLabel": "Record Action Selectable Item Extract",
+    "QualifiedApiName": "RecordActnSelItemExtrc",
+    "ExternalSharingModel": "Private",
+    "InternalSharingModel": "Private",
+    "KeyPrefix": "1CU",
+    "IsRetrieveable": true,
+    "IsCustomizable": false
+  },
+  {
+    "attributes": {
+      "type": "EntityDefinition",
+      "url": "/services/data/v66.0/tooling/sobjects/EntityDefinition/01I000000000000"
+    },
+    "DurableId": "01I000000000000",
+    "MasterLabel": "My Custom Object",
+    "QualifiedApiName": "MyCustomObject__c",
+    "ExternalSharingModel": "Read",
+    "InternalSharingModel": "Read",
+    "KeyPrefix": "a00",
+    "IsRetrieveable": true,
+    "IsCustomizable": true
+  },
+  {
+    "attributes": {
+      "type": "EntityDefinition",
+      "url": "/services/data/v66.0/tooling/sobjects/EntityDefinition/01I000000000001"
+    },
+    "DurableId": "01I000000000001",
+    "MasterLabel": "My Other Custom Object",
+    "QualifiedApiName": "MyOtherCustomObject__c",
+    "ExternalSharingModel": "ReadWrite",
+    "InternalSharingModel": "ReadWrite",
+    "KeyPrefix": "a01",
+    "IsRetrieveable": true,
+    "IsCustomizable": true
+  }
+]
