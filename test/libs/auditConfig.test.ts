@@ -232,12 +232,13 @@ describe('audit config', () => {
 
       // Assert
       expect(saveResult.acceptedRisks).to.deep.equal({});
-      expect(Object.keys(saveResult.policies)).to.have.members([
+      expect(saveResult.policies).to.have.all.keys([
         'profiles',
         'settings',
         'permissionSets',
         'users',
         'connectedApps',
+        'objects',
       ]);
     });
 

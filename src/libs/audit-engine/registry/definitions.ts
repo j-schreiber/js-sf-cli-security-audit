@@ -1,5 +1,6 @@
 import { AuditConfigShapeDefinition, ExtractAuditConfigTypes } from '../file-manager/fileManager.types.js';
 import ConnectedAppsPolicy from './policies/connectedApps.js';
+import ObjectsPolicy from './policies/objects.js';
 import PermissionSetsPolicy from './policies/permissionSets.js';
 import ProfilesPolicy from './policies/profiles.js';
 import SettingsPolicy from './policies/settings.js';
@@ -15,6 +16,7 @@ import NoInactiveUsers from './rules/noInactiveUsers.js';
 import NoOtherApexApiLogins from './rules/noOtherApexApiLogins.js';
 import NoStandardProfilesOnActiveUsers from './rules/noStandardProfilesOnActiveUsers.js';
 import NoUserCanSelfAuthorize from './rules/noUserCanSelfAuthorize.js';
+import PrivateExternalAccessForAllObjects from './rules/privateExternalAccessForAllObjects.js';
 import { BaseAuditConfigShape } from './shape/auditConfigShape.js';
 import { AcceptedRisksSchema, PolicyConfig, UserPolicyConfig } from './shape/schema.js';
 
@@ -30,6 +32,7 @@ type PolicyDefinitions = {
   users: PolicyDefinition<UsersPolicy, UserPolicyConfig>;
   connectedApps: PolicyDefinition<ConnectedAppsPolicy>;
   settings: PolicyDefinition<SettingsPolicy>;
+  objects: PolicyDefinition<ObjectsPolicy>;
 };
 
 export type AuditRunConfig = ExtractAuditConfigTypes<typeof AuditConfigShape>;
@@ -77,6 +80,12 @@ export const PolicyDefinitions: PolicyDefinitions = {
   },
   settings: {
     handler: SettingsPolicy,
+  },
+  objects: {
+    handler: ObjectsPolicy,
+    rules: {
+      PrivateExternalAccessForAllObjects,
+    },
   },
 };
 

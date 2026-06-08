@@ -41,7 +41,7 @@ export default class AuditRun extends EventEmitter {
   public constructor(config: Partial<AuditRunConfig>) {
     super();
     this.config = { ...{ shape: {}, inventory: {}, policies: {}, acceptedRisks: {}, controls: {} }, ...config };
-    ResolveLifecycle.on('resolvewarning', (warning: UserMessageEvent) => this.emitWarning(warning.message));
+    ResolveLifecycle.on('resolvewarning', (warning) => this.emitWarning(warning.message));
   }
 
   public getExecutableRulesCount(policyName: Policies): number {

@@ -65,6 +65,11 @@ export const BaseAuditConfigShape = {
         isCountable: true,
         entities: 'rules',
       },
+      objects: {
+        schema: PolicyFileSchema,
+        isCountable: true,
+        entities: 'rules',
+      },
     },
   },
 };

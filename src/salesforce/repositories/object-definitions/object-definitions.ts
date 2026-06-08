@@ -26,7 +26,7 @@ export type ObjectDefinition = {
    * If its a custom object, the Id in CustomObject table
    */
   customObjectId?: string;
-  label?: string;
+  label: string | undefined;
   externalSharing: GlobalSharingModelEnum;
   internalSharing: GlobalSharingModelEnum;
   sharingModel: CustomObjSharingModelEnum;
@@ -45,11 +45,13 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
     const customObjects = await this.fetchCustomObjects();
     this.emit('entityresolve', { total: Object.keys(customObjects).length, resolved: 0 });
     const sharingRules = await this.fetchSharingRules();
-    const objectNames = Array.from(new Set<string>([...Object.keys(customObjects), ...Object.keys(sharingRules)]));
+    const objectNames = Array.from(
+      new Set<string>([...Object.keys(customObjects), ...Object.keys(sharingRules)])
+    ).sort();
     const globalDescribe = await this.fetchGlobalDescribe();
     const entityDefs = await this.fetchEntityDefinitions(objectNames);
     const toolingCustomObjs = await this.fetchToolingCustomObjects();
-    for (const objectName of Object.keys(customObjects)) {
+    for (const objectName of objectNames) {
       results.set(
         objectName,
         buildObjectDefinition(
@@ -60,21 +62,6 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
           entityDefs[objectName]
         )
       );
-    }
-    // some objects have sharing rules, but are NOT listed as SObjects
-    for (const objectName of Object.keys(sharingRules)) {
-      if (!results.has(objectName)) {
-        results.set(
-          objectName,
-          buildObjectDefinition(
-            objectName,
-            true,
-            toolingCustomObjs[entityDefs[objectName]?.DurableId],
-            globalDescribe[objectName],
-            entityDefs[objectName]
-          )
-        );
-      }
     }
     this.emit('entityresolve', {
       total: Object.keys(customObjects).length,
