@@ -1,18 +1,12 @@
 import { expect } from 'chai';
 import AuditTestContext from '../mocks/auditTestContext.js';
 import { Objects } from '../../src/salesforce/index.js';
-import { CUSTOM_OBJECT_BASE_QUERY } from '../../src/salesforce/repositories/object-definitions/object-definitions.types.js';
 
 describe('object definitions resolve', () => {
   const $$ = new AuditTestContext();
 
   beforeEach(async () => {
     await $$.init();
-    $$.mocks.mockEntityDefinitions(
-      ['Account', 'MyCustomObject__c', 'MyOtherCustomObject__c', 'RecordActnSelItemExtrc'],
-      'default-entity-definitions'
-    );
-    $$.mocks.setQueryMock(CUSTOM_OBJECT_BASE_QUERY, 'default-custom-objects');
   });
 
   afterEach(async () => {
@@ -25,7 +19,13 @@ describe('object definitions resolve', () => {
     const objects = await repo.resolve();
 
     // Assert
-    expect(objects.size).to.equal(4);
-    expect(objects).keys(['Account', 'MyCustomObject__c', 'MyOtherCustomObject__c', 'RecordActnSelItemExtrc']);
+    expect(objects.size).to.equal(5);
+    expect(objects).keys([
+      'Account',
+      'MyCustomObject1__c',
+      'MyCustomObject2__c',
+      'MyCustomObject3__c',
+      'RecordActnSelItemExtrc',
+    ]);
   });
 });

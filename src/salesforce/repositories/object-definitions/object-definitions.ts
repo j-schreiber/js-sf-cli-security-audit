@@ -1,38 +1,13 @@
 import { EventEmitter } from 'node:events';
 import { FileProperties } from '@jsforce/jsforce-node/lib/api/metadata.js';
-import { DescribeGlobalSObjectResult } from '@jsforce/jsforce-node/lib/api/soap/schema.js';
 import SfConnection from '../../connection.js';
 import {
   CUSTOM_OBJECT_BASE_QUERY,
-  CustomObjSharingModelEnum,
   formatEntityDefinitionQuery,
-  GlobalSharingModelEnum,
+  ObjectDefinition,
   SfCustomObject,
   SfEntityDefinition,
 } from './object-definitions.types.js';
-
-export type ObjectDefinition = {
-  /**
-   * Qualified API name of the object, with type suffix (__c, __e, etc)
-   */
-  developerName: string;
-  /**
-   * Indicates if the object has explicit sharing rules and can be
-   * managed independently. If sharing is controlled by the parent, this
-   * is also false.
-   */
-  isSharingControllable: boolean;
-  /**
-   * If its a custom object, the Id in CustomObject table
-   */
-  customObjectId?: string;
-  label: string | undefined;
-  externalSharing: GlobalSharingModelEnum;
-  internalSharing: GlobalSharingModelEnum;
-  sharingModel: CustomObjSharingModelEnum;
-  type: 'SObject' | 'CustomSetting' | 'CustomMetadata' | 'PlatformEvent' | 'KnowledgeArticle' | 'Unknown';
-  isCustom: boolean;
-};
 
 export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ total: number; resolved: number }] }> {
   public constructor(private readonly con: SfConnection) {
@@ -48,7 +23,6 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
     const objectNames = Array.from(
       new Set<string>([...Object.keys(customObjects), ...Object.keys(sharingRules)])
     ).sort();
-    const globalDescribe = await this.fetchGlobalDescribe();
     const entityDefs = await this.fetchEntityDefinitions(objectNames);
     const toolingCustomObjs = await this.fetchToolingCustomObjects();
     for (const objectName of objectNames) {
@@ -58,8 +32,8 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
           objectName,
           Boolean(sharingRules[objectName]),
           toolingCustomObjs[entityDefs[objectName]?.DurableId],
-          globalDescribe[objectName],
-          entityDefs[objectName]
+          entityDefs[objectName],
+          customObjects[objectName]
         )
       );
     }
@@ -68,15 +42,6 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
       resolved: Object.keys(customObjects).length,
     });
     return results;
-  }
-
-  private async fetchGlobalDescribe(): Promise<Record<string, DescribeGlobalSObjectResult>> {
-    const describe = await this.con.coreConnection.describeGlobal();
-    const r: Record<string, DescribeGlobalSObjectResult> = {};
-    for (const describeResult of describe.sobjects) {
-      r[describeResult.name] = describeResult;
-    }
-    return r;
   }
 
   private async fetchCustomObjects(): Promise<Record<string, FileProperties>> {
@@ -119,15 +84,15 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
   }
 }
 
-function evalObjectType(describe?: DescribeGlobalSObjectResult): ObjectDefinition['type'] {
-  if (describe) {
-    return describe.customSetting
+function evalObjectType(entityDef?: SfEntityDefinition): ObjectDefinition['type'] {
+  if (entityDef) {
+    return entityDef.IsCustomSetting
       ? 'CustomSetting'
-      : describe.name.endsWith('__mdt')
+      : entityDef.QualifiedApiName.endsWith('__mdt')
       ? 'CustomMetadata'
-      : describe.name.endsWith('__e')
+      : entityDef.QualifiedApiName.endsWith('__e')
       ? 'PlatformEvent'
-      : describe.name.endsWith('__kav')
+      : entityDef.QualifiedApiName.endsWith('__kav')
       ? 'KnowledgeArticle'
       : 'SObject';
   } else {
@@ -139,18 +104,20 @@ function buildObjectDefinition(
   developerName: string,
   isSharingControllable: boolean,
   toolingObj?: SfCustomObject,
-  describe?: DescribeGlobalSObjectResult,
-  entityDef?: SfEntityDefinition
+  entityDef?: SfEntityDefinition,
+  customObjectMetadata?: FileProperties
 ): ObjectDefinition {
   return {
     customObjectId: toolingObj?.Id,
     developerName,
     isSharingControllable,
-    label: describe?.label ?? entityDef?.MasterLabel,
+    label: entityDef?.MasterLabel,
     externalSharing: entityDef?.ExternalSharingModel ?? 'Unknown',
     internalSharing: entityDef?.InternalSharingModel ?? 'Unknown',
     sharingModel: toolingObj?.SharingModel ?? 'Unknown',
-    isCustom: describe?.custom ?? false,
-    type: evalObjectType(describe),
+    isCustom: Boolean(toolingObj),
+    type: evalObjectType(entityDef),
+    hasEntityDefinition: Boolean(entityDef),
+    hasCustomObjectMetadata: Boolean(customObjectMetadata),
   };
 }

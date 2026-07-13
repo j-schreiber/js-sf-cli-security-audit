@@ -41,14 +41,12 @@ describe('audit run execution', () => {
     assert.isDefined(auditResult.policies.profiles);
     assert.isDefined(auditResult.policies.permissionSets);
     assert.isDefined(auditResult.policies.users);
+    assert.isDefined(auditResult.policies.objects);
     expect(auditResult.policies.profiles.isCompliant).to.be.true;
     expect(auditResult.policies.permissionSets.isCompliant).to.be.true;
-    expect(Object.keys(auditResult.policies.profiles.executedRules)).to.deep.equal([
-      'EnforcePermissionClassifications',
-    ]);
-    expect(Object.keys(auditResult.policies.permissionSets.executedRules)).to.deep.equal([
-      'EnforcePermissionClassifications',
-    ]);
+    expect(auditResult.policies.profiles.executedRules).to.have.keys(['EnforcePermissionClassifications']);
+    expect(auditResult.policies.permissionSets.executedRules).to.have.keys(['EnforcePermissionClassifications']);
+    expect(auditResult.policies.objects.executedRules).to.have.keys(['PrivateExternalAccessForAllObjects']);
   });
 
   it('reports non-compliance if one policy is not compliant', async () => {

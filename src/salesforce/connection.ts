@@ -10,14 +10,16 @@ import { RETRIEVE_CACHE, TMP_DIR } from './mdapi/constants.js';
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('@j-schreiber/sf-cli-security-audit', 'salesforceConnectionErrors');
 
+const DEV_MODE_WRITE_DIR = path.join(TMP_DIR, `${Date.now()}`);
+
 /**
  * Wrapper around the default `Connection` from core to add
  * meaningful logging and error bubbling for better UX and debugging.
  */
 export default class SfConnection {
   /**
-   * This flag is enabled by SAE_
-   * temporary directory within .jsc for easy query-debugging.
+   * Use this flag during local testing to write all
+   * query results to .jsc tmp dir.
    */
   public static devMode: boolean = false;
 
@@ -56,7 +58,7 @@ export default class SfConnection {
         ? await this.coreConnection.tooling.query<T>(soql, definitiveOpts)
         : await this.coreConnection.query<T>(soql, definitiveOpts);
       if (SfConnection.devMode) {
-        writeFileSafe(path.join(TMP_DIR, 'queries'), createDigest(soql, 16) + '.json', result);
+        writeFileSafe(path.join(DEV_MODE_WRITE_DIR, 'queries'), createDigest(soql, 16) + '.json', result);
       }
       return result;
     } catch (error) {
@@ -84,7 +86,7 @@ export default class SfConnection {
     try {
       const result = await this.coreConnection.describe(sobjectName);
       if (SfConnection.devMode) {
-        writeFileSafe(path.join(TMP_DIR, 'describes'), `${sobjectName}.json`, result);
+        writeFileSafe(path.join(DEV_MODE_WRITE_DIR, 'describes'), `${sobjectName}.json`, result);
       }
       return result;
     } catch (error) {
@@ -136,6 +138,9 @@ export default class SfConnection {
     const logger = await this.getLogger();
     logger.debug('List available metadata on org for: ' + type);
     const types = await this.coreConnection.metadata.list({ type });
+    if (SfConnection.devMode) {
+      writeFileSafe(path.join(DEV_MODE_WRITE_DIR, 'metadata-list'), `${type}.json`, types);
+    }
     return types;
   }
 

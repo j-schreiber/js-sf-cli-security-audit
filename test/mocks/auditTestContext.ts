@@ -214,9 +214,15 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
       CustomObject: 'test/mocks/data/metadata-list-results/custom-object.json',
       SharingRules: 'test/mocks/data/metadata-list-results/sharing-rules.json',
     },
-    queries: {},
+    queries: {
+      'SELECT Id,DeveloperName,SharingModel FROM CustomObject': 'default-custom-objects',
+    },
   };
   mocks.prepareMocks(defaults);
+  mocks.mockEntityDefinitions(
+    ['Account', 'MyCustomObject1__c', 'MyCustomObject2__c', 'MyCustomObject3__c', 'RecordActnSelItemExtrc'],
+    'compliant-entity-definitions'
+  );
   mocks.mockCustomPermissions('custom-permissions');
   // active users, but wipe all permission set assignments
   mocks.mockUsers('active-user-details', (record) => ({ ...record, PermissionSetAssignments: null }));

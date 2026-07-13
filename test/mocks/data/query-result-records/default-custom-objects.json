@@ -5,7 +5,7 @@
       "url": "/services/data/v66.0/tooling/sobjects/CustomObject/01I000000000000AAA"
     },
     "Id": "01I000000000000AAA",
-    "DeveloperName": "MyCustomObject__c",
+    "DeveloperName": "MyCustomObject1__c",
     "SharingModel": "Edit"
   },
   {
@@ -14,7 +14,16 @@
       "url": "/services/data/v66.0/tooling/sobjects/CustomObject/01I000000000001AAA"
     },
     "Id": "01I000000000001AAA",
-    "DeveloperName": "MyOtherCustomObject__c",
+    "DeveloperName": "MyCustomObject2__c",
+    "SharingModel": "Edit"
+  },
+  {
+    "attributes": {
+      "type": "CustomObject",
+      "url": "/services/data/v66.0/tooling/sobjects/CustomObject/01I000000000002AAA"
+    },
+    "Id": "01I000000000003AAA",
+    "DeveloperName": "MyCustomObject3__c",
     "SharingModel": "Edit"
   }
 ]
