@@ -17,7 +17,13 @@ export type ResolveEntityResult<T> = {
   ignoredEntities: EntityResolveError[];
 };
 
-export default abstract class Policy<T> extends EventEmitter implements IPolicy {
+export type ResolveState = {
+  total: number;
+  resolved: number;
+};
+
+export default abstract class Policy<T> extends EventEmitter<{ entityresolve: [ResolveState] }> implements IPolicy {
+  protected resolveState: ResolveState = { total: 0, resolved: 0 };
   protected resolvedRules: RegistryRuleResolveResult;
   protected entities?: ResolveEntityResult<T>;
 
@@ -96,6 +102,11 @@ export default abstract class Policy<T> extends EventEmitter implements IPolicy 
       auditedEntities: Object.keys(resolveResult.resolvedEntities),
       ignoredEntities: resolveResult.ignoredEntities,
     };
+  }
+
+  protected updateResolveState(update: Partial<ResolveState>): void {
+    this.resolveState = { ...this.resolveState, ...update };
+    this.emit('entityresolve', this.resolveState);
   }
 
   protected abstract resolveEntities(context: AuditContext): Promise<ResolveEntityResult<T>>;

@@ -13,7 +13,7 @@ export default class ConnectedAppsPolicy extends Policy<ConnectedApp> {
   protected async resolveEntities(context: AuditContext): Promise<ResolveEntityResult<ConnectedApp>> {
     const resolvedEntities: Record<string, ConnectedApp> = {};
     const appsRepo = new ConnectedApps(context.targetOrgConnection);
-    appsRepo.addListener('entityresolve', (resolveEvt) => this.emit('entityresolve', resolveEvt));
+    appsRepo.addListener('entityresolve', (resolveEvt) => this.updateResolveState(resolveEvt));
     const apps = await appsRepo.resolve({ withTokenUsage: true });
     for (const app of apps.values()) {
       resolvedEntities[app.name] = app;

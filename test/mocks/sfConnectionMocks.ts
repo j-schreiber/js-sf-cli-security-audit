@@ -1,6 +1,12 @@
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
-import { DescribeSObjectResult, Record as JsForceRecord, QueryResult } from '@jsforce/jsforce-node';
+import {
+  DescribeGlobalResult,
+  DescribeSObjectResult,
+  Record as JsForceRecord,
+  QueryResult,
+} from '@jsforce/jsforce-node';
+import { FileProperties } from '@jsforce/jsforce-node/lib/api/metadata.js';
 import { AnyJson, isString } from '@salesforce/ts-types';
 import { TestContext } from '@salesforce/core/testSetup';
 import { ComponentSet, MetadataApiRetrieve, RequestStatus, RetrieveResult } from '@salesforce/source-deploy-retrieve';
@@ -19,12 +25,15 @@ import {
   EXTERNAL_CLIENT_APPS_QUERY,
   EXTERNAL_APPS_OAUTH_POLICY,
 } from '../../src/salesforce/repositories/connected-apps/queries.js';
+import SfConnection from '../../src/salesforce/connection.js';
 import { SfMinimalUser, SfOauthToken } from '../../src/salesforce/repositories/connected-apps/connected-app.types.js';
+import { formatEntityDefinitionQuery } from '../../src/salesforce/repositories/object-definitions/object-definitions.types.js';
 import { MOCK_DATA_BASE_PATH, SRC_MOCKS_BASE_PATH, QUERY_RESULTS_BASE, FULL_QUERY_RESULTS_BASE } from './data/paths.js';
 
 export type SfConnectionMockConfig = {
   describes?: Record<string, PathLike>;
   queries?: Record<string, string>;
+  metadataLists?: Record<string, string>;
 };
 
 export type SfQueryError = {
@@ -45,8 +54,10 @@ export default class SfConnectionMocks {
   public queries: Record<string, JsForceRecord[]>;
   public queryErrors: Record<string, SfQueryError>;
   public retrieveStub?: sinon.SinonStub;
+  public listMetadataStub?: sinon.SinonStub;
   public fullQueryResults: Record<string, AnyJson>;
   public mockedUsers: Record<string, SfMinimalUser>;
+  public metadataTypeLists: Record<string, FileProperties[]>;
 
   public constructor(private readonly context: TestContext) {
     this.describes = {};
@@ -54,7 +65,27 @@ export default class SfConnectionMocks {
     this.fullQueryResults = {};
     this.mockedUsers = {};
     this.queryErrors = {};
+    this.metadataTypeLists = {};
     this.context.fakeConnectionRequest = this.fakeConnectionRequest;
+  }
+
+  /**
+   * Stubs the internal "metadata.list" command that is called by "listMetadata"
+   * and returns the mocked values that are prepared in metadataTypeLists.
+   *
+   * @returns
+   */
+  public stubListMetadata(): sinon.SinonStub {
+    this.listMetadataStub?.restore();
+    this.listMetadataStub = this.context.SANDBOX.stub(SfConnection.prototype, 'listMetadata').callsFake(
+      (requestedType: string): Promise<FileProperties[]> => {
+        if (this.metadataTypeLists[requestedType]) {
+          return Promise.resolve(this.metadataTypeLists[requestedType]);
+        }
+        return Promise.reject(new Error(`No mock was defined for: ${requestedType}`));
+      }
+    );
+    return this.listMetadataStub;
   }
 
   /**
@@ -74,6 +105,12 @@ export default class SfConnectionMocks {
     if (config.queries) {
       for (const [queryString, resultsPath] of Object.entries(config.queries)) {
         this.setQueryMock(queryString, resultsPath);
+      }
+    }
+    if (config.metadataLists) {
+      for (const [metadataType, resultsPath] of Object.entries(config.metadataLists)) {
+        const content = fs.readFileSync(resultsPath, 'utf-8');
+        this.metadataTypeLists[metadataType] = JSON.parse(content) as FileProperties[];
       }
     }
   }
@@ -139,6 +176,16 @@ export default class SfConnectionMocks {
     const filePath = path.join(MOCK_DATA_BASE_PATH, 'profiles-metadata', `${resultFile}.json`);
     const records = loadRecords(filePath);
     this.queries[`SELECT Name,Metadata FROM Profile WHERE Name = '${profileName}'`] = records;
+  }
+
+  /**
+   * Mock EntityDefinition results for specified sobjects
+   *
+   * @param objectNames
+   * @param resultFile
+   */
+  public mockEntityDefinitions(objectNames: string[], resultFile: string): void {
+    this.setQueryMock(formatEntityDefinitionQuery(objectNames), resultFile);
   }
 
   /**
@@ -255,7 +302,7 @@ export default class SfConnectionMocks {
    * @param request
    */
   private readonly fakeConnectionRequest = (request: AnyJson): Promise<AnyJson> => {
-    // all describe calls
+    // describe calls to specific sobjects
     if (isString(request) && request.endsWith('/describe')) {
       const requestUrl = request.split('/');
       const sobjectName = requestUrl[requestUrl.length - 2];
@@ -266,6 +313,14 @@ export default class SfConnectionMocks {
         });
       }
       return Promise.resolve(this.describes[sobjectName] as AnyJson);
+    }
+    // global describe for the org
+    if (isString(request) && request.endsWith('/sobjects')) {
+      const content = fs.readFileSync(
+        path.join(MOCK_DATA_BASE_PATH, 'global-describes', 'full-org-describe.json'),
+        'utf-8'
+      );
+      return Promise.resolve(JSON.parse(content) as DescribeGlobalResult);
     }
     // assume its a call to /query? now
     const url = (request as { url: string }).url;

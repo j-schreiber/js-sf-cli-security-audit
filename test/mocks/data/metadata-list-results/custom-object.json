@@ -1,0 +1,64 @@
+[
+  {
+    "createdById": "0059b00000I3e9pAAB",
+    "createdByName": "Jannis Schreiber",
+    "createdDate": "1970-01-01T00:00:00.000Z",
+    "fileName": "objects/Account.object",
+    "fullName": "Account",
+    "id": "",
+    "lastModifiedById": "0059b00000I3e9pAAB",
+    "lastModifiedByName": "Jannis Schreiber",
+    "lastModifiedDate": "1970-01-01T00:00:00.000Z",
+    "namespacePrefix": "",
+    "type": "CustomObject"
+  },
+  {
+    "createdById": "0059b00000I3e9pAAB",
+    "createdByName": "Jannis Schreiber",
+    "createdDate": "2023-12-27T09:49:28.000Z",
+    "fileName": "objects/MyCustomObject1__c.object",
+    "fullName": "MyCustomObject1__c",
+    "id": "01I3X000001jxxyUAA",
+    "lastModifiedById": "0059b00000I3e9pAAB",
+    "lastModifiedByName": "Jannis Schreiber",
+    "lastModifiedDate": "2023-12-27T09:49:31.000Z",
+    "type": "CustomObject"
+  },
+  {
+    "createdById": "0059b00000I3e9pAAB",
+    "createdByName": "Jannis Schreiber",
+    "createdDate": "2023-12-27T09:49:28.000Z",
+    "fileName": "objects/MyCustomObject2__c.object",
+    "fullName": "MyCustomObject2__c",
+    "id": "01I3X000001jxxzUAA",
+    "lastModifiedById": "0059b00000I3e9pAAB",
+    "lastModifiedByName": "Jannis Schreiber",
+    "lastModifiedDate": "2023-12-27T09:49:31.000Z",
+    "type": "CustomObject"
+  },
+  {
+    "createdById": "0059b00000I3e9pAAB",
+    "createdByName": "Jannis Schreiber",
+    "createdDate": "2023-12-27T09:49:28.000Z",
+    "fileName": "objects/MyCustomObject3__c.object",
+    "fullName": "MyCustomObject3__c",
+    "id": "01I3X000001jxxxUAA",
+    "lastModifiedById": "0059b00000I3e9pAAB",
+    "lastModifiedByName": "Jannis Schreiber",
+    "lastModifiedDate": "2023-12-27T09:49:31.000Z",
+    "type": "CustomObject"
+  },
+  {
+    "createdById": "0059b00000I3e9pAAB",
+    "createdByName": "Jannis Schreiber",
+    "createdDate": "1970-01-01T00:00:00.000Z",
+    "fileName": "objects/RecordActnSelItemExtrc.object",
+    "fullName": "RecordActnSelItemExtrc",
+    "id": "",
+    "lastModifiedById": "0059b00000I3e9pAAB",
+    "lastModifiedByName": "Jannis Schreiber",
+    "lastModifiedDate": "1970-01-01T00:00:00.000Z",
+    "namespacePrefix": "",
+    "type": "CustomObject"
+  }
+]

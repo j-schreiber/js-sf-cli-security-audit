@@ -1,10 +1,10 @@
 import path from 'node:path';
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import Sinon, { SinonSandbox } from 'sinon';
 import { AuthInfo, Connection } from '@salesforce/core';
 import { TestSession } from '@salesforce/cli-plugins-testkit';
 import OAuthTokens from '../../src/salesforce/repositories/connected-apps/oauth-tokens.js';
-import { SfConnection, Users } from '../../src/salesforce/index.js';
+import { Objects, SfConnection, Users } from '../../src/salesforce/index.js';
 
 const testingWorkingDir = path.join('test', 'mocks', 'test-sfdx-project');
 
@@ -82,6 +82,22 @@ describe('salesforce APIs', () => {
     for (const user of allUsers.values()) {
       expect(user.isActive).to.be.true;
       expect(user.assignments, `assignments for ${user.username}`).to.be.undefined;
+    }
+  });
+
+  it('fetches and initialises all object definitions from org', async () => {
+    // Act
+    const objectsRepo = new Objects(orgConnection);
+    const allObjects = await objectsRepo.resolve();
+
+    // Assert
+    expect(allObjects.size).to.not.equal(0);
+    for (const obj of allObjects.values()) {
+      assert.isDefined(obj.developerName);
+      assert.isDefined(obj.internalSharing);
+      assert.isDefined(obj.externalSharing);
+      assert.isDefined(obj.sharingModel);
+      assert.isDefined(obj.type);
     }
   });
 });
