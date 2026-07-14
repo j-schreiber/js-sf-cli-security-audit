@@ -23,6 +23,7 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
     const objectNames = Array.from(
       new Set<string>([...Object.keys(customObjects), ...Object.keys(sharingRules)])
     ).sort();
+    this.emit('entityresolve', { total: objectNames.length, resolved: 0 });
     const entityDefs = await this.fetchEntityDefinitions(objectNames);
     const toolingCustomObjs = await this.fetchToolingCustomObjects();
     for (const objectName of objectNames) {
@@ -38,8 +39,8 @@ export default class ObjectDefinitions extends EventEmitter<{ entityresolve: [{ 
       );
     }
     this.emit('entityresolve', {
-      total: Object.keys(customObjects).length,
-      resolved: Object.keys(customObjects).length,
+      total: results.size,
+      resolved: results.size,
     });
     return results;
   }
@@ -118,6 +119,6 @@ function buildObjectDefinition(
     isCustom: Boolean(toolingObj),
     type: evalObjectType(entityDef),
     hasEntityDefinition: Boolean(entityDef),
-    hasCustomObjectMetadata: Boolean(customObjectMetadata),
+    hasObjectMetadata: Boolean(customObjectMetadata),
   };
 }
