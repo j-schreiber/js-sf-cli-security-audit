@@ -40,7 +40,14 @@ describe('policy - objects', () => {
       };
       $$.mockAuditConfig.policies.objects = defaultConfig;
       $$.mocks.mockEntityDefinitions(
-        ['Account', 'MyCustomObject1__c', 'MyCustomObject2__c', 'MyCustomObject3__c', 'RecordActnSelItemExtrc'],
+        [
+          'Account',
+          'MyCustomObject1__c',
+          'MyCustomObject2__c',
+          'MyCustomObject3__c',
+          'RecordActnSelItemExtrc',
+          'SharingRulesOnlyObject__c',
+        ],
         'default-entity-definitions'
       );
     });
@@ -56,12 +63,17 @@ describe('policy - objects', () => {
         'MyCustomObject2__c',
         'MyCustomObject3__c',
         'RecordActnSelItemExtrc',
+        'SharingRulesOnlyObject__c',
       ]);
       assert.isDefined(policyResult.executedRules.PrivateExternalAccessForAllObjects);
       const ruleResult = policyResult.executedRules.PrivateExternalAccessForAllObjects;
       expect(ruleResult.isCompliant).to.be.false;
       expect(ruleResult.violatedEntities).to.have.members(['Account', 'MyCustomObject1__c', 'MyCustomObject2__c']);
-      expect(ruleResult.compliantEntities).to.have.members(['MyCustomObject3__c', 'RecordActnSelItemExtrc']);
+      expect(ruleResult.compliantEntities).to.have.members([
+        'MyCustomObject3__c',
+        'RecordActnSelItemExtrc',
+        'SharingRulesOnlyObject__c',
+      ]);
     });
   });
 });

@@ -220,7 +220,14 @@ function initDefaultMocks(mocks: SfConnectionMocks): SfConnectionMocks {
   };
   mocks.prepareMocks(defaults);
   mocks.mockEntityDefinitions(
-    ['Account', 'MyCustomObject1__c', 'MyCustomObject2__c', 'MyCustomObject3__c', 'RecordActnSelItemExtrc'],
+    [
+      'Account',
+      'MyCustomObject1__c',
+      'MyCustomObject2__c',
+      'MyCustomObject3__c',
+      'RecordActnSelItemExtrc',
+      'SharingRulesOnlyObject__c',
+    ],
     'compliant-entity-definitions'
   );
   mocks.mockCustomPermissions('custom-permissions');

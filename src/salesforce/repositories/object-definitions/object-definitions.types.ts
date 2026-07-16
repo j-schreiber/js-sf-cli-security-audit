@@ -45,7 +45,7 @@ export type ObjectDefinition = {
    * Indicates, if the object exists as a CustomObject metadata (this
    * type has all regular sobjects, not only custom objects).
    */
-  hasCustomObjectMetadata: boolean;
+  hasObjectMetadata: boolean;
 };
 
 export type SfEntityDefinition = {
