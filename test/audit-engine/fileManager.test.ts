@@ -253,6 +253,31 @@ describe('file manager', () => {
       expect(fs.existsSync(potentialInvalidPath)).to.be.false;
     });
 
+    it('ignores empty directories when saving audit config to disk', () => {
+      // Act
+      const fm = new FileManager(BaseShapeV2);
+      fm.save(DEFAULT_TEST_OUTPUT_DIR, {
+        acceptedRisks: {},
+        shape: {},
+        controls: {},
+        policies: {
+          permissionSets: { enabled: true, rules: { TestRule: { enabled: true } } },
+        },
+        inventory: {
+          profiles: {
+            'Test Profile': {
+              role: 'Test Role',
+            },
+          },
+        },
+      });
+
+      // Assert
+      expect(fs.existsSync(path.join(DEFAULT_TEST_OUTPUT_DIR, 'acceptedRisks'))).to.be.false;
+      expect(fs.existsSync(path.join(DEFAULT_TEST_OUTPUT_DIR, 'shape'))).to.be.false;
+      expect(fs.existsSync(path.join(DEFAULT_TEST_OUTPUT_DIR, 'controls'))).to.be.false;
+    });
+
     it('saves accepted risks to disk', () => {
       // Arrange
       const testRuleContent = {

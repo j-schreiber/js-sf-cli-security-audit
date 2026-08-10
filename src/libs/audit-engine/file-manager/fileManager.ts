@@ -82,7 +82,6 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
           targetPath: path.join(targetDirPath.toString(), dirName.toString()),
           dirDefinition,
         };
-        fs.mkdirSync(dirConf.targetPath, { recursive: true });
         saveResult[dirName.toString()] = writeSubdir(dirConf);
       } else if (isNestedDir(dirDefinition)) {
         const nestedSaveResults: Record<string, unknown> = {};
@@ -96,7 +95,6 @@ export default class FileManager<ConfShape extends AuditConfigShapeDefinition> {
             targetPath: path.join(targetDirPath.toString(), dirName.toString(), fileDirName),
             dirDefinition: fileDirDef,
           };
-          fs.mkdirSync(dirConf.targetPath, { recursive: true });
           nestedSaveResults[fileDirName] = writeSubdir(dirConf);
         }
         saveResult[dirName.toString()] = nestedSaveResults;
@@ -149,6 +147,10 @@ function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
           : countEntities(maybeContent)
         : 0;
       dirSaveResults[fileName] = { filePath, content: maybeContent, totalEntities: entitiesCount };
+      // defer dir-creation to the last possible point, to avoid creating empty directories
+      if (!fs.existsSync(conf.targetPath)) {
+        fs.mkdirSync(conf.targetPath, { recursive: true });
+      }
       fs.writeFileSync(filePath, yaml.dump(maybeContent));
     } else if (fs.existsSync(filePath)) {
       fs.rmSync(filePath);
