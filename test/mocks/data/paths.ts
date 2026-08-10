@@ -2,6 +2,9 @@ import path from 'node:path';
 
 export const MOCK_DATA_BASE_PATH = path.join('test', 'mocks', 'data');
 
+/** Audit configs */
+export const AUDIT_CONFIGS_BASE = path.join(MOCK_DATA_BASE_PATH, 'audit-configs');
+
 /** this path stores records (-> JSON files with arrays) */
 export const QUERY_RESULTS_BASE = path.join(MOCK_DATA_BASE_PATH, 'query-result-records');
 

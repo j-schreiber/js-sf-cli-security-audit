@@ -1318,6 +1318,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@inquirer/select@npm:^5.2.1":
+  version: 5.2.1
+  resolution: "@inquirer/select@npm:5.2.1"
+  dependencies:
+    "@inquirer/ansi": "npm:^2.0.7"
+    "@inquirer/core": "npm:^11.2.1"
+    "@inquirer/figures": "npm:^2.0.7"
+    "@inquirer/type": "npm:^4.0.7"
+  peerDependencies:
+    "@types/node": ">=18"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10c0/3c6d0151b5a29111254a58eaf8b93bb4c476e68b0751526d8bff61a4bea457bdbe782890ae33977c5d2015f436596b5d32a8bb0677bfdf610f5f5998e65f5a92
+  languageName: node
+  linkType: hard
+
 "@inquirer/type@npm:^1.5.3":
   version: 1.5.5
   resolution: "@inquirer/type@npm:1.5.5"
@@ -1423,6 +1440,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@j-schreiber/sf-cli-security-audit@workspace:."
   dependencies:
+    "@inquirer/select": "npm:^5.2.1"
     "@jsforce/jsforce-node": "npm:^3.10.19"
     "@oclif/core": "npm:^4.11.14"
     "@oclif/multi-stage-output": "npm:^0.8.44"
@@ -1437,6 +1455,7 @@ __metadata:
     "@salesforce/sf-plugins-core": "npm:^12.2.26"
     "@salesforce/source-deploy-retrieve": "npm:^12.37.1"
     "@salesforce/ts-types": "npm:^2.0.12"
+    "@types/inquirer": "npm:^9.0.10"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/node": "npm:25.9.5"
     eslint-plugin-sf-plugin: "npm:^1.20.33"
@@ -2593,6 +2612,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/inquirer@npm:^9.0.10":
+  version: 9.0.10
+  resolution: "@types/inquirer@npm:9.0.10"
+  dependencies:
+    "@types/through": "npm:*"
+    rxjs: "npm:^7.2.0"
+  checksum: 10c0/60381c394f83d3233aea45af106d0c05e34344f2b765c048d32214726f79174eeb42b160bf602c9d9c1258bd263fbd14e384a8b4b07813662b525fe56f95b7c1
+  languageName: node
+  linkType: hard
+
 "@types/istanbul-lib-coverage@npm:*":
   version: 2.0.6
   resolution: "@types/istanbul-lib-coverage@npm:2.0.6"
@@ -2793,6 +2822,15 @@ __metadata:
   version: 15.0.1
   resolution: "@types/sinonjs__fake-timers@npm:15.0.1"
   checksum: 10c0/be8daa4e19746f4c249ce4926b83676bb2e5500a8c33b61d81cd303495b56697c28c910f7c57c0ecfd1d7c8ead87449570586d9568b0b5c6fd94c45f116197f4
+  languageName: node
+  linkType: hard
+
+"@types/through@npm:*":
+  version: 0.0.33
+  resolution: "@types/through@npm:0.0.33"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/6a8edd7f40cd7e197318e86310a40e568cddd380609dde59b30d5cc6c5f8276ddc698905eac4b3b429eb39f2e8ee326bc20dc6e95a2cdc41c4d3fc9a1ebd4929
   languageName: node
   linkType: hard
 
@@ -10476,7 +10514,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.8.2":
+"rxjs@npm:^7.2.0, rxjs@npm:^7.8.2":
   version: 7.8.2
   resolution: "rxjs@npm:7.8.2"
   dependencies:
