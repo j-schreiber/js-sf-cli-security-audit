@@ -75,10 +75,14 @@ export default class ManageInventory extends SfCommand<ManageInventoryResult> {
 
   private logResults(result: ManageInventoryResult, logVerbose: boolean): void {
     if (logVerbose && result.addedEntities.length > 0) {
-      this.table({ data: result.addedEntities.map((entityName) => ({ [`Added ${result.type}`]: entityName })) });
+      this.table({
+        data: result.addedEntities.map((entityName) => ({ [`added${capitalize(result.type)}`]: entityName })),
+      });
     }
     if (logVerbose && result.removedEntities.length > 0) {
-      this.table({ data: result.removedEntities.map((entityName) => ({ [`Removed ${result.type}`]: entityName })) });
+      this.table({
+        data: result.removedEntities.map((entityName) => ({ [`removed${capitalize(result.type)}`]: entityName })),
+      });
     }
     this.logSuccess(
       messages.getMessage('ux.summary.completion', [

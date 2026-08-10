@@ -69,6 +69,9 @@
       "@salesforce/plugin-command-reference"
     ],
     "topics": {
+      "audit": {
+        "description": "Commands to work with the the local audit config on disk"
+      },
       "org": {
         "description": "Org namespace",
         "subtopics": {

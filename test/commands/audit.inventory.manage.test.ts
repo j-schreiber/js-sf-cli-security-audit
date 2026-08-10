@@ -52,4 +52,36 @@ describe('audit inventory manage', () => {
     const reloadedConfig = loadAuditConfig(WORKING_DIR);
     expect(reloadedConfig.inventory.users).to.have.all.keys(newUsersFromMocks);
   });
+
+  it('prints manage result details to table when --verbose is set', async () => {
+    // Arrange
+    // first prompt selects the inventory type, second selects the operation
+    selectStub.onFirstCall().resolves('profiles');
+    selectStub.onSecondCall().resolves('prune');
+
+    // Act
+    const result = await ManageInventory.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--source-dir',
+      WORKING_DIR,
+      '--verbose',
+    ]);
+
+    // Assert
+    const removedProfiles = ['Guest License User', 'Minimum Access - Salesforce'];
+    expect(result).to.deep.contain({
+      type: 'profiles',
+      addedEntities: [],
+      removedEntities: removedProfiles,
+    });
+    expect($$.sfCommandStubs.logSuccess.args.flat()).to.deep.equal([
+      messages.getMessage('ux.summary.completion', [0, 2, 'Profiles']),
+    ]);
+    const reloadedConfig = loadAuditConfig(WORKING_DIR);
+    expect(reloadedConfig.inventory.profiles).to.have.all.keys(['System Administrator', 'Standard User']);
+    expect($$.sfCommandStubs.table.args.flat()).to.deep.equal([
+      { data: [{ removedProfiles: 'Guest License User' }, { removedProfiles: 'Minimum Access - Salesforce' }] },
+    ]);
+  });
 });
