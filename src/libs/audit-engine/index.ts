@@ -16,6 +16,8 @@ export type { AuditResult } from './registry/result.types.js';
 export const ConfigFileManager = new FileManager(AuditConfigShape, validator);
 export { PolicyDefinitions, loadPolicy } from './registry/definitions.js';
 
+type AuditConfigParseResult = ReturnType<(typeof ConfigFileManager)['save']>;
+
 /**
  * Loads audit config from directory and initialises audit run.
  *
@@ -43,10 +45,7 @@ export function loadAuditConfig(directoryPath: string): AuditRunConfig {
  * @param config
  * @returns
  */
-export function saveAuditConfig(
-  directoryPath: string,
-  config: AuditRunConfig
-): ReturnType<(typeof ConfigFileManager)['save']> {
+export function saveAuditConfig(directoryPath: string, config: AuditRunConfig): AuditConfigParseResult {
   const fm = new FileManager(AuditConfigShape);
   return fm.save(directoryPath, config);
 }

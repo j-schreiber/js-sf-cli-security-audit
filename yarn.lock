@@ -997,6 +997,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@inquirer/checkbox@npm:^5.2.1":
+  version: 5.2.1
+  resolution: "@inquirer/checkbox@npm:5.2.1"
+  dependencies:
+    "@inquirer/ansi": "npm:^2.0.7"
+    "@inquirer/core": "npm:^11.2.1"
+    "@inquirer/figures": "npm:^2.0.7"
+    "@inquirer/type": "npm:^4.0.7"
+  peerDependencies:
+    "@types/node": ">=18"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10c0/e3a845156c718fbbec228a0e7fd2a4f10775185615eac1f405b3a2bb2ae607dda6baf178fbd6487db0e12e5e33014536e81acefe65de57cd476a7aeaea6fb35d
+  languageName: node
+  linkType: hard
+
 "@inquirer/confirm@npm:^3.1.22":
   version: 3.2.0
   resolution: "@inquirer/confirm@npm:3.2.0"
@@ -1440,6 +1457,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@j-schreiber/sf-cli-security-audit@workspace:."
   dependencies:
+    "@inquirer/checkbox": "npm:^5.2.1"
     "@inquirer/select": "npm:^5.2.1"
     "@jsforce/jsforce-node": "npm:^3.10.19"
     "@oclif/core": "npm:^4.11.14"

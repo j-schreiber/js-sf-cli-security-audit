@@ -8,6 +8,7 @@
   },
   "homepage": "https://securityauditengine.org",
   "dependencies": {
+    "@inquirer/checkbox": "^5.2.1",
     "@inquirer/select": "^5.2.1",
     "@jsforce/jsforce-node": "^3.10.19",
     "@oclif/core": "^4.11.14",

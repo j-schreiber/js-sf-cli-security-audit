@@ -26,7 +26,7 @@ Show additional details after completing the operation.
 
 # ux.choices.inventory-type.prompt
 
-Which inventory do you want to manage?
+Select inventory to manage:
 
 # ux.choices.inventory-type.entities-found
 
@@ -38,7 +38,7 @@ No entities found in local config.
 
 # ux.choices.operation.prompt
 
-What operation to perform?
+Choose operation(s):
 
 # ux.choices.refresh.description-existing
 
@@ -54,4 +54,4 @@ Prunes the local inventory: Removes entities from config that do not exist on th
 
 # ux.summary.completion
 
-Added %s missing entities and removed %s obsolete entities from %s.
+Added %s missing and removed %s obsolete entities from %s.

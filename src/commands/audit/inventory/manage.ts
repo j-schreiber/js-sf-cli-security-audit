@@ -55,7 +55,7 @@ export default class ManageInventory extends SfCommand<ManageInventoryResult> {
       message: messages.getMessage('ux.choices.inventory-type.prompt'),
       choices: buildInventoryTypeChoices(existingConfig.inventory),
     });
-    const selectedOperation = await Prompts.select({
+    const selectedOperation = await Prompts.checkbox({
       message: messages.getMessage('ux.choices.operation.prompt'),
       choices: buildOperationChoices(existingConfig.inventory, selectedType),
     });
@@ -63,8 +63,8 @@ export default class ManageInventory extends SfCommand<ManageInventoryResult> {
       new SfConnection(flags['target-org'].getConnection(flags['api-version'])),
       {
         type: selectedType,
-        prune: selectedOperation === 'prune',
-        refresh: selectedOperation === 'refresh',
+        prune: selectedOperation.includes('prune'),
+        refresh: selectedOperation.includes('refresh'),
         config: existingConfig,
       }
     );

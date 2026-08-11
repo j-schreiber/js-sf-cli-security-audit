@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
-import { SinonStub } from 'sinon';
 import { Messages } from '@salesforce/core';
 import ManageInventory from '../../src/commands/audit/inventory/manage.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
@@ -18,12 +17,9 @@ const WORKING_DIR = path.join('tmp', `inventory-manage-${Date.now()}`);
 describe('audit inventory manage', () => {
   const $$ = new AuditTestContext();
 
-  let selectStub: SinonStub;
-
   beforeEach(async () => {
     await $$.init();
     fs.cpSync(VALID_CONFIG_PATH, WORKING_DIR, { recursive: true });
-    selectStub = $$.context.SANDBOX.stub(Prompts, 'select');
   });
 
   afterEach(async () => {
@@ -33,9 +29,8 @@ describe('audit inventory manage', () => {
 
   it('calls inventory-manager with command-line input and summarizes results', async () => {
     // Arrange
-    // first prompt selects the inventory type, second selects the operation
-    selectStub.onFirstCall().resolves('users');
-    selectStub.onSecondCall().resolves('refresh');
+    $$.context.SANDBOX.stub(Prompts, 'select').resolves('users');
+    $$.context.SANDBOX.stub(Prompts, 'checkbox').resolves(['refresh']);
 
     // Act
     const result = await ManageInventory.run(['--target-org', $$.targetOrg.username, '--source-dir', WORKING_DIR]);
@@ -55,9 +50,8 @@ describe('audit inventory manage', () => {
 
   it('prints manage result details to table when --verbose is set', async () => {
     // Arrange
-    // first prompt selects the inventory type, second selects the operation
-    selectStub.onFirstCall().resolves('profiles');
-    selectStub.onSecondCall().resolves('prune');
+    $$.context.SANDBOX.stub(Prompts, 'select').resolves('profiles');
+    $$.context.SANDBOX.stub(Prompts, 'checkbox').resolves(['prune']);
 
     // Act
     const result = await ManageInventory.run([
@@ -83,5 +77,43 @@ describe('audit inventory manage', () => {
     expect($$.sfCommandStubs.table.args.flat()).to.deep.equal([
       { data: [{ removedProfiles: 'Guest License User' }, { removedProfiles: 'Minimum Access - Salesforce' }] },
     ]);
+  });
+
+  it('performs prune and refresh if both options are checked', async () => {
+    // Arrange
+    $$.context.SANDBOX.stub(Prompts, 'select').resolves('profiles');
+    $$.context.SANDBOX.stub(Prompts, 'checkbox').resolves(['refresh', 'prune']);
+
+    // Act
+    const result = await ManageInventory.run(['--target-org', $$.targetOrg.username, '--source-dir', WORKING_DIR]);
+
+    // Assert
+    expect(result).to.deep.contain({
+      type: 'profiles',
+      addedEntities: ['Custom Profile'],
+      removedEntities: ['Guest License User', 'Minimum Access - Salesforce'],
+    });
+  });
+
+  it('second subsequent call with same configs is idempotent', async () => {
+    // Arrange
+    $$.context.SANDBOX.stub(Prompts, 'select').resolves('profiles');
+    $$.context.SANDBOX.stub(Prompts, 'checkbox').resolves(['refresh', 'prune']);
+
+    // Act
+    await ManageInventory.run(['--target-org', $$.targetOrg.username, '--source-dir', WORKING_DIR]);
+    const secondResult = await ManageInventory.run([
+      '--target-org',
+      $$.targetOrg.username,
+      '--source-dir',
+      WORKING_DIR,
+    ]);
+
+    // Assert
+    expect(secondResult).to.deep.contain({
+      type: 'profiles',
+      addedEntities: [],
+      removedEntities: [],
+    });
   });
 });
