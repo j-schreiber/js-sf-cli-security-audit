@@ -1,16 +1,25 @@
 # summary
 
-Univeral interactive inventory management.
+Interactive inventory management for a local audit config.
 
 # description
 
-Asks for the inventory type and the operation you want to perform.
+Asks for the inventory type you want to manage (currently supports profiles, users, and permission sets)
+and performs "refresh" or "prune" operations on the selected inventory. Refresh pulls missing entities
+from the target org and adds them to your local config. Prune compares your local config with the target
+org and removes entities that are not on your org.
+
+It is highly recommended to put the audit config under version control before you use this command.
 
 # examples
 
-- Scan and analyse inventorized profiles in "my_audit_config"
+- Load the audit config in "my_audit_config" and compare inventory with MyTargetOrg
 
   <%= config.bin %> <%= command.id %> -d my_audit_config -o MyTargetOrg
+
+- Loads the audit config from root (working directory)
+
+  <%= config.bin %> <%= command.id %> -o MyTargetOrg
 
 # flags.target-org.summary
 
@@ -22,7 +31,7 @@ Directory of the audit config to scan. If not set, the root directory will be us
 
 # flags.verbose.summary
 
-Show additional details after completing the operation.
+Lists added/removed entities after completing the operation.
 
 # ux.choices.inventory-type.prompt
 
