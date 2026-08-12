@@ -39,9 +39,50 @@ Contributers are welcome! Please reach out on [Linkedin](https://www.linkedin.co
 
 <!-- commands -->
 
+- [`sf audit inventory manage`](#sf-audit-inventory-manage)
 - [`sf org audit init`](#sf-org-audit-init)
 - [`sf org audit run`](#sf-org-audit-run)
 - [`sf org scan user-perms`](#sf-org-scan-user-perms)
+
+## `sf audit inventory manage`
+
+Interactive inventory management for a local audit config.
+
+```
+USAGE
+  $ sf audit inventory manage -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>] [--verbose]
+
+FLAGS
+  -d, --source-dir=<value>   Directory of the audit config to scan. If not set, the root directory will be used.
+  -o, --target-org=<value>   (required) Target org to export the inventory from.
+      --api-version=<value>  Override the api version used for api requests made by this command
+      --verbose              Lists added/removed entities after completing the operation.
+
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
+
+DESCRIPTION
+  Interactive inventory management for a local audit config.
+
+  Asks for the inventory type you want to manage (currently supports profiles, users, and permission sets)
+  and performs "refresh" or "prune" operations on the selected inventory. Refresh pulls missing entities
+  from the target org and adds them to your local config. Prune compares your local config with the target
+  org and removes entities that are not on your org.
+
+  It is highly recommended to put the audit config under version control before you use this command.
+
+EXAMPLES
+  Load the audit config in "my_audit_config" and compare inventory with MyTargetOrg
+
+    $ sf audit inventory manage -d my_audit_config -o MyTargetOrg
+
+  Loads the audit config from root (working directory)
+
+    $ sf audit inventory manage -o MyTargetOrg
+```
+
+_See code: [src/commands/audit/inventory/manage.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/audit/inventory/manage.ts)_
 
 ## `sf org audit init`
 
@@ -89,7 +130,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.24.1/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -134,7 +175,7 @@ FLAG DESCRIPTIONS
     never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.24.1/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -183,7 +224,7 @@ FLAG DESCRIPTIONS
     userPermissions.yml.
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.24.1/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
