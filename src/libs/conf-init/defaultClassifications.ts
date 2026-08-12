@@ -1,6 +1,6 @@
 import { PermissionRiskLevel, UserPrivilegeLevel } from '../audit-engine/index.js';
 import { OrgDescribe, PermissionSets, Profiles, SfConnection, Users } from '../../salesforce/index.js';
-import { Inventories, Shapes } from '../audit-engine/registry/definitions.js';
+import { Shapes } from '../audit-engine/registry/definitions.js';
 import { loadPreset } from './presets.js';
 import {
   AuditInitPresets,
@@ -18,7 +18,7 @@ export const ShapeInitialisers: Record<Shapes, Initialiser> = {
   customPermissions: initCustomPermissions,
 };
 
-export const InventoryInitialisers: Record<Inventories, Initialiser> = {
+export const InventoryInitialisers = {
   profiles: initProfiles,
   permissionSets: initPermissionSets,
   users: initUsers,
