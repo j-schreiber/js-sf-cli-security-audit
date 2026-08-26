@@ -82,7 +82,7 @@ EXAMPLES
     $ sf audit inventory manage -o MyTargetOrg
 ```
 
-_See code: [src/commands/audit/inventory/manage.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/audit/inventory/manage.ts)_
+_See code: [src/commands/audit/inventory/manage.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.26.0/src/commands/audit/inventory/manage.ts)_
 
 ## `sf org audit init`
 
@@ -130,7 +130,7 @@ FLAG DESCRIPTIONS
     essentially control, if a permission is allowed in a certain profile / permission set.
 ```
 
-_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/audit/init.ts)_
+_See code: [src/commands/org/audit/init.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.26.0/src/commands/org/audit/init.ts)_
 
 ## `sf org audit run`
 
@@ -138,13 +138,16 @@ Audit your org with an existing config.
 
 ```
 USAGE
-  $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--api-version <value>] [--verbose]
+  $ sf org audit run -o <value> [--json] [--flags-dir <value>] [-d <value>] [--policies
+    permissionSets|profiles|users|connectedApps|settings|objects...] [--api-version <value>] [--verbose]
 
 FLAGS
-  -d, --source-dir=<value>   Source directory of the audit config to run.
-  -o, --target-org=<value>   (required) The org that is audited.
-      --api-version=<value>  Override the api version used for api requests made by this command
-      --verbose              Don't truncate rule violation tables.
+  -d, --source-dir=<value>    Source directory of the audit config to run.
+  -o, --target-org=<value>    (required) The org that is audited.
+      --api-version=<value>   Override the api version used for api requests made by this command
+      --policies=<option>...  Only run selected policies of the audit config.
+                              <options: permissionSets|profiles|users|connectedApps|settings|objects>
+      --verbose               Don't truncate rule violation tables.
 
 GLOBAL FLAGS
   --flags-dir=<value>  Import flag values from a directory.
@@ -167,6 +170,13 @@ FLAG DESCRIPTIONS
     Loads all classifications and policies from the directory and uses them to audit the org. Only policies that are
     enabled and that exist in the directory are executed.
 
+  --policies=permissionSets|profiles|users|connectedApps|settings|objects...
+
+    Only run selected policies of the audit config.
+
+    Filter the loaded audit config for the policies and override the "enabled" flag. When a policy exists, it is always
+    executed (the individual rule-enablement flags are still respected).
+
   --verbose  Don't truncate rule violation tables.
 
     The default behavior truncates result tables of rule violations in terminal output, when they exceed a certain
@@ -175,7 +185,7 @@ FLAG DESCRIPTIONS
     never truncated.
 ```
 
-_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/audit/run.ts)_
+_See code: [src/commands/org/audit/run.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.26.0/src/commands/org/audit/run.ts)_
 
 ## `sf org scan user-perms`
 
@@ -224,7 +234,7 @@ FLAG DESCRIPTIONS
     userPermissions.yml.
 ```
 
-_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.25.0/src/commands/org/scan/user-perms.ts)_
+_See code: [src/commands/org/scan/user-perms.ts](https://github.com/j-schreiber/js-sf-cli-security-audit/blob/v0.26.0/src/commands/org/scan/user-perms.ts)_
 
 <!-- commandsstop -->
 
