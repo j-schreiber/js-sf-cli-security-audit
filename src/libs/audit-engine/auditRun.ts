@@ -31,6 +31,10 @@ export type UserMessageEvent = {
   message: string;
 };
 
+export type AuditScope = {
+  policies?: string[];
+};
+
 /**
  * Instance of an audit run that manages high-level operations
  */
@@ -44,28 +48,22 @@ export default class AuditRun extends EventEmitter {
     ResolveLifecycle.on('resolvewarning', (warning) => this.emitWarning(warning.message));
   }
 
-  public getExecutableRulesCount(policyName: Policies): number {
-    if (this.executablePolicies?.[policyName] !== undefined) {
-      return this.executablePolicies[policyName].getExecutableRules().length;
-    }
-    return 0;
-  }
-
   /**
    * Runs an audit from config. Execution emits a series of status events.
    *
    * @param targetOrgConnection
    * @returns
    */
-  public async execute(targetOrgConnection: Connection): Promise<AuditResult> {
+  public async execute(targetOrgConnection: Connection, opts?: AuditScope): Promise<AuditResult> {
     const sfCon = await SfConnection.create(targetOrgConnection);
     this.emitStageUpdate('initialising');
     const orgDescribe = await OrgDescribe.create(sfCon);
     await this.verifyAuditConfig(orgDescribe);
+    this.executablePolicies = this.loadPolicies(opts?.policies);
     this.emitStageUpdate('resolving');
-    const executablePolicies = await this.resolve(sfCon, orgDescribe);
+    await resolve(this.executablePolicies, sfCon, orgDescribe);
     this.emitStageUpdate('executing');
-    const pendingResults = await runPolicies(executablePolicies, sfCon, orgDescribe);
+    const pendingResults = await runPolicies(this.executablePolicies, sfCon, orgDescribe);
     this.emitStageUpdate('finalising');
     const result = {
       orgId: targetOrgConnection.getAuthInfoFields().orgId,
@@ -73,6 +71,24 @@ export default class AuditRun extends EventEmitter {
     };
     this.emitStageUpdate('completed');
     return result;
+  }
+
+  /**
+   * Access the currently enabled policies at runtime. This may be
+   * different from the configured policy and can change accross
+   * different runs (depending on the scope).
+   *
+   * @returns
+   */
+  public enabledPolicies(): PolicyMap {
+    this.executablePolicies = this.executablePolicies ?? this.loadPolicies();
+    const enabled: PolicyMap = {};
+    for (const [policyName, policy] of Object.entries(this.executablePolicies)) {
+      if (policy.config.enabled) {
+        enabled[policyName] = policy;
+      }
+    }
+    return enabled;
   }
 
   // PRIVATE ZONE
@@ -90,23 +106,6 @@ export default class AuditRun extends EventEmitter {
   private emitWarning(message: string): void {
     const warnMsg: UserMessageEvent = { message };
     this.emit('warning', warnMsg);
-  }
-
-  /**
-   * Loads all policies, resolves entities and caches the results.
-   *
-   * @param targetOrgConnection
-   */
-  private async resolve(targetOrgConnection: SfConnection, orgDescribe: OrgDescribe): Promise<PolicyMap> {
-    if (this.executablePolicies) {
-      return this.executablePolicies;
-    }
-    this.executablePolicies = this.loadPolicies();
-    const resolveResultPromises = Object.values(this.executablePolicies).map((executable) =>
-      executable.resolve({ targetOrgConnection, orgDescribe })
-    );
-    await Promise.all(resolveResultPromises);
-    return this.executablePolicies;
   }
 
   /**
@@ -132,11 +131,23 @@ export default class AuditRun extends EventEmitter {
     };
   }
 
-  private loadPolicies(): PolicyMap {
+  /**
+   * Load policies from config with scope and attach resolve listeners
+   *
+   * @param scope
+   * @returns
+   */
+  private loadPolicies(scope?: string[]): PolicyMap {
     const pols: PolicyMap = {};
     for (const policyName of Object.keys(this.config.policies)) {
+      if (scope && !scope.includes(policyName)) {
+        continue;
+      }
       const policy = loadPolicy(policyName as Policies, this.config);
       if (policy) {
+        if (!policy.config.enabled && scope?.includes(policyName)) {
+          policy.config.enabled = true;
+        }
         policy.addListener('entityresolve', (resolveStats: Omit<EntityResolveEvent, 'policyName'>) => {
           this.emit(`entityresolve-${policyName}`, { policyName, ...resolveStats });
         });
@@ -152,6 +163,22 @@ export default class AuditRun extends EventEmitter {
     };
     this.emit('stageupdate', updateEvt);
   }
+}
+
+/**
+ * Resolves entities for all policies and caches the results.
+ *
+ * @param targetOrgConnection
+ */
+async function resolve(
+  enabledPolicies: PolicyMap,
+  targetOrgConnection: SfConnection,
+  orgDescribe: OrgDescribe
+): Promise<void> {
+  const resolveResultPromises = Object.values(enabledPolicies).map((executable) =>
+    executable.resolve({ targetOrgConnection, orgDescribe })
+  );
+  await Promise.all(resolveResultPromises);
 }
 
 function isCompliant(results: ResultsMap): boolean {

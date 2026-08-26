@@ -11,7 +11,7 @@ import {
 } from '../../../libs/audit-engine/registry/result.types.js';
 import AuditRunMultiStageOutput from '../../../ux/auditRunMultiStage.js';
 import { capitalize, formatToLocale } from '../../../utils.js';
-import { startAuditRun } from '../../../libs/audit-engine/index.js';
+import { startAuditRun, PolicyDefinitions } from '../../../libs/audit-engine/index.js';
 import { envVars } from '../../../ux/environment.js';
 import { AuditRunStageUpdate, UserMessageEvent } from '../../../libs/audit-engine/auditRun.js';
 
@@ -43,6 +43,12 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       summary: messages.getMessage('flags.source-dir.summary'),
       description: messages.getMessage('flags.source-dir.description'),
       default: '',
+    }),
+    policies: Flags.string({
+      multiple: true,
+      options: Object.keys(PolicyDefinitions),
+      summary: messages.getMessage('flags.policies.summary'),
+      description: messages.getMessage('flags.policies.description'),
     }),
     'api-version': Flags.orgApiVersion(),
     verbose: Flags.boolean({
@@ -85,7 +91,9 @@ export default class OrgAuditRun extends SfCommand<OrgAuditRunResult> {
       this.warn(warning.message);
     });
 
-    const result = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']));
+    const result = await auditRun.execute(flags['target-org'].getConnection(flags['api-version']), {
+      policies: flags.policies,
+    });
     this.printResults(result, flags['verbose']);
     const filePath = this.writeReport(result, flags);
     return { ...result, filePath };

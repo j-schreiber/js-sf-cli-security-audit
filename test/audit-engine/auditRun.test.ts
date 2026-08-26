@@ -2,14 +2,35 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, assert } from 'chai';
 import { Messages } from '@salesforce/core';
+import { merge } from '@salesforce/kit';
+import { PartialDeep } from '@salesforce/kit/lib/nodash/support.js';
 import AuditTestContext from '../mocks/auditTestContext.js';
-import { startAuditRun } from '../../src/libs/audit-engine/index.js';
+import { AuditRunConfig, loadAuditConfig, saveAuditConfig, startAuditRun } from '../../src/libs/audit-engine/index.js';
 
 const TEST_DIR_BASE_PATH = path.join('test', 'mocks', 'data', 'audit-configs');
 const DEFAULT_TEST_OUTPUT_DIR = path.join(TEST_DIR_BASE_PATH, 'tmp-1');
+const TMP_CONFIGS_DIR = path.join('tmp', 'test-configs');
 
 function buildPath(dirName: string) {
   return path.join(TEST_DIR_BASE_PATH, dirName);
+}
+
+/**
+ * Copies a template audit-config from commited test dir
+ * to an ephemeral tmp dir and returns the path.
+ *
+ * @param dirName
+ */
+function copyFromDir(dirName: string, overrides?: PartialDeep<AuditRunConfig>): string {
+  const sourceConfig = path.join(TEST_DIR_BASE_PATH, dirName);
+  const targetDir = path.join(TMP_CONFIGS_DIR, `${Date.now()}`);
+  fs.cpSync(sourceConfig, targetDir, { recursive: true });
+  const config = loadAuditConfig(targetDir);
+  if (overrides) {
+    merge(config, overrides);
+    saveAuditConfig(targetDir, config);
+  }
+  return targetDir;
 }
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -25,17 +46,19 @@ describe('audit run execution', () => {
   afterEach(async () => {
     $$.reset();
     fs.rmSync(DEFAULT_TEST_OUTPUT_DIR, { recursive: true, force: true });
+    fs.rmSync(TMP_CONFIGS_DIR, { recursive: true, force: true });
   });
 
   it('executes all loaded policies', async () => {
     // Arrange
     const dirPath = buildPath('full-valid');
-    const audit = startAuditRun(dirPath);
 
     // Act
+    const audit = startAuditRun(dirPath);
     const auditResult = await audit.execute($$.coreConnection);
 
     // Assert
+    expect(audit.enabledPolicies()).to.have.keys(['profiles', 'users', 'permissionSets', 'objects', 'connectedApps']);
     expect(auditResult.isCompliant).to.be.true;
     assert.isDefined(auditResult.policies);
     assert.isDefined(auditResult.policies.profiles);
@@ -47,6 +70,56 @@ describe('audit run execution', () => {
     expect(auditResult.policies.profiles.executedRules).to.have.keys(['EnforcePermissionClassifications']);
     expect(auditResult.policies.permissionSets.executedRules).to.have.keys(['EnforcePermissionClassifications']);
     expect(auditResult.policies.objects.executedRules).to.have.keys(['PrivateExternalAccessForAllObjects']);
+  });
+
+  it('filters executed policies from available policies and audit scope', async () => {
+    // Arrange
+    const dirPath = buildPath('full-valid');
+
+    // Act
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.coreConnection, { policies: ['users', 'objects'] });
+
+    // Assert
+    expect(audit.enabledPolicies()).to.have.keys(['users', 'objects']);
+    expect(auditResult.isCompliant).to.be.true;
+    assert.isDefined(auditResult.policies);
+    assert.isDefined(auditResult.policies.users);
+    assert.isDefined(auditResult.policies.objects);
+    assert.isUndefined(auditResult.policies.profiles);
+    assert.isUndefined(auditResult.policies.permissionSets);
+  });
+
+  it('runs a disabled policy when audit scope enforces it', async () => {
+    // Arrange
+    const dirPath = copyFromDir('minimal', { policies: { profiles: { enabled: false } } });
+
+    // Act
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.coreConnection, { policies: ['profiles'] });
+
+    // Assert
+    expect(audit.enabledPolicies()).to.have.keys(['profiles']);
+    expect(auditResult.isCompliant).to.be.true;
+    assert.isDefined(auditResult.policies);
+    assert.isDefined(auditResult.policies.profiles);
+    expect(auditResult.policies.profiles.enabled).to.be.true;
+  });
+
+  it('ignores a non-existing policy even when it is scoped', async () => {
+    // Arrange
+    const dirPath = copyFromDir('minimal');
+
+    // Act
+    const audit = startAuditRun(dirPath);
+    const auditResult = await audit.execute($$.coreConnection, { policies: ['users', 'profiles'] });
+
+    // Assert
+    expect(audit.enabledPolicies()).to.have.keys(['profiles']);
+    expect(auditResult.isCompliant).to.be.true;
+    assert.isDefined(auditResult.policies);
+    assert.isDefined(auditResult.policies.profiles);
+    assert.isUndefined(auditResult.policies.users);
   });
 
   it('reports non-compliance if one policy is not compliant', async () => {

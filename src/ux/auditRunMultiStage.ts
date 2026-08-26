@@ -1,6 +1,6 @@
 import { MultiStageOutput, MultiStageOutputOptions } from '@oclif/multi-stage-output';
 import { capitalize } from '../utils.js';
-import { AuditRun, EntityResolveEvent, Policies } from '../libs/audit-engine/index.js';
+import { AuditRun, EntityResolveEvent } from '../libs/audit-engine/index.js';
 
 export const LOAD_AUDIT_CONFIG = 'Loading audit config';
 export const RESOLVE_POLICIES = 'Resolving policies';
@@ -87,37 +87,33 @@ export default class AuditRunMultiStageOutput {
 
   public startPolicyResolve(runInstance: AuditRun): void {
     this.mso.goto(RESOLVE_POLICIES, { currentStatus: 'Resolving' });
-    Object.entries(runInstance.config.policies).forEach(([policyName, policy]) => {
-      if (policy.enabled) {
-        this.addPolicyStatsListener(policyName, runInstance);
-        this.stageSpecificBlocks.push({
-          stage: RESOLVE_POLICIES,
-          type: 'dynamic-key-value',
-          label: capitalize(policyName),
-          get: (data: AuditRunData): string => {
-            if (data?.policies?.[policyName]) {
-              return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;
-            } else {
-              return '';
-            }
-          },
-        });
-      }
+    Object.keys(runInstance.enabledPolicies()).forEach((policyName) => {
+      this.addPolicyStatsListener(policyName, runInstance);
+      this.stageSpecificBlocks.push({
+        stage: RESOLVE_POLICIES,
+        type: 'dynamic-key-value',
+        label: capitalize(policyName),
+        get: (data: AuditRunData): string => {
+          if (data?.policies?.[policyName]) {
+            return `${data.policies[policyName].resolved ?? 0}/${data.policies[policyName].total ?? 0}`;
+          } else {
+            return '';
+          }
+        },
+      });
     });
     this.mso.updateData({});
   }
 
   public startRuleExecution(runInstance: AuditRun): void {
     this.mso.goto(EXECUTE_RULES, { currentStatus: 'Executing' });
-    Object.entries(runInstance.config.policies).forEach(([policyName, policy]) => {
-      if (policy.enabled) {
-        const enabledRules = runInstance.getExecutableRulesCount(policyName as Policies);
-        this.stageSpecificBlocks.push({
-          stage: EXECUTE_RULES,
-          type: 'message',
-          get: () => `${enabledRules} rule(s) for ${capitalize(policyName)}`,
-        });
-      }
+    Object.entries(runInstance.enabledPolicies()).forEach(([policyName, policy]) => {
+      const enabledRules = policy.getExecutableRules().length;
+      this.stageSpecificBlocks.push({
+        stage: EXECUTE_RULES,
+        type: 'message',
+        get: () => `${enabledRules} rule(s) for ${capitalize(policyName)}`,
+      });
     });
     this.mso.updateData({});
   }
