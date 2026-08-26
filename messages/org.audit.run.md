@@ -18,6 +18,14 @@ Source directory of the audit config to run.
 
 Loads all classifications and policies from the directory and uses them to audit the org. Only policies that are enabled and that exist in the directory are executed.
 
+# flags.policies.summary
+
+Only run selected policies of the audit config.
+
+# flags.policies.description
+
+Filter the loaded audit config for the policies and override the "enabled" flag. When a policy exists, it is always executed (the individual rule-enablement flags are still respected).
+
 # flags.verbose.summary
 
 Don't truncate rule violation tables.

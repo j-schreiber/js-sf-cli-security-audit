@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from 'chai';
 import { StandardColors } from '@salesforce/sf-plugins-core';
-import { Messages } from '@salesforce/core';
+import { Connection, Messages } from '@salesforce/core';
 import OrgAuditRun, { MERGE_CHAR } from '../../src/commands/org/audit/run.js';
 import AuditTestContext, { clearAuditReports } from '../mocks/auditTestContext.js';
 import { AuditResult, AuditRun } from '../../src/libs/audit-engine/index.js';
@@ -108,6 +108,26 @@ describe('org audit run', () => {
         assertSfError(error, 'UserPermClassificationRequiredForPermSets');
       }
     });
+
+    it('rejects policy filter with invalid policy', async () => {
+      // Act
+      try {
+        await OrgAuditRun.run([
+          '--target-org',
+          $$.targetOrg.username,
+          '--policies',
+          'somePolicyThatDoesNotExist',
+          '--policies',
+          'settings',
+          '--source-dir',
+          path.join(AUDIT_CONFIGS_DIR, 'full-valid'),
+        ]);
+        expect.fail('Expected exception,but succeeded');
+      } catch (error) {
+        // helper appends "Error" to name, so this resolves to "Error" verbatim
+        assertSfError(error, '', 'somePolicyThatDoesNotExist');
+      }
+    });
   });
 
   describe('audit result reporting', () => {
@@ -126,7 +146,7 @@ describe('org audit run', () => {
       // Assert
       // ensure contract - all relevant params are actually passed to lib
       expect(libMock.callCount).to.equal(1);
-      const conParam = libMock.args.flat()[0];
+      const conParam = libMock.args.flat()[0] as Connection;
       expect(conParam.getUsername()).to.equal($$.targetOrg.username);
 
       // lib result is passed through as command result
@@ -481,6 +501,27 @@ describe('org audit run', () => {
 
       // Assert
       expect(auditResult.isCompliant).to.be.true;
+    });
+
+    it('accepts policy filter with a valid policy', async () => {
+      // Arrange
+      const executeMock = mockResult(COMPLIANT_RESULT);
+
+      // Act
+      const auditResult = await OrgAuditRun.run([
+        '--target-org',
+        $$.targetOrg.username,
+        '--policies',
+        'users',
+        '--policies',
+        'settings',
+        '--source-dir',
+        path.join(AUDIT_CONFIGS_DIR, 'full-valid'),
+      ]);
+
+      // Assert
+      expect(auditResult.isCompliant).to.be.true;
+      expect(executeMock.args.flat()[1]).to.deep.equal({ policies: ['users', 'settings'] });
     });
   });
 
