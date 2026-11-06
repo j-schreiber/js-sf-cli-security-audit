@@ -1461,7 +1461,7 @@ __metadata:
     "@inquirer/select": "npm:^5.2.1"
     "@jsforce/jsforce-node": "npm:^3.10.19"
     "@oclif/core": "npm:^4.11.14"
-    "@oclif/multi-stage-output": "npm:^0.8.44"
+    "@oclif/multi-stage-output": "npm:^0.9.0"
     "@release-it/conventional-changelog": "npm:^10.0.6"
     "@salesforce/apex-node": "npm:^8.4.35"
     "@salesforce/cli-plugins-testkit": "npm:^5.3.62"
@@ -1469,7 +1469,7 @@ __metadata:
     "@salesforce/dev-scripts": "npm:^11.0.4"
     "@salesforce/kit": "npm:^3.2.6"
     "@salesforce/packaging": "npm:^4.27.2"
-    "@salesforce/plugin-command-reference": "npm:^3.1.121"
+    "@salesforce/plugin-command-reference": "npm:3.1.132"
     "@salesforce/sf-plugins-core": "npm:^12.2.26"
     "@salesforce/source-deploy-retrieve": "npm:^12.37.1"
     "@salesforce/ts-types": "npm:^2.0.12"
@@ -1482,7 +1482,7 @@ __metadata:
     js-yaml: "npm:^4.3.0"
     mocha: "npm:^11.7.6"
     nyc: "npm:^17.1.0"
-    oclif: "npm:^4.23.27"
+    oclif: "npm:^4.24.0"
     release-it: "npm:^19.2.4"
     tsx: "npm:^4.23.1"
     typescript: "npm:^5.9.3"
@@ -1716,45 +1716,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/core@npm:^4":
-  version: 4.8.0
-  resolution: "@oclif/core@npm:4.8.0"
+"@oclif/core@npm:^4, @oclif/core@npm:^4.11.11, @oclif/core@npm:^4.11.14, @oclif/core@npm:^4.11.4, @oclif/core@npm:^4.13.3":
+  version: 4.14.0
+  resolution: "@oclif/core@npm:4.14.0"
   dependencies:
     ansi-escapes: "npm:^4.3.2"
     ansis: "npm:^3.17.0"
     clean-stack: "npm:^3.0.1"
     cli-spinners: "npm:^2.9.2"
     debug: "npm:^4.4.3"
-    ejs: "npm:^3.1.10"
+    ejs: "npm:^6"
     get-package-type: "npm:^0.1.0"
     indent-string: "npm:^4.0.0"
-    is-wsl: "npm:^2.2.0"
-    lilconfig: "npm:^3.1.3"
-    minimatch: "npm:^9.0.5"
-    semver: "npm:^7.7.3"
-    string-width: "npm:^4.2.3"
-    supports-color: "npm:^8"
-    tinyglobby: "npm:^0.2.14"
-    widest-line: "npm:^3.1.0"
-    wordwrap: "npm:^1.0.0"
-    wrap-ansi: "npm:^7.0.0"
-  checksum: 10c0/83347c86250390b9c53d7eeb4f85adcc57578827b2de65be606b609290f4101f24b4245bd9c1dbeaca10a5e29c3fc68eaa3b5efa5f801d222e4f8e59691e8a86
-  languageName: node
-  linkType: hard
-
-"@oclif/core@npm:^4.11.11, @oclif/core@npm:^4.11.14, @oclif/core@npm:^4.11.4, @oclif/core@npm:^4.11.7":
-  version: 4.11.14
-  resolution: "@oclif/core@npm:4.11.14"
-  dependencies:
-    ansi-escapes: "npm:^4.3.2"
-    ansis: "npm:^3.17.0"
-    clean-stack: "npm:^3.0.1"
-    cli-spinners: "npm:^2.9.2"
-    debug: "npm:^4.4.3"
-    ejs: "npm:^3.1.10"
-    get-package-type: "npm:^0.1.0"
-    indent-string: "npm:^4.0.0"
-    is-wsl: "npm:^2.2.0"
     lilconfig: "npm:^3.1.3"
     minimatch: "npm:^10.2.5"
     semver: "npm:^7.8.1"
@@ -1764,13 +1737,14 @@ __metadata:
     widest-line: "npm:^3.1.0"
     wordwrap: "npm:^1.0.0"
     wrap-ansi: "npm:^7.0.0"
-  checksum: 10c0/3131cf7b2a064b66522cbbd11dea10988276c9b34cf83fef822823cdea4216ceae5da613d3e71ed2c2b550924685a01e73377075bf2e78072a8eb10c12411ec1
+    wsl-utils: "npm:^0.4.0"
+  checksum: 10c0/369407d870740926aa3f26f7dc63eb9c7d55f1fa18da86d57317edd8efaa0e1c97b65ff25bb9468160975e086a775aef72c19f5fbdf10a90366c0fd3d3650a29
   languageName: node
   linkType: hard
 
-"@oclif/multi-stage-output@npm:^0.8.44":
-  version: 0.8.44
-  resolution: "@oclif/multi-stage-output@npm:0.8.44"
+"@oclif/multi-stage-output@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "@oclif/multi-stage-output@npm:0.9.0"
   dependencies:
     "@oclif/core": "npm:^4"
     "@types/react": "npm:^18.3.12"
@@ -1779,7 +1753,7 @@ __metadata:
     ink: "npm:5.0.1"
     react: "npm:^18.3.1"
     wrap-ansi: "npm:^9.0.2"
-  checksum: 10c0/35d9fd92124b2c154c601bbde893b09f3950b3540adee7979e80411fcb23486556d8257486e0f59542202ff221a06ac40f2e38b4afff33929013a17133e45e97
+  checksum: 10c0/1c09b6b4d7a99cbaa7079ae99e1924b63f9b5a9a989cc1343d1d19c43c9f218c05f1fb631150ad6ba29470a2f98f9e8f1da0cddfc9bc7e2e4f40dcfbd315f248
   languageName: node
   linkType: hard
 
@@ -1792,21 +1766,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/plugin-not-found@npm:^3.2.87":
-  version: 3.2.88
-  resolution: "@oclif/plugin-not-found@npm:3.2.88"
+"@oclif/plugin-not-found@npm:^3.2.93":
+  version: 3.3.0
+  resolution: "@oclif/plugin-not-found@npm:3.3.0"
   dependencies:
     "@inquirer/prompts": "npm:^7.10.1"
-    "@oclif/core": "npm:^4.11.7"
+    "@oclif/core": "npm:^4.13.3"
     ansis: "npm:^3.17.0"
     fast-levenshtein: "npm:^3.0.0"
-  checksum: 10c0/11ace3216cb2a74291711d8c1bdcfff637bc6fe0e7d059b07a3b79e3a4cf7ef03ffe12141f6460086551114bf39c210642e441a95494906b15627d55bd2280bb
+  checksum: 10c0/f4ddf1d8d41d2830cefa1e802b46043e0da92e68a7c73b8bf4bab7524fb465204eeccf8707f96464069127361ea168bb25419de563c429f33dd5449e3134c274
   languageName: node
   linkType: hard
 
-"@oclif/plugin-warn-if-update-available@npm:^3.1.67":
-  version: 3.1.68
-  resolution: "@oclif/plugin-warn-if-update-available@npm:3.1.68"
+"@oclif/plugin-warn-if-update-available@npm:^3.1.73":
+  version: 3.2.0
+  resolution: "@oclif/plugin-warn-if-update-available@npm:3.2.0"
   dependencies:
     "@oclif/core": "npm:^4"
     ansis: "npm:^3.17.0"
@@ -1814,7 +1788,7 @@ __metadata:
     http-call: "npm:^5.2.2"
     lodash: "npm:^4.18.1"
     registry-auth-token: "npm:^5.1.1"
-  checksum: 10c0/7e12aecab49f6167b9ec4429ae14589b7c719f3cb5351684dc3dc462738620098ff7a0e1231ba26a526d226bd6ce2c6422695e5ac06f83cf3709a73b4c1aedca
+  checksum: 10c0/50a0b0e865048f0bd6ea6a4ae296c4d49e123f02a6c1f0c54c1567d944eb7dd42c0f84900d6da26ac8f95d3cd26a9108913a801319c096af13a8a1aea630f56e
   languageName: node
   linkType: hard
 
@@ -2121,6 +2095,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@salesforce/core@npm:^8.32.6":
+  version: 8.32.6
+  resolution: "@salesforce/core@npm:8.32.6"
+  dependencies:
+    "@jsforce/jsforce-node": "npm:^3.10.17"
+    "@salesforce/kit": "npm:^3.2.4"
+    "@salesforce/ts-types": "npm:^2.0.12"
+    ajv: "npm:^8.18.0"
+    change-case: "npm:^4.1.2"
+    fast-levenshtein: "npm:^3.0.0"
+    faye: "npm:^1.4.1"
+    form-data: "npm:^4.0.5"
+    js2xmlparser: "npm:^4.0.1"
+    jsonwebtoken: "npm:9.0.3"
+    jszip: "npm:3.10.1"
+    memfs: "npm:4.38.1"
+    pino: "npm:^9.7.0"
+    pino-abstract-transport: "npm:^1.2.0"
+    pino-pretty: "npm:^11.3.0"
+    proper-lockfile: "npm:^4.1.2"
+    semver: "npm:^7.8.0"
+    ts-retry-promise: "npm:^0.8.1"
+    zod: "npm:^4.1.12"
+  checksum: 10c0/e9b17ed34b6b8e0f2ab10f3563173770b98840add38757fc9ae54482e5bcbd8d75f8f45210432e6d9e1e122d627b332c26dcf23b80a37e9fe622efe25dbb4a2a
+  languageName: node
+  linkType: hard
+
 "@salesforce/dev-config@npm:^4.3.1":
   version: 4.3.2
   resolution: "@salesforce/dev-config@npm:4.3.2"
@@ -2207,19 +2208,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salesforce/plugin-command-reference@npm:^3.1.121":
-  version: 3.1.121
-  resolution: "@salesforce/plugin-command-reference@npm:3.1.121"
+"@salesforce/plugin-command-reference@npm:3.1.132":
+  version: 3.1.132
+  resolution: "@salesforce/plugin-command-reference@npm:3.1.132"
   dependencies:
     "@oclif/core": "npm:^4"
-    "@salesforce/core": "npm:^8.32.2"
+    "@salesforce/core": "npm:^8.32.6"
     "@salesforce/kit": "npm:^3.2.6"
-    "@salesforce/sf-plugins-core": "npm:^12.2.26"
+    "@salesforce/sf-plugins-core": "npm:^12.2.28"
     "@salesforce/ts-types": "npm:^2.0.11"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
     handlebars: "npm:^4.7.9"
-  checksum: 10c0/a3ca1b4d0a8dfcf572cc16de28142c848e205a282bb57b894cc1b3f9033c81405de8ecece5bcd74adab6545d51d9ff8167162a36d9b97c2bf0635dd892b4ec61
+  checksum: 10c0/e8b0299c1db3cfbd49047040914d28b05eb74c3783df740cf398176cb9c58df67d54278ed95ce27b20924f782c1ea6e2ecd1c0e32e846aeec8fe7615dd335e3a
   languageName: node
   linkType: hard
 
@@ -2252,6 +2253,24 @@ __metadata:
     cli-progress: "npm:^3.12.0"
     terminal-link: "npm:^3.0.0"
   checksum: 10c0/358f66d1fc46d4d02a77b3fc3589fb65bb2508638e6b578280768dd0650470c7459fd8cbcfd540bade1301cb63ad122e0344f2e03ae90fd15e02f7ebabac4ed8
+  languageName: node
+  linkType: hard
+
+"@salesforce/sf-plugins-core@npm:^12.2.28":
+  version: 12.2.28
+  resolution: "@salesforce/sf-plugins-core@npm:12.2.28"
+  dependencies:
+    "@inquirer/confirm": "npm:^6.1.1"
+    "@inquirer/password": "npm:^5.1.1"
+    "@oclif/core": "npm:^4.11.4"
+    "@oclif/table": "npm:^0.5.9"
+    "@salesforce/core": "npm:^8.31.4"
+    "@salesforce/kit": "npm:^3.2.3"
+    "@salesforce/ts-types": "npm:^2.0.12"
+    ansis: "npm:^3.3.2"
+    cli-progress: "npm:^3.12.0"
+    terminal-link: "npm:^3.0.0"
+  checksum: 10c0/be2d2090f4571e9a194df30eee867b67e8aad9892ddf9f7c691b55e51fbb983330b13f4fb0546f9c70da3bb56bdd05f349f2c0b969dcf7bdde0f396c362822a2
   languageName: node
   linkType: hard
 
@@ -4927,6 +4946,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ejs@npm:^6":
+  version: 6.0.1
+  resolution: "ejs@npm:6.0.1"
+  bin:
+    ejs: bin/cli.js
+  checksum: 10c0/475665efdab9deb01448a0b136129d138483228520138b2fba7991330255e4e1050eae145124c26101ff1ab158bf5f506f19a8dae5996054fc7e76bb94a12ebd
+  languageName: node
+  linkType: hard
+
 "electron-to-chromium@npm:^1.5.263":
   version: 1.5.267
   resolution: "electron-to-chromium@npm:1.5.267"
@@ -7176,15 +7204,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-docker@npm:^2.0.0":
-  version: 2.2.1
-  resolution: "is-docker@npm:2.2.1"
-  bin:
-    is-docker: cli.js
-  checksum: 10c0/e828365958d155f90c409cdbe958f64051d99e8aedc2c8c4cd7c89dcf35329daed42f7b99346f7828df013e27deb8f721cf9408ba878c76eb9e8290235fbcdcc
-  languageName: node
-  linkType: hard
-
 "is-docker@npm:^3.0.0":
   version: 3.0.0
   resolution: "is-docker@npm:3.0.0"
@@ -7496,15 +7515,6 @@ __metadata:
   version: 1.0.2
   resolution: "is-windows@npm:1.0.2"
   checksum: 10c0/b32f418ab3385604a66f1b7a3ce39d25e8881dee0bd30816dc8344ef6ff9df473a732bcc1ec4e84fe99b2f229ae474f7133e8e93f9241686cfcf7eebe53ba7a5
-  languageName: node
-  linkType: hard
-
-"is-wsl@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "is-wsl@npm:2.2.0"
-  dependencies:
-    is-docker: "npm:^2.0.0"
-  checksum: 10c0/a6fa2d370d21be487c0165c7a440d567274fbba1a817f2f0bfa41cc5e3af25041d84267baa22df66696956038a43973e72fca117918c91431920bdef490fa25e
   languageName: node
   linkType: hard
 
@@ -9279,9 +9289,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oclif@npm:^4.23.27":
-  version: 4.23.27
-  resolution: "oclif@npm:4.23.27"
+"oclif@npm:^4.24.0":
+  version: 4.24.0
+  resolution: "oclif@npm:4.24.0"
   dependencies:
     "@aws-sdk/client-cloudfront": "npm:^3.1079.0"
     "@aws-sdk/client-s3": "npm:^3.1079.0"
@@ -9290,8 +9300,8 @@ __metadata:
     "@inquirer/select": "npm:^2.5.0"
     "@oclif/core": "npm:^4.11.11"
     "@oclif/plugin-help": "npm:^6.2.53"
-    "@oclif/plugin-not-found": "npm:^3.2.87"
-    "@oclif/plugin-warn-if-update-available": "npm:^3.1.67"
+    "@oclif/plugin-not-found": "npm:^3.2.93"
+    "@oclif/plugin-warn-if-update-available": "npm:^3.1.73"
     ansis: "npm:^3.16.0"
     async-retry: "npm:^1.3.3"
     change-case: "npm:^4"
@@ -9308,7 +9318,7 @@ __metadata:
     validate-npm-package-name: "npm:^5.0.1"
   bin:
     oclif: bin/run.js
-  checksum: 10c0/5b7524ee52800dc83f3f8d1407ca9c1dff5ba8c37e0234461f3cd7bd7671fea9e60445121ef6fcd4bcf994e9a557d978a2a7ec9f65e794e569128b95ebc9394b
+  checksum: 10c0/9431fe22afcdb204a76698ca9e4d0699001d5d8187b3cda03468d745986f4d1d1f3e3d65e371fc3fe047a8811195b97f0b2c027bfdf0b710616abb0a3d55315b
   languageName: node
   linkType: hard
 
@@ -9892,6 +9902,13 @@ __metadata:
   version: 1.1.0
   resolution: "possible-typed-array-names@npm:1.1.0"
   checksum: 10c0/c810983414142071da1d644662ce4caebce890203eb2bc7bf119f37f3fe5796226e117e6cca146b521921fa6531072674174a3325066ac66fce089a53e1e5196
+  languageName: node
+  linkType: hard
+
+"powershell-utils@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "powershell-utils@npm:0.1.0"
+  checksum: 10c0/a64713cf3583259c9ed6be211c06b4b19e8608bcb0f7f6287ffac0a95b8c7582b6b662eea0e201fd659492c8e9f9c5fd0bfc4579645c5add9c1a600075621c95
   languageName: node
   linkType: hard
 
@@ -11454,7 +11471,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinyglobby@npm:0.2.15, tinyglobby@npm:^0.2.12, tinyglobby@npm:^0.2.14":
+"tinyglobby@npm:0.2.15, tinyglobby@npm:^0.2.12":
   version: 0.2.15
   resolution: "tinyglobby@npm:0.2.15"
   dependencies:
@@ -12413,6 +12430,16 @@ __metadata:
   dependencies:
     is-wsl: "npm:^3.1.0"
   checksum: 10c0/44318f3585eb97be994fc21a20ddab2649feaf1fbe893f1f866d936eea3d5f8c743bec6dc02e49fbdd3c0e69e9b36f449d90a0b165a4f47dd089747af4cf2377
+  languageName: node
+  linkType: hard
+
+"wsl-utils@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "wsl-utils@npm:0.4.0"
+  dependencies:
+    is-wsl: "npm:^3.1.0"
+    powershell-utils: "npm:^0.1.0"
+  checksum: 10c0/578c084dde46135792cbc7395e325ea370318f2e2f3f76aa3e581071dd17bb2a0ac9e77fea28f1916134c29277599383e9f2a471f47017dd419c6d35bed56689
   languageName: node
   linkType: hard
 
