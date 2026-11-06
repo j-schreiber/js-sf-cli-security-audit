@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import AuditTestContext from '../../mocks/auditTestContext.js';

@@ -76,7 +76,6 @@ export function newRuleResult(ruleName?: string): PartialPolicyRuleResult {
 export function setRoleInClassification(role: string, maybeProfileLikes?: PermissionSetClassifications): void {
   if (maybeProfileLikes) {
     for (const profile of Object.values(maybeProfileLikes)) {
-      // eslint-disable-next-line no-param-reassign
       profile.role = role;
     }
   }

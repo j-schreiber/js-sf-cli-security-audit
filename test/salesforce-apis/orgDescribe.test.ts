@@ -61,12 +61,10 @@ describe('org metadata describe', () => {
     // Assert
     const existingPerms = ['AuthorApex', 'ViewSetup', 'CanApproveUninstalledApps', 'Packaging2'];
     for (const perm of existingPerms) {
-      // eslint-disable-next-line no-await-in-loop
       expect(org.isValid(perm)).to.be.true;
     }
     const nonExistingPerms = ['Something', 'SmthElse', '', ' '];
     for (const perm of nonExistingPerms) {
-      // eslint-disable-next-line no-await-in-loop
       expect(org.isValid(perm)).to.be.false;
     }
   });

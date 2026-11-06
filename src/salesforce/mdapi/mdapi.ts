@@ -70,9 +70,9 @@ export default class MDAPI {
     if (toRetrieve.length > 0) {
       const retrieveResults = await retriever.resolve(this.con);
       this.cache.set(typeName, retrieveResults);
-      return retrieveResults as SingletonReturnTypes[K];
+      return retrieveResults;
     }
-    return cached[typeName] as SingletonReturnTypes[K];
+    return cached[typeName];
   }
 
   private cacheResults(results: Record<string, Metadata>): void {

@@ -145,9 +145,7 @@ export default class SfConnection {
   }
 
   private async getLogger(): Promise<Logger> {
-    if (!this.logger) {
-      this.logger = await Logger.child('jsc:sae');
-    }
+    this.logger ??= await Logger.child('jsc:sae');
     return this.logger;
   }
 }

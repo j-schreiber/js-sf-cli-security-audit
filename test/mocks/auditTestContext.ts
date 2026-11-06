@@ -100,9 +100,7 @@ export default class AuditTestContext {
    * @param role
    */
   public mockRole(roleName: string, role: ComposableRolesControl['string']): void {
-    if (!this.mockAuditConfig.controls.roles) {
-      this.mockAuditConfig.controls.roles = {};
-    }
+    this.mockAuditConfig.controls.roles ??= {};
     this.mockAuditConfig.controls.roles[roleName] = role;
   }
 

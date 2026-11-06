@@ -145,9 +145,7 @@ export default class UserPermissionScanner extends EventEmitter {
 
   private async resolvePermissionSets(targetOrg: SfConnection): Promise<Record<string, PermissionSetMetadata>> {
     const permsetsRepo = new PermissionSets(targetOrg);
-    permsetsRepo.addListener('entityresolve', (resolveEvt) =>
-      this.emitProgress({ permissionSets: resolveEvt as ScanStatusEvent['permissionSets'] })
-    );
+    permsetsRepo.addListener('entityresolve', (resolveEvt) => this.emitProgress({ permissionSets: resolveEvt }));
     const permsets = await permsetsRepo.resolve({ withMetadata: true });
     const resolved: Record<string, PermissionSetMetadata> = {};
     for (const ps of permsets.values()) {
@@ -191,7 +189,7 @@ function findPermissionAssignments(
   const permAssignments: UserPermissionAssignment[] = [];
   for (const [username, userDetails] of scanContext.users.entries()) {
     const profile = scanContext.profiles[userDetails.profileName];
-    if (profile && profile.userPermissions.has(permName)) {
+    if (profile?.userPermissions.has(permName)) {
       permAssignments.push({
         username,
         source: userDetails.profileName,
@@ -202,7 +200,7 @@ function findPermissionAssignments(
     if (userDetails.assignments) {
       for (const permSetAss of userDetails.assignments) {
         const permSet = scanContext.permissionSets[permSetAss.permissionSetIdentifier];
-        if (permSet && permSet.userPermissions.has(permName)) {
+        if (permSet?.userPermissions.has(permName)) {
           permAssignments.push({
             username,
             source: permSetAss.permissionSetIdentifier,

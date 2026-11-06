@@ -42,7 +42,7 @@ function checkSettings(
 ): void {
   for (const [settingsKey, expectedValue] of Object.entries(expectedValues)) {
     const settingsPath = [...pathSoFar, settingsKey];
-    if (!actualValues || actualValues[settingsKey] === undefined) {
+    if (actualValues?.[settingsKey] === undefined) {
       resultSoFar.warnings.push({
         identifier: settingsPath,
         message: messages.getMessage('warnings.property-does-not-exist'),
@@ -66,6 +66,7 @@ function checkSettings(
           identifier: settingsPath,
           message: messages.getMessage('violations.expected-value-does-not-match', [
             expectedValue,
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string -- message format kept as-is
             String(actualValues[settingsKey]),
           ]),
         });

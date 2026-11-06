@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { expect } from 'chai';
 import Sinon, { SinonSandbox } from 'sinon';
 import { MultiStageOutput } from '@oclif/multi-stage-output';

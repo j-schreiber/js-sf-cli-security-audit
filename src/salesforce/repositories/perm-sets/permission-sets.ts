@@ -16,7 +16,7 @@ export default class PermissionSets extends EventEmitter<{ entityresolve: [{ tot
   public async resolve(opts?: Partial<ResolvePermSetOptions>): Promise<Map<string, PermissionSet>> {
     const defOpts = ResolvePermSetOptionsSchema.parse(opts ?? {});
     const allPermsets = await this.retrievePermsetsFromOrg();
-    const permsetsToRetrieve = defOpts.filterNames ? defOpts.filterNames : Array.from(allPermsets.keys());
+    const permsetsToRetrieve = defOpts.filterNames ?? Array.from(allPermsets.keys());
     this.emit('entityresolve', { total: permsetsToRetrieve.length, resolved: 0 });
     const resolvedPermsets = defOpts.withMetadata ? await this.mdapi.resolve('PermissionSet', permsetsToRetrieve) : {};
     const results = new Map<string, PermissionSet>();
