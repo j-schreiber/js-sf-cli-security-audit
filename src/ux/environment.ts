@@ -58,7 +58,7 @@ export default class EnvVars extends Env {
     const conf = SUPPORTED_ENV_VARS[property];
     switch (conf.expectedType) {
       case 'number':
-        return (this.getNumber(property) ?? conf.defaultValue) as InferType<P>;
+        return this.getNumber(property) ?? conf.defaultValue;
       // case 'boolean':
       //   return (this.getBoolean(property) ?? conf.defaultValue) as InferType<P>;
       // case 'string':

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-promise-reject-errors -- mocks mimic jsforce error objects */
 import fs, { PathLike } from 'node:fs';
 import path from 'node:path';
 import {

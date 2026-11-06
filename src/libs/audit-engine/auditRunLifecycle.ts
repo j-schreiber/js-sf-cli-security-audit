@@ -15,7 +15,7 @@ export default class AuditRunLifecycle extends EventEmitter {
   public emitResolveWarn(message: string): void {
     this.emit('resolvewarning', {
       message,
-    } as MessageEvent);
+    });
   }
 }
 

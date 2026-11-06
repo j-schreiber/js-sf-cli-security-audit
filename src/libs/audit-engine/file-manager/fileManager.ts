@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import path from 'node:path';
 import fs, { PathLike } from 'node:fs';
-import yaml from 'js-yaml';
+import { dump, load } from 'js-yaml';
 import { ZodError } from 'zod';
 import { Messages } from '@salesforce/core';
 import {
@@ -151,7 +151,7 @@ function writeSubdir(conf: DirSaveConfig): Record<string, FileResult<unknown>> {
       if (!fs.existsSync(conf.targetPath)) {
         fs.mkdirSync(conf.targetPath, { recursive: true });
       }
-      fs.writeFileSync(filePath, yaml.dump(maybeContent));
+      fs.writeFileSync(filePath, dump(maybeContent));
     } else if (fs.existsSync(filePath)) {
       fs.rmSync(filePath);
       dirSaveResults[fileName] = { filePath, content: undefined, totalEntities: 0 };
@@ -197,7 +197,7 @@ function readFile(basePath: PathLike, fileName: string): { content: unknown; pat
   for (const suffix of ['yml', 'yaml']) {
     const filePath = path.join(basePath.toString(), `${fileName}.${suffix}`);
     if (fs.existsSync(filePath)) {
-      return { content: yaml.load(fs.readFileSync(filePath, 'utf-8')), path: filePath };
+      return { content: load(fs.readFileSync(filePath, 'utf-8')), path: filePath };
     }
   }
   return { content: undefined, path: undefined };

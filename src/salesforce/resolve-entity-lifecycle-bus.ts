@@ -12,7 +12,7 @@ export default class ResolveEntityLifecycle extends EventEmitter<{ resolvewarnin
   public emitWarn(message: string): void {
     this.emit('resolvewarning', {
       message,
-    } as MessageEvent);
+    });
   }
 }
 

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
+import { dump, load } from 'js-yaml';
 import { assert, expect } from 'chai';
 import { Messages } from '@salesforce/core';
 import FileManager from '../../src/libs/audit-engine/file-manager/fileManager.js';
@@ -394,13 +394,13 @@ function wrapProfileDependencies(deps: ConfigFileDependency[]): AuditConfigShape
 function assertFileContentEquals(filePath: string, expectedContent: unknown) {
   expect(fs.existsSync(filePath)).to.be.true;
   const actualFileContent = fs.readFileSync(filePath, 'utf-8');
-  const parsedContent = yaml.load(actualFileContent);
+  const parsedContent = load(actualFileContent);
   expect(parsedContent).to.deep.equal(expectedContent);
 }
 
 function arrangeRoleDefinitions(roleContent: unknown, auditConfigDir: string): string {
   const rolesPath = path.join(auditConfigDir, 'controls', 'roles.yml');
   fs.mkdirSync(path.join(auditConfigDir, 'controls'), { recursive: true });
-  fs.writeFileSync(rolesPath, yaml.dump(roleContent));
+  fs.writeFileSync(rolesPath, dump(roleContent));
   return rolesPath;
 }

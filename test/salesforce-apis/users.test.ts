@@ -36,7 +36,6 @@ describe('users resolve', () => {
     // Assert
     expect(users.size).to.equal(3);
     expect(users.get('test-user-1@example.de')).to.deep.equal({
-      // eslint-disable-next-line unicorn/numeric-separators-style
       createdDate: 1760011200000,
       lastLogin: undefined,
       logins: [],

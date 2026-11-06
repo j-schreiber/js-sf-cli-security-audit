@@ -46,8 +46,6 @@ const PermClassification = z.object({
   classification: z.enum(PermissionRiskLevel),
 });
 
-const PermissionClassifications = z.record(z.string(), PermClassification);
-
 const PolicyRuleConfigSchema = z.object({
   enabled: z.boolean().default(false),
   options: z.record(z.string(), z.unknown()).optional(),
